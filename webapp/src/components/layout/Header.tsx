@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Home, Users, FileText, Handshake } from "lucide-react";
+import { Sparkles, Home, Users, FileText, Handshake, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
 
@@ -57,6 +57,12 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
               <Link href="/creator/collabs">
                 <Handshake className="h-3.5 w-3.5" />
                 Collabs
+              </Link>
+            </Button>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs" asChild>
+              <Link href="/creator/responses">
+                <MessageCircle className="h-3.5 w-3.5" />
+                Réponses
               </Link>
             </Button>
           </nav>
