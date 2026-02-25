@@ -9,6 +9,8 @@ export interface MediaKitConfig {
   primaryColor: string; // hex
   secondaryColor: string; // hex
   accentColor: string; // hex
+  fontTitle: string; // Google Font name, e.g. "Playfair Display"
+  fontBody: string; // Google Font name, e.g. "Inter"
   tagline: string;
   services: string[];
   contactEmail: string;
@@ -20,6 +22,8 @@ export const defaultMediaKitConfig: MediaKitConfig = {
   primaryColor: "#7c3aed",
   secondaryColor: "#db2777",
   accentColor: "#f59e0b",
+  fontTitle: "Playfair Display",
+  fontBody: "Inter",
   tagline: "Créateur de contenu passionné",
   services: ["Posts sponsorisés", "Stories", "Reels", "Placement produit"],
   contactEmail: "",
@@ -67,6 +71,9 @@ export function generateMediaKitHTML(
   )[0];
 
   const gradient = `linear-gradient(135deg, ${config.primaryColor}, ${config.secondaryColor})`;
+  const titleFont = config.fontTitle || "Playfair Display";
+  const bodyFont = config.fontBody || "Inter";
+  const googleFontsUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(titleFont)}:wght@400;700;800&family=${encodeURIComponent(bodyFont)}:wght@300;400;500;600;700&display=swap`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -74,11 +81,11 @@ export function generateMediaKitHTML(
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Media Kit – @${profile.username}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="${googleFontsUrl}" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: '${bodyFont}', sans-serif;
       background: #0f0f13;
       color: #f1f1f5;
       min-height: 100vh;
@@ -108,7 +115,7 @@ export function generateMediaKitHTML(
       flex-shrink: 0; overflow: hidden;
     }
     .avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .hero-text h1 { font-size: 2.5rem; font-weight: 800; color: white; }
+    .hero-text h1 { font-size: 2.5rem; font-weight: 800; color: white; font-family: '${titleFont}', serif; }
     .hero-text .handle { font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-top: 4px; }
     .hero-text .tagline { font-size: 1rem; color: rgba(255,255,255,0.7); margin-top: 10px; font-style: italic; }
     .verified-badge { display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: white; margin-top: 8px; }

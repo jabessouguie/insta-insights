@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
   Download,
   Share2,
@@ -12,6 +12,9 @@ import {
   RefreshCw,
   Sparkles,
   ImageIcon,
+  Type,
+  Loader2,
+  Upload,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +27,26 @@ import {
   defaultMediaKitConfig,
   type MediaKitConfig,
 } from "@/lib/mediakit-generator";
+
+// ─── Google Fonts ─────────────────────────────────────────────────────────────
+
+const GOOGLE_FONTS = [
+  "Inter",
+  "Roboto",
+  "Montserrat",
+  "Playfair Display",
+  "Raleway",
+  "Oswald",
+  "Lora",
+  "Nunito",
+  "Poppins",
+  "Bebas Neue",
+  "Dancing Script",
+  "Pacifico",
+  "Merriweather",
+  "Open Sans",
+  "Source Sans 3",
+];
 
 // ─── Color picker with hex input ──────────────────────────────────────────────
 
@@ -109,10 +132,12 @@ export default function MediaKitPage() {
   const [newService, setNewService] = useState("");
   const [activeTab, setActiveTab] = useState<"edit" | "preview">("edit");
   const [shareId] = useState(() => Math.random().toString(36).substring(2, 10));
+  const [isGenerating, setIsGenerating] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Initialise config from real data when loaded
-  useState(() => {
+  useEffect(() => {
     if (data?.profile) {
       setConfig((c) => ({
         ...c,
@@ -123,12 +148,70 @@ export default function MediaKitPage() {
         profilePicUrl: data.profile.profilePicUrl ?? c.profilePicUrl,
       }));
     }
-  });
+  }, [data?.profile]);
 
   const html = useMemo(() => {
     if (!data) return "";
     return generateMediaKitHTML(data, config);
   }, [data, config]);
+
+  // ── AI generation ─────────────────────────────────────────────────────────
+
+  const generateWithAI = useCallback(async () => {
+    if (!data || isGenerating) return;
+    setIsGenerating(true);
+    try {
+      const topContentType = data.metrics?.contentTypePerformance?.sort(
+        (a, b) => (b.avgEngagement ?? 0) - (a.avgEngagement ?? 0)
+      )[0]?.type;
+
+      const topCountries = data.audienceInsights?.topCountries
+        ? Object.keys(data.audienceInsights.topCountries).slice(0, 3)
+        : [];
+
+      const body = {
+        username: data.profile.username ?? "",
+        followerCount: data.profile.followerCount ?? 0,
+        engagementRate: data.metrics?.engagementRate ?? 0,
+        bio: data.profile.bio ?? "",
+        contactEmail: config.contactEmail,
+        topContentType,
+        audienceGender: data.audienceInsights?.genderSplit
+          ? {
+              female: data.audienceInsights.genderSplit.female ?? 0,
+              male: data.audienceInsights.genderSplit.male ?? 0,
+            }
+          : undefined,
+        topCountries,
+        posts: data.posts
+          ?.filter((p) => p.caption.trim().length > 0)
+          .slice(0, 10)
+          .map((p) => ({ caption: p.caption })),
+      };
+
+      const res = await fetch("/api/mediakit/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setConfig((c) => ({
+            ...c,
+            tagline: json.tagline ?? c.tagline,
+            services: json.services?.length ? json.services : c.services,
+            ratePerPost: json.ratePerPost ?? c.ratePerPost,
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("AI generate error:", err);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [data, config.contactEmail, isGenerating]);
 
   const handleDownloadHTML = useCallback(() => {
     const blob = new Blob([html], { type: "text/html" });
@@ -166,6 +249,22 @@ export default function MediaKitPage() {
   const removeService = useCallback((i: number) => {
     setConfig((c) => ({ ...c, services: c.services.filter((_, idx) => idx !== i) }));
   }, []);
+
+  // ── Photo upload ──────────────────────────────────────────────────────────
+
+  const handlePhotoUpload = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      const file = files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (dataUrl) updateConfig("profilePicUrl", dataUrl);
+      };
+      reader.readAsDataURL(file);
+    },
+    [updateConfig]
+  );
 
   if (isLoading) {
     return (
@@ -208,6 +307,14 @@ export default function MediaKitPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={generateWithAI} disabled={isGenerating}>
+              {isGenerating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+              )}
+              {isGenerating ? "Génération…" : "Générer avec l'IA"}
+            </Button>
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="h-3.5 w-3.5" />
               Copier lien de partage
@@ -291,6 +398,43 @@ export default function MediaKitPage() {
               </CardContent>
             </Card>
 
+            {/* Fonts */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+                  <Type className="h-4 w-4 text-sky-400" />
+                  Polices
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-3">
+                  {(
+                    [
+                      ["fontTitle", "Titre", config.fontTitle],
+                      ["fontBody", "Corps de texte", config.fontBody],
+                    ] as const
+                  ).map(([key, label, value]) => (
+                    <div key={key}>
+                      <label className="mb-1 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {label}
+                      </label>
+                      <select
+                        value={value}
+                        onChange={(e) => updateConfig(key, e.target.value)}
+                        className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-primary/30"
+                      >
+                        {GOOGLE_FONTS.map((f) => (
+                          <option key={f} value={f}>
+                            {f}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Identity */}
             <Card>
               <CardHeader className="pb-3">
@@ -300,10 +444,11 @@ export default function MediaKitPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                {/* Profile photo */}
                 <div className="space-y-1.5">
                   <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                     <ImageIcon className="h-3 w-3" />
-                    Photo de profil (URL)
+                    Photo de profil
                   </label>
                   <input
                     type="url"
@@ -312,14 +457,32 @@ export default function MediaKitPage() {
                     placeholder="https://..."
                     className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  {config.profilePicUrl && (
-                    <img
-                      src={config.profilePicUrl}
-                      alt="Aperçu"
-                      className="h-12 w-12 rounded-full border border-border object-cover"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={photoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(e.target.files)}
                     />
-                  )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={() => photoInputRef.current?.click()}
+                    >
+                      <Upload className="h-3 w-3" />
+                      Uploader une photo
+                    </Button>
+                    {config.profilePicUrl && (
+                      <img
+                        src={config.profilePicUrl}
+                        alt="Aperçu"
+                        className="h-10 w-10 flex-shrink-0 rounded-full border border-border object-cover"
+                        onError={(e) => (e.currentTarget.style.display = "none")}
+                      />
+                    )}
+                  </div>
                 </div>
                 <LabeledInput
                   label="Tagline"
