@@ -47,8 +47,54 @@ function findExportFolder(): string | null {
 
 // ─── HTML parser helpers ──────────────────────────────────────────────────────
 
-/** Parse an ISO-8601 or relative timestamp string into a Date.
- *  Returns new Date(0) (epoch) when the string is empty or invalid,
+/** Parse French locale date strings from the Instagram HTML export.
+ *  Format: "fév 22, 2026 8:58 am" or "janv. 5, 2025 3:00 pm" */
+function parseFrenchDate(raw: string): Date | null {
+  const MONTHS: Record<string, number> = {
+    janv: 0,
+    jan: 0,
+    fév: 1,
+    fev: 1,
+    feb: 1,
+    mars: 2,
+    mar: 2,
+    avr: 3,
+    apr: 3,
+    mai: 4,
+    may: 4,
+    juin: 5,
+    jun: 5,
+    juil: 6,
+    jul: 6,
+    août: 7,
+    aout: 7,
+    aug: 7,
+    sept: 8,
+    sep: 8,
+    oct: 9,
+    nov: 10,
+    déc: 11,
+    dec: 11,
+  };
+  // Normalise: strip dots, collapse spaces, lowercase
+  const s = raw.toLowerCase().replace(/\./g, "").replace(/\s+/g, " ").trim();
+  const m = s.match(
+    /^([a-zéûôàèùâêîäëïöü]+)\s+(\d{1,2}),?\s+(\d{4})(?:\s+(\d{1,2}):(\d{2})(?:\s*(am|pm))?)?/
+  );
+  if (!m) return null;
+  const monthNum = MONTHS[m[1]];
+  if (monthNum === undefined) return null;
+  const day = parseInt(m[2]);
+  const year = parseInt(m[3]);
+  let hours = m[4] ? parseInt(m[4]) : 0;
+  const minutes = m[5] ? parseInt(m[5]) : 0;
+  if (m[6] === "pm" && hours < 12) hours += 12;
+  if (m[6] === "am" && hours === 12) hours = 0;
+  return new Date(year, monthNum, day, hours, minutes);
+}
+
+/** Parse an ISO-8601 or locale timestamp string into a Date.
+ *  Returns new Date(0) (epoch) when the string is empty or unparseable,
  *  so callers can detect "no timestamp available". */
 function parseTimestamp(raw: string): Date {
   const trimmed = raw.trim();
@@ -56,6 +102,8 @@ function parseTimestamp(raw: string): Date {
   if (trimmed.includes("T")) return new Date(trimmed);
   const d = new Date(trimmed);
   if (!isNaN(d.getTime())) return d;
+  const french = parseFrenchDate(trimmed);
+  if (french) return french;
   return new Date(0);
 }
 
@@ -231,36 +279,26 @@ function parseFollowerFile(filePath: string): InstagramFollower[] {
   const $ = loadHtml(filePath);
   if (!$) return [];
 
-  const followers: InstagramFollower[] = [];
+  const result: InstagramFollower[] = [];
 
-  $("ul._a9-z li, div[class*='_a706'] li").each((_: number, el: AnyNode) => {
+  // Instagram export: each follower/following entry is a div.pam card.
+  // Structure: div.pam > div._a6-p > div > [ div > a(username), div(date) ]
+  $("div.pam").each((_: number, el: AnyNode) => {
     const $el = $(el);
-    const username = $el.find("a").first().text().trim() || $el.find("div").first().text().trim();
-    const timestampText = $el.find("div[class*='_a72_']").text().trim();
-    if (!username) return;
-
-    followers.push({
+    const link = $el.find("a[href*='instagram.com']").first();
+    const username = link.text().trim().toLowerCase();
+    if (!username || username.length < 2) return;
+    // Timestamp is the next sibling div after the div wrapping the link
+    const dateText = link.parent().next("div").text().trim();
+    result.push({
       username,
-      followedAt: parseTimestamp(timestampText),
+      followedAt: parseTimestamp(dateText),
       isFollowingBack: false,
       isActive: false,
     });
   });
 
-  if (followers.length === 0) {
-    $("a[href*='instagram.com']").each((_: number, el: AnyNode) => {
-      const username = $(el).text().trim();
-      if (!username || username.length < 2) return;
-      followers.push({
-        username,
-        followedAt: new Date(),
-        isFollowingBack: false,
-        isActive: false,
-      });
-    });
-  }
-
-  return followers;
+  return result;
 }
 
 function parseFollowers(exportFolder: string): InstagramFollower[] {
@@ -294,11 +332,13 @@ function parsePostsFile(filePath: string, mediaType: MediaType): InstagramPost[]
   const posts: InstagramPost[] = [];
   let idx = 0;
 
-  $("._a706, div[class*='pam']").each((_: number, el: AnyNode) => {
+  // Instagram export: each post is a div.pam card.
+  // Caption: h2 with class _a6-h (e.g. "_3-95 _2pim _a6-h _a6-i")
+  // Timestamp: div with class _a6-o (e.g. "_3-94 _a6-o")
+  $("div.pam").each((_: number, el: AnyNode) => {
     const $el = $(el);
-    const captionEl = $el.find("div._a6-p, ._a6eo").first();
-    const caption = captionEl.text().trim();
-    const timestampText = $el.find("div[class*='_a72_'], ._a72d").last().text().trim();
+    const caption = $el.find("h2[class*='_a6-h']").first().text().trim();
+    const timestampText = $el.find("div[class*='_a6-o']").first().text().trim();
 
     posts.push({
       id: `post_${idx++}`,
@@ -442,46 +482,48 @@ function computeContentPerformance(
     const reels = posts.filter((p) => p.mediaType === "REEL");
     const images = posts.filter((p) => p.mediaType === "IMAGE" || p.mediaType === "CAROUSEL");
 
-    if (reels.length > 0 && ci.reels.interactions > 0) {
+    // Use likes+comments as fallback when the interactions field is missing/zero
+    const reelEngagement = ci.reels.interactions || ci.reels.likes + ci.reels.comments;
+    if (reels.length > 0 && reelEngagement > 0) {
       const count = reels.length;
       const avgLikes = ci.reels.likes / count;
       const avgComments = ci.reels.comments / count;
       result.push({
         type: "REEL",
-        avgEngagement: ci.reels.interactions / count,
+        avgEngagement: reelEngagement / count,
         avgLikes,
         avgComments,
         count,
-        engagementRate:
-          followerCount > 0 ? (ci.reels.interactions / count / followerCount) * 100 : 0,
+        engagementRate: followerCount > 0 ? (reelEngagement / count / followerCount) * 100 : 0,
       });
     }
 
-    if (images.length > 0 && ci.posts.interactions > 0) {
+    const postEngagement = ci.posts.interactions || ci.posts.likes + ci.posts.comments;
+    if (images.length > 0 && postEngagement > 0) {
       const count = images.length;
       const avgLikes = ci.posts.likes / count;
       const avgComments = ci.posts.comments / count;
       result.push({
         type: "IMAGE",
-        avgEngagement: ci.posts.interactions / count,
+        avgEngagement: postEngagement / count,
         avgLikes,
         avgComments,
         count,
-        engagementRate:
-          followerCount > 0 ? (ci.posts.interactions / count / followerCount) * 100 : 0,
+        engagementRate: followerCount > 0 ? (postEngagement / count / followerCount) * 100 : 0,
       });
     }
 
-    if (ci.stories.interactions > 0) {
+    const storyEngagement = ci.stories.interactions || ci.stories.replies;
+    if (storyEngagement > 0) {
       const storyCount = posts.filter((p) => p.mediaType === "STORY").length || 1;
       result.push({
         type: "STORY",
-        avgEngagement: ci.stories.interactions / storyCount,
+        avgEngagement: storyEngagement / storyCount,
         avgLikes: 0,
-        avgComments: 0,
+        avgComments: ci.stories.replies / storyCount,
         count: storyCount,
         engagementRate:
-          followerCount > 0 ? (ci.stories.interactions / storyCount / followerCount) * 100 : 0,
+          followerCount > 0 ? (storyEngagement / storyCount / followerCount) * 100 : 0,
       });
     }
 

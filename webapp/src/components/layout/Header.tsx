@@ -4,9 +4,18 @@ import Link from "next/link";
 import { ThemeToggle } from "./ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Home, Users, FileText, Handshake, MessageCircle } from "lucide-react";
+import {
+  Sparkles,
+  Home,
+  Users,
+  FileText,
+  Handshake,
+  MessageCircle,
+  MessageSquarePlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface HeaderProps {
   profile?: InstagramProfile;
@@ -15,6 +24,7 @@ interface HeaderProps {
 }
 
 export function Header({ profile, mode, agencyName }: HeaderProps) {
+  const { lang, toggle } = useLanguage();
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
@@ -65,6 +75,12 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
                 Réponses
               </Link>
             </Button>
+            <Button variant="ghost" size="sm" className="gap-1.5 text-xs" asChild>
+              <Link href="/creator/comments">
+                <MessageSquarePlus className="h-3.5 w-3.5" />
+                Commentaires
+              </Link>
+            </Button>
           </nav>
         )}
 
@@ -74,6 +90,17 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
             <Link href="/" aria-label="Retour à l'accueil">
               <Home className="h-4 w-4" />
             </Link>
+          </Button>
+
+          {/* Language toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggle}
+            className="h-9 w-12 text-xs font-semibold"
+            title={lang === "fr" ? "Switch to English" : "Passer en français"}
+          >
+            {lang === "fr" ? "FR" : "EN"}
           </Button>
 
           <ThemeToggle />
