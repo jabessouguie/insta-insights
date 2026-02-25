@@ -133,9 +133,13 @@ function parseInsightTable(exportFolder: string, relativePath: string): Map<stri
     if (!$td.length) return;
 
     // Label = direct text node (clone the td, remove all child elements)
+    // Normalise typographic apostrophe (U+2019) → ASCII apostrophe (U+0027)
     const $clone = $td.clone();
     $clone.find("*").remove();
-    const label = $clone.text().trim();
+    const label = $clone
+      .text()
+      .trim()
+      .replace(/\u2019/g, "'");
 
     // Value = innermost div text
     const value = $td.find("div > div").first().text().trim();
