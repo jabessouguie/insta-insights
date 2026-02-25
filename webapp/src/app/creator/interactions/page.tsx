@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useInstagramData } from "@/hooks/useInstagramData";
+import { useT } from "@/lib/i18n";
 import type { InteractionAnalysis, UnfollowCandidate, DMSuggestion } from "@/types/instagram";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -42,17 +43,22 @@ function CopyButton({ text }: { text: string }) {
 }
 
 function CandidateRow({ candidate, tag }: { candidate: UnfollowCandidate; tag?: string }) {
+  const t = useT();
   return (
     <div className="flex items-center gap-3 border-b border-border/40 py-3 text-sm last:border-0">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">@{candidate.username}</p>
         <p className="text-xs text-muted-foreground">
-          Suivi depuis le{" "}
+          {t("interactions.candidate.followedSince")}{" "}
           {candidate.followedSince && new Date(candidate.followedSince).getTime() > 0
             ? new Date(candidate.followedSince).toLocaleDateString("fr-FR")
-            : "date inconnue"}
+            : t("interactions.candidate.unknownDate")}
           {candidate.lastDmSentAt && (
-            <> · DM envoyé le {new Date(candidate.lastDmSentAt).toLocaleDateString("fr-FR")}</>
+            <>
+              {" "}
+              · {t("interactions.candidate.lastDm")}{" "}
+              {new Date(candidate.lastDmSentAt).toLocaleDateString("fr-FR")}
+            </>
           )}
         </p>
       </div>
@@ -83,6 +89,7 @@ function DMCard({
   creatorUsername: string;
   creatorFollowers: number;
 }) {
+  const t = useT();
   const [dm, setDm] = useState(suggestion.suggestedDm || "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -167,16 +174,14 @@ function DMCard({
           </div>
         ) : (
           <p className="text-xs italic text-muted-foreground">
-            {isGenerating
-              ? "Rédaction du DM en cours…"
-              : "Clique sur \u201cGénérer\u201d pour obtenir un DM personnalisé via Gemini."}
+            {isGenerating ? t("interactions.dm.generating") : t("interactions.dm.helper")}
           </p>
         )}
         {dm && !isGenerating && (
           <AIFeedbackBar
             onRegenerate={generate}
             isGenerating={isGenerating}
-            placeholder="Ex: rends le ton plus chaleureux, mentionne leur contenu vidéo…"
+            placeholder={t("interactions.dm.feedbackPlaceholder")}
           />
         )}
         {!dm && (
@@ -190,12 +195,12 @@ function DMCard({
             {isGenerating ? (
               <>
                 <Loader2 className="h-3 w-3 animate-spin" />
-                Génération...
+                {t("interactions.dm.generating_button")}
               </>
             ) : (
               <>
                 <RefreshCw className="h-3 w-3" />
-                Générer le DM
+                {t("interactions.dm.generateButton")}
               </>
             )}
           </Button>
@@ -208,6 +213,7 @@ function DMCard({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function InteractionsPage() {
+  const t = useT();
   const { data: instagramData } = useInstagramData();
   const { data, isLoading } = useSWR<{ success: boolean; data: InteractionAnalysis }>(
     "/api/interactions",
@@ -225,11 +231,9 @@ export default function InteractionsPage() {
         <div className="mb-8">
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Users className="h-6 w-6 text-violet-400" />
-            Analyse des Interactions
+            {t("interactions.title")}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Identifie les comptes inactifs, les contacts à relancer et ceux à unfollow.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("interactions.subtitle")}</p>
         </div>
 
         {/* Summary badges */}
@@ -237,24 +241,24 @@ export default function InteractionsPage() {
           <div className="mb-6 flex flex-wrap gap-3">
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <UserX className="h-3.5 w-3.5 text-amber-400" />
-              {analysis.neverInteracted.length} jamais interagi
+              {analysis.neverInteracted.length} {t("interactions.badge.neverInteracted")}
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <MessageSquare className="h-3.5 w-3.5 text-violet-400" />
-              {analysis.dmSuggestions.length} à contacter
+              {analysis.dmSuggestions.length} {t("interactions.badge.toContact")}
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <Trash2 className="h-3.5 w-3.5 text-red-400" />
-              {analysis.unfollowCandidates.length} à unfollow
+              {analysis.unfollowCandidates.length} {t("interactions.badge.toUnfollow")}
             </Badge>
           </div>
         )}
 
         <Tabs defaultValue="inactive" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
-            <TabsTrigger value="inactive">Inactifs</TabsTrigger>
-            <TabsTrigger value="dm">DM suggérés</TabsTrigger>
-            <TabsTrigger value="unfollow">À unfollow</TabsTrigger>
+            <TabsTrigger value="inactive">{t("interactions.tabs.inactive")}</TabsTrigger>
+            <TabsTrigger value="dm">{t("interactions.tabs.dmSuggestions")}</TabsTrigger>
+            <TabsTrigger value="unfollow">{t("interactions.tabs.unfollow")}</TabsTrigger>
           </TabsList>
 
           {/* ── Inactive Tab ── */}
@@ -263,12 +267,9 @@ export default function InteractionsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
                   <UserX className="h-4 w-4 text-amber-400" />
-                  Abonnés que tu suis, jamais interagi
+                  {t("interactions.inactive.title")}
                 </CardTitle>
-                <CardDescription>
-                  Ces comptes te suivent et tu les suis, mais ils n&apos;ont jamais liké ni commenté
-                  tes posts.
-                </CardDescription>
+                <CardDescription>{t("interactions.inactive.description")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -285,7 +286,7 @@ export default function InteractionsPage() {
                   </div>
                 ) : analysis?.neverInteracted.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
-                    🎉 Tous tes contacts ont interagi avec ton contenu !
+                    {t("interactions.inactive.empty")}
                   </p>
                 ) : (
                   <div>
@@ -305,12 +306,9 @@ export default function InteractionsPage() {
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 text-base font-semibold">
                     <MessageSquare className="h-4 w-4 text-violet-400" />
-                    Comptes à relancer
+                    {t("interactions.dm.title")}
                   </CardTitle>
-                  <CardDescription>
-                    Tu les suis mais ils ne te suivent pas en retour. Gemini génère un DM
-                    personnalisé pour chaque compte.
-                  </CardDescription>
+                  <CardDescription>{t("interactions.dm.description")}</CardDescription>
                 </CardHeader>
               </Card>
               {isLoading ? (
@@ -321,7 +319,7 @@ export default function InteractionsPage() {
                 </div>
               ) : analysis?.dmSuggestions.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Aucun compte à contacter pour l&apos;instant.
+                  {t("interactions.dm.empty")}
                 </p>
               ) : (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -344,12 +342,9 @@ export default function InteractionsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base font-semibold">
                   <Trash2 className="h-4 w-4 text-red-400" />
-                  Comptes à unfollow
+                  {t("interactions.unfollow.title")}
                 </CardTitle>
-                <CardDescription>
-                  Tu les suis, ils ne te suivent pas, et tu leur as envoyé un DM il y a plus
-                  d&apos;un mois sans réponse.
-                </CardDescription>
+                <CardDescription>{t("interactions.unfollow.description")}</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -363,12 +358,16 @@ export default function InteractionsPage() {
                   </div>
                 ) : analysis?.unfollowCandidates.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
-                    Aucun compte à unfollow pour l&apos;instant.
+                    {t("interactions.unfollow.empty")}
                   </p>
                 ) : (
                   <div>
                     {analysis?.unfollowCandidates.map((c) => (
-                      <CandidateRow key={c.username} candidate={c} tag="À unfollow" />
+                      <CandidateRow
+                        key={c.username}
+                        candidate={c}
+                        tag={t("interactions.candidate.unfollowTag")}
+                      />
                     ))}
                   </div>
                 )}

@@ -19,23 +19,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
+import { useT } from "@/lib/i18n";
 import type { CollabMatch } from "@/app/api/collabs/route";
-
-const EMAIL_GEN_STATUSES = [
-  "Analyse du profil de la marque…",
-  "Rédaction de l'objet de l'email…",
-  "Personnalisation du contenu…",
-  "Ajout du call-to-action…",
-];
 import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
 
-// ─── Type badges ──────────────────────────────────────────────────────────────
+// ─── Type badge colors ─────────────────────────────────────────────────────────
 
-const TYPE_CONFIG: Record<string, { label: string; color: string }> = {
-  brand: { label: "Marque", color: "text-amber-400 border-amber-400/30 bg-amber-400/10" },
-  creator: { label: "Créateur", color: "text-violet-400 border-violet-400/30 bg-violet-400/10" },
-  event: { label: "Événement", color: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10" },
-  media: { label: "Média", color: "text-pink-400 border-pink-400/30 bg-pink-400/10" },
+const TYPE_COLORS: Record<string, string> = {
+  brand: "text-amber-400 border-amber-400/30 bg-amber-400/10",
+  creator: "text-violet-400 border-violet-400/30 bg-violet-400/10",
+  event: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10",
+  media: "text-pink-400 border-pink-400/30 bg-pink-400/10",
 };
 
 // ─── Collab Card ──────────────────────────────────────────────────────────────
@@ -47,11 +41,27 @@ function CollabCard({
   collab: CollabMatch;
   profile: { username?: string; followerCount?: number; bio?: string };
 }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [emailData, setEmailData] = useState<{ subject: string; body: string } | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
-  const emailStatus = useAnimatedStatus(isGeneratingEmail, EMAIL_GEN_STATUSES);
+
+  const emailGenStatuses = [
+    t("collabs.email.status.analyzeProfile"),
+    t("collabs.email.status.draftSubject"),
+    t("collabs.email.status.customizeContent"),
+    t("collabs.email.status.addCTA"),
+  ];
+
+  const emailStatus = useAnimatedStatus(isGeneratingEmail, emailGenStatuses);
+
+  const typeLabels: Record<string, string> = {
+    brand: t("collabs.type.brand"),
+    creator: t("collabs.type.creator"),
+    event: t("collabs.type.event"),
+    media: t("collabs.type.media"),
+  };
 
   const generateEmail = useCallback(
     async (feedback?: string) => {
@@ -74,12 +84,15 @@ function CollabCard({
 
   const copyEmail = () => {
     if (!emailData) return;
-    navigator.clipboard.writeText(`Objet: ${emailData.subject}\n\n${emailData.body}`);
+    navigator.clipboard.writeText(
+      `${t("collabs.email.subject")}: ${emailData.subject}\n\n${emailData.body}`
+    );
     setCopiedEmail(true);
     setTimeout(() => setCopiedEmail(false), 2000);
   };
 
-  const typeConfig = TYPE_CONFIG[collab.type] ?? { label: collab.type, color: "" };
+  const typeColor = TYPE_COLORS[collab.type] ?? "";
+  const typeLabel = typeLabels[collab.type] ?? collab.type;
 
   return (
     <Card className="overflow-hidden">
@@ -89,9 +102,9 @@ function CollabCard({
             <CardTitle className="flex flex-wrap items-center gap-2 text-base font-semibold">
               {collab.name}
               <span
-                className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${typeConfig.color}`}
+                className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-medium ${typeColor}`}
               >
-                {typeConfig.label}
+                {typeLabel}
               </span>
             </CardTitle>
             <CardDescription className="mt-1 text-xs">
@@ -136,7 +149,11 @@ function CollabCard({
             ) : (
               <Mail className="h-3 w-3" />
             )}
-            {isGeneratingEmail ? emailStatus : emailData ? "Régénérer l'email" : "Générer l'email"}
+            {isGeneratingEmail
+              ? emailStatus
+              : emailData
+                ? t("collabs.card.regenerateEmail")
+                : t("collabs.card.generateEmail")}
           </Button>
 
           {emailData && (
@@ -147,7 +164,7 @@ function CollabCard({
               onClick={() => setExpanded((e) => !e)}
             >
               {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              {expanded ? "Masquer" : "Voir"} l&apos;email
+              {expanded ? t("collabs.card.hide") : t("collabs.card.show")} email
             </Button>
           )}
         </div>
@@ -155,21 +172,21 @@ function CollabCard({
         {expanded && emailData && (
           <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 text-sm">
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Objet
+              {t("collabs.email.subject")}
             </div>
             <p className="font-semibold">{emailData.subject}</p>
             <div className="mt-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Corps
+              {t("collabs.email.body")}
             </div>
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{emailData.body}</p>
             <Button size="sm" variant="outline" className="w-full text-xs" onClick={copyEmail}>
               <FileText className="h-3 w-3" />
-              {copiedEmail ? "✓ Copié !" : "Copier l'email complet"}
+              {copiedEmail ? t("collabs.email.copied") : t("collabs.email.copyButton")}
             </Button>
             <AIFeedbackBar
               onRegenerate={generateEmail}
               isGenerating={isGeneratingEmail}
-              placeholder="Ex: rends l'objet plus accrocheur, ajoute un tarif, ton plus décontracté…"
+              placeholder={t("collabs.email.feedbackPlaceholder")}
             />
           </div>
         )}
@@ -196,6 +213,7 @@ const INTEREST_SUGGESTIONS = [
 ];
 
 export default function CollabsPage() {
+  const t = useT();
   const { data } = useInstagramData();
   const [location, setLocation] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -205,13 +223,15 @@ export default function CollabsPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
 
-  const searchStatus = useAnimatedStatus(isSearching, [
-    "Analyse de ton profil…",
-    "Recherche de partenaires compatibles…",
-    "Évaluation des opportunités de collaboration…",
-    "Sélection des meilleures correspondances…",
-    "Finalisation des résultats via Gemini…",
-  ]);
+  const searchStatuses = [
+    t("collabs.search.status.analyzeProfile"),
+    t("collabs.search.status.searchPartners"),
+    t("collabs.search.status.evaluateOpportunities"),
+    t("collabs.search.status.selectMatches"),
+    t("collabs.search.status.finalizeResults"),
+  ];
+
+  const searchStatus = useAnimatedStatus(isSearching, searchStatuses);
 
   const toggleInterest = (i: string) => {
     setInterests((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
@@ -245,14 +265,14 @@ export default function CollabsPage() {
         setCollabs(json.data.collabs ?? []);
         setSummary(json.data.summary ?? "");
       } else {
-        setError(json.error ?? "Erreur lors de la recherche.");
+        setError(json.error ?? t("collabs.search.error"));
       }
     } catch {
-      setError("Erreur réseau. Vérifie ta connexion.");
+      setError(t("collabs.search.networkError"));
     } finally {
       setIsSearching(false);
     }
-  }, [location, interests, data]);
+  }, [location, interests, data, t]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -262,12 +282,9 @@ export default function CollabsPage() {
         <div className="mb-8">
           <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Sparkles className="h-5 w-5 text-amber-400" />
-            Trouveur de Collabs
+            {t("collabs.title")}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Indique ta localisation et tes centres d&apos;intérêt — Gemini identifie les meilleures
-            opportunités et génère les emails.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{t("collabs.subtitle")}</p>
         </div>
 
         {/* Search form */}
@@ -276,13 +293,13 @@ export default function CollabsPage() {
             {/* Location */}
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                📍 Localisation
+                {t("collabs.location.label")}
               </label>
               <input
                 type="text"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                placeholder="Paris, Lyon, Bordeaux..."
+                placeholder={t("collabs.location.placeholder")}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -290,7 +307,7 @@ export default function CollabsPage() {
             {/* Interests */}
             <div className="space-y-2">
               <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                🎯 Centres d&apos;intérêt
+                {t("collabs.interests.label")}
               </label>
               <div className="flex flex-wrap gap-2">
                 {INTEREST_SUGGESTIONS.map((i) => (
@@ -314,7 +331,7 @@ export default function CollabsPage() {
                   value={customInterest}
                   onChange={(e) => setCustomInterest(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addCustomInterest()}
-                  placeholder="Autre centre d'intérêt..."
+                  placeholder={t("collabs.interests.customPlaceholder")}
                   className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-primary/30"
                 />
                 <Button size="sm" variant="outline" onClick={addCustomInterest}>
@@ -348,7 +365,7 @@ export default function CollabsPage() {
               ) : (
                 <>
                   <Search className="h-4 w-4" />
-                  Trouver des collabs
+                  {t("collabs.search.button")}
                 </>
               )}
             </Button>
@@ -359,7 +376,7 @@ export default function CollabsPage() {
         {/* Results */}
         {summary && (
           <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-sm text-foreground/80">
-            <span className="font-medium text-amber-400">Gemini : </span>
+            <span className="font-medium text-amber-400">{t("collabs.summary.prefix")}</span>
             {summary}
           </div>
         )}

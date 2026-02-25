@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 import type { AIInsight, InsightsApiRequest } from "@/types/instagram";
 import { useInsights } from "@/hooks/useInsights";
 
@@ -45,26 +46,28 @@ const PRIORITY_BADGES = {
   low: "secondary" as const,
 };
 
-const PRIORITY_LABELS = {
-  high: "Priorité haute",
-  medium: "Moyen",
-  low: "Faible",
-};
-
-const INSIGHTS_STATUSES = [
-  "Analyse de ton profil Instagram…",
-  "Identification de ta niche et de ton audience…",
-  "Lecture des métriques d'engagement…",
-  "Analyse de tes contenus les plus performants…",
-  "Génération des recommandations personnalisées…",
-  "Personnalisation pour ta niche et ton marché…",
-  "Finalisation des insights…",
-];
-
 export function InsightsPanel({ request, initialInsights, summary }: InsightsPanelProps) {
+  const t = useT();
   const { insights, isLoading, generate } = useInsights();
   const [hasGenerated, setHasGenerated] = useState(false);
-  const loadingStatus = useAnimatedStatus(isLoading, INSIGHTS_STATUSES);
+
+  const insightsStatuses = [
+    t("insights.status.analyzeProfile"),
+    t("insights.status.identifyNiche"),
+    t("insights.status.readMetrics"),
+    t("insights.status.analyzeTopContent"),
+    t("insights.status.generateRecommendations"),
+    t("insights.status.personalizeForNiche"),
+    t("insights.status.finalize"),
+  ];
+
+  const priorityLabels = {
+    high: t("insights.priority.high"),
+    medium: t("insights.priority.medium"),
+    low: t("insights.priority.low"),
+  };
+
+  const loadingStatus = useAnimatedStatus(isLoading, insightsStatuses);
 
   const displayInsights = insights?.insights ?? initialInsights;
   const displaySummary = insights?.summary ?? summary;
@@ -91,9 +94,9 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
           <div>
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
               <Sparkles className="h-4 w-4 text-violet-400" />
-              Insights IA Gemini
+              {t("insights.title")}
             </CardTitle>
-            <CardDescription>Recommandations personnalisées basées sur vos données</CardDescription>
+            <CardDescription>{t("insights.subtitle")}</CardDescription>
           </div>
 
           <Button
@@ -106,12 +109,12 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
             {isLoading ? (
               <>
                 <RefreshCw className="h-3 w-3 animate-spin" />
-                Analyse...
+                {t("insights.button.analyzing")}
               </>
             ) : (
               <>
                 <RefreshCw className="h-3 w-3" />
-                {hasGenerated ? "Actualiser" : "Générer"}
+                {hasGenerated ? t("insights.button.refresh") : t("insights.button.generate")}
               </>
             )}
           </Button>
@@ -180,7 +183,7 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
                           variant={PRIORITY_BADGES[insight.priority]}
                           className="h-4 px-1.5 text-[10px]"
                         >
-                          {PRIORITY_LABELS[insight.priority]}
+                          {priorityLabels[insight.priority]}
                         </Badge>
                         {insight.metric && (
                           <span className="font-mono text-xs font-medium text-muted-foreground">
@@ -205,9 +208,7 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
         ) : (
           <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
             <Sparkles className="h-8 w-8 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">
-              Cliquez sur &quot;Générer&quot; pour obtenir des insights IA personnalisés
-            </p>
+            <p className="text-sm text-muted-foreground">{t("insights.empty")}</p>
           </div>
         )}
         {displayInsights && displayInsights.length > 0 && (
@@ -215,7 +216,7 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
             <AIFeedbackBar
               onRegenerate={handleGenerate}
               isGenerating={isLoading}
-              placeholder="Ex: concentre-toi sur la croissance, donne plus de conseils contenu, sois plus précis sur les Reels…"
+              placeholder={t("insights.feedbackPlaceholder")}
             />
           </div>
         )}
