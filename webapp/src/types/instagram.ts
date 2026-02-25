@@ -122,6 +122,7 @@ export interface ReachInsights {
 
 export interface InstagramMetrics {
   engagementRate: number;
+  engagementRateWithReels?: number;
   avgLikesPerPost: number;
   avgCommentsPerPost: number;
   avgReachPerPost: number;

@@ -202,6 +202,8 @@ const FR = {
   "feedback.button.regenerate": "Régénérer",
 
   // ── Dashboard (remaining) ─────────────────────────────────────────────────
+  "dashboard.er.postsOnly": "Posts seulement",
+  "dashboard.er.reelsIncluded": "Reels inclus",
   "dashboard.vsLastMonth": "vs mois dernier",
   "dashboard.vsPreviousPeriod": "vs période précédente",
   "dashboard.reelInteractions": "Reels interactions",
@@ -486,6 +488,8 @@ const EN: Record<keyof typeof FR, string> = {
   "feedback.button.regenerate": "Regenerate",
 
   // ── Dashboard (remaining) ─────────────────────────────────────────────────
+  "dashboard.er.postsOnly": "Posts only",
+  "dashboard.er.reelsIncluded": "Reels included",
   "dashboard.vsLastMonth": "vs last month",
   "dashboard.vsPreviousPeriod": "vs previous period",
   "dashboard.reelInteractions": "Reels interactions",

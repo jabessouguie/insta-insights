@@ -740,6 +740,7 @@ function computeMetrics(
   let avgLikes: number;
   let avgComments: number;
   let engagementRate: number;
+  let engagementRateWithReels: number | undefined;
 
   // Parse the insights period so we can restrict the denominator to posts published
   // during the same window that content_interactions.html covers. Older posts and
@@ -769,6 +770,15 @@ function computeMetrics(
     avgComments = postCount > 0 ? realComments / postCount : 0;
     // Per-post engagement rate: (avgLikes + avgComments) / followers × 100
     engagementRate = followerCount > 0 ? ((avgLikes + avgComments) / followerCount) * 100 : 0;
+    // ER including reels — user can toggle this view in the dashboard
+    const reelCount = posts.filter((p) => p.mediaType === "REEL" && inPeriod(p)).length;
+    const totalCount = postCount + reelCount || 1;
+    const totalLikes = contentInteractions.posts.likes + contentInteractions.reels.likes;
+    const totalComments = contentInteractions.posts.comments + contentInteractions.reels.comments;
+    engagementRateWithReels =
+      Math.round(
+        ((totalLikes / totalCount + totalComments / totalCount) / followerCount) * 100 * 100
+      ) / 100;
   } else {
     // Fallback: compute from raw post data (only works if likes are populated)
     const totalLikes = posts.reduce((a, p) => a + p.likes, 0);
@@ -837,6 +847,7 @@ function computeMetrics(
 
   return {
     engagementRate,
+    engagementRateWithReels,
     avgLikesPerPost: avgLikes,
     avgCommentsPerPost: avgComments,
     avgReachPerPost,

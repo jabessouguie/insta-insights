@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   Users,
   TrendingUp,
@@ -38,6 +38,7 @@ const TYPE_LABELS: Record<string, string> = {
 export default function CreatorDashboard() {
   const { data, isLoading } = useInstagramData();
   const t = useT();
+  const [includeReels, setIncludeReels] = useState(false);
 
   const insightsRequest = useMemo(
     () => ({
@@ -119,16 +120,32 @@ export default function CreatorDashboard() {
                     iconColor="text-violet-400"
                     iconBg="bg-violet-500/10"
                   />
-                  <MetricCard
-                    title={t("kpi.engagementRate")}
-                    value={data?.metrics.engagementRate ?? 0}
-                    change={0.3}
-                    description={t("dashboard.vsLastMonth")}
-                    icon={TrendingUp}
-                    format="percent"
-                    iconColor="text-pink-400"
-                    iconBg="bg-pink-500/10"
-                  />
+                  <div className="flex flex-col">
+                    <MetricCard
+                      title={t("kpi.engagementRate")}
+                      value={
+                        includeReels
+                          ? (data?.metrics.engagementRateWithReels ??
+                            data?.metrics.engagementRate ??
+                            0)
+                          : (data?.metrics.engagementRate ?? 0)
+                      }
+                      change={0.3}
+                      description={t("dashboard.vsLastMonth")}
+                      icon={TrendingUp}
+                      format="percent"
+                      iconColor="text-pink-400"
+                      iconBg="bg-pink-500/10"
+                    />
+                    {data?.metrics.engagementRateWithReels !== undefined && (
+                      <button
+                        onClick={() => setIncludeReels((v) => !v)}
+                        className="mt-1 px-1 text-left text-[10px] text-muted-foreground underline hover:text-foreground"
+                      >
+                        {t(includeReels ? "dashboard.er.reelsIncluded" : "dashboard.er.postsOnly")}
+                      </button>
+                    )}
+                  </div>
                   <MetricCard
                     title={t("kpi.avgLikes")}
                     value={Math.round(data?.metrics.avgLikesPerPost ?? 0)}
