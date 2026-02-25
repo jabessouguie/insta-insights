@@ -40,6 +40,7 @@ function DMReplyCard({
   const generate = useCallback(
     async (feedback?: string) => {
       setIsGenerating(true);
+      setReply("");
       try {
         const res = await fetch("/api/responses/compose", {
           method: "POST",
@@ -51,9 +52,15 @@ function DMReplyCard({
             feedback,
           }),
         });
-        const json = await res.json();
-        if (json.success && json.data?.suggestedReply) {
-          setReply(json.data.suggestedReply);
+        if (!res.ok || !res.body) return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          text += decoder.decode(value, { stream: true });
+          setReply(text);
         }
       } finally {
         setIsGenerating(false);
@@ -113,27 +120,35 @@ function DMReplyCard({
               onChange={(e) => setReply(e.target.value)}
               className="min-h-[60px] w-full resize-none bg-transparent pr-8 text-sm leading-relaxed outline-none"
               rows={3}
+              readOnly={isGenerating}
             />
-            <button
-              onClick={handleCopy}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-            </button>
+            {isGenerating && (
+              <span className="pointer-events-none absolute bottom-3 right-3 inline-block h-3.5 w-0.5 animate-pulse bg-foreground/60" />
+            )}
+            {!isGenerating && (
+              <button
+                onClick={handleCopy}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </div>
         )}
 
         {!reply && (
           <p className="text-xs italic text-muted-foreground">
-            Clique sur &ldquo;Générer&rdquo; pour obtenir une réponse personnalisée via Gemini.
+            {isGenerating
+              ? "Rédaction de la réponse en cours…"
+              : "Clique sur \u201cGénérer\u201d pour obtenir une réponse personnalisée via Gemini."}
           </p>
         )}
 
-        {reply && (
+        {reply && !isGenerating && (
           <AIFeedbackBar
             onRegenerate={generate}
             isGenerating={isGenerating}

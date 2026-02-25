@@ -18,7 +18,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useInstagramData } from "@/hooks/useInstagramData";
+import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
 import type { CollabMatch } from "@/app/api/collabs/route";
+
+const EMAIL_GEN_STATUSES = [
+  "Analyse du profil de la marque…",
+  "Rédaction de l'objet de l'email…",
+  "Personnalisation du contenu…",
+  "Ajout du call-to-action…",
+];
 import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
 
 // ─── Type badges ──────────────────────────────────────────────────────────────
@@ -43,6 +51,7 @@ function CollabCard({
   const [emailData, setEmailData] = useState<{ subject: string; body: string } | null>(null);
   const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
+  const emailStatus = useAnimatedStatus(isGeneratingEmail, EMAIL_GEN_STATUSES);
 
   const generateEmail = useCallback(
     async (feedback?: string) => {
@@ -127,7 +136,7 @@ function CollabCard({
             ) : (
               <Mail className="h-3 w-3" />
             )}
-            {emailData ? "Régénérer l'email" : "Générer l'email"}
+            {isGeneratingEmail ? emailStatus : emailData ? "Régénérer l'email" : "Générer l'email"}
           </Button>
 
           {emailData && (
@@ -195,6 +204,14 @@ export default function CollabsPage() {
   const [summary, setSummary] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
+
+  const searchStatus = useAnimatedStatus(isSearching, [
+    "Analyse de ton profil…",
+    "Recherche de partenaires compatibles…",
+    "Évaluation des opportunités de collaboration…",
+    "Sélection des meilleures correspondances…",
+    "Finalisation des résultats via Gemini…",
+  ]);
 
   const toggleInterest = (i: string) => {
     setInterests((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
@@ -326,7 +343,7 @@ export default function CollabsPage() {
               {isSearching ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Recherche en cours via Gemini...
+                  {searchStatus}
                 </>
               ) : (
                 <>

@@ -28,6 +28,15 @@ import {
   type MediaKitConfig,
 } from "@/lib/mediakit-generator";
 import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
+import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
+
+const MEDIAKIT_GEN_STATUSES = [
+  "Analyse de ta niche…",
+  "Identification de ton positionnement…",
+  "Génération de ta tagline…",
+  "Calcul du tarif adapté…",
+  "Finalisation du media kit…",
+];
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 
@@ -135,6 +144,7 @@ export default function MediaKitPage() {
   const [shareId] = useState(() => Math.random().toString(36).substring(2, 10));
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const generatingStatus = useAnimatedStatus(isGenerating, MEDIAKIT_GEN_STATUSES);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -325,7 +335,7 @@ export default function MediaKitPage() {
               ) : (
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
               )}
-              {isGenerating ? "Génération…" : "Générer avec l'IA"}
+              {isGenerating ? generatingStatus : "Générer avec l'IA"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="h-3.5 w-3.5" />

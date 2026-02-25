@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
 import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Bell, RefreshCw } from "lucide-react";
 import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -50,9 +51,20 @@ const PRIORITY_LABELS = {
   low: "Faible",
 };
 
+const INSIGHTS_STATUSES = [
+  "Analyse de ton profil Instagram…",
+  "Identification de ta niche et de ton audience…",
+  "Lecture des métriques d'engagement…",
+  "Analyse de tes contenus les plus performants…",
+  "Génération des recommandations personnalisées…",
+  "Personnalisation pour ta niche et ton marché…",
+  "Finalisation des insights…",
+];
+
 export function InsightsPanel({ request, initialInsights, summary }: InsightsPanelProps) {
   const { insights, isLoading, generate } = useInsights();
   const [hasGenerated, setHasGenerated] = useState(false);
+  const loadingStatus = useAnimatedStatus(isLoading, INSIGHTS_STATUSES);
 
   const displayInsights = insights?.insights ?? initialInsights;
   const displaySummary = insights?.summary ?? summary;
@@ -116,6 +128,10 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
       <CardContent className="p-0">
         {isLoading ? (
           <div className="space-y-1 p-4">
+            <p className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <RefreshCw className="h-3 w-3 shrink-0 animate-spin" />
+              {loadingStatus}
+            </p>
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="rounded-lg border-l-2 border-l-muted p-4">
                 <div className="flex gap-3">

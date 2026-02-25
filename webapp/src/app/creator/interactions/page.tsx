@@ -90,6 +90,7 @@ function DMCard({
   const generate = useCallback(
     async (feedback?: string) => {
       setIsGenerating(true);
+      setDm("");
       try {
         const res = await fetch("/api/interactions/dm-suggest", {
           method: "POST",
@@ -101,9 +102,15 @@ function DMCard({
             feedback,
           }),
         });
-        const json = await res.json();
-        if (json.success && json.data?.suggestedDm) {
-          setDm(json.data.suggestedDm);
+        if (!res.ok || !res.body) return;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let text = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          text += decoder.decode(value, { stream: true });
+          setDm(text);
         }
       } finally {
         setIsGenerating(false);
@@ -139,24 +146,33 @@ function DMCard({
       <CardContent className="space-y-3 px-4 pb-4">
         {dm ? (
           <div className="relative rounded-lg bg-muted/50 p-3 text-sm leading-relaxed">
-            <p className="pr-8">{dm}</p>
-            <button
-              onClick={handleCopy}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
+            <p className="pr-8">
+              {dm}
+              {isGenerating && (
+                <span className="ml-0.5 inline-block h-3.5 w-0.5 animate-pulse bg-current align-middle" />
               )}
-            </button>
+            </p>
+            {!isGenerating && (
+              <button
+                onClick={handleCopy}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+            )}
           </div>
         ) : (
           <p className="text-xs italic text-muted-foreground">
-            Clique sur &ldquo;Générer&rdquo; pour obtenir un DM personnalisé via Gemini.
+            {isGenerating
+              ? "Rédaction du DM en cours…"
+              : "Clique sur \u201cGénérer\u201d pour obtenir un DM personnalisé via Gemini."}
           </p>
         )}
-        {dm && (
+        {dm && !isGenerating && (
           <AIFeedbackBar
             onRegenerate={generate}
             isGenerating={isGenerating}

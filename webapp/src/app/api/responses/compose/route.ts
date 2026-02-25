@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const dynamic = "force-dynamic";
@@ -9,35 +8,41 @@ export interface ComposeRequest {
   creatorProfile: { username?: string; followerCount?: number };
 }
 
-export interface ComposeResponse {
-  success: boolean;
-  data?: { suggestedReply: string };
-  error?: string;
+const encoder = new TextEncoder();
+
+function textStream(text: string): Response {
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(text));
+        controller.close();
+      },
+    }),
+    { headers: { "Content-Type": "text/plain; charset=utf-8" } }
+  );
 }
 
-export async function POST(request: Request): Promise<NextResponse<ComposeResponse>> {
-  try {
-    const body: ComposeRequest & { feedback?: string } = await request.json();
-    const { username, lastMessage, creatorProfile, feedback } = body;
+export async function POST(request: Request): Promise<Response> {
+  const body: ComposeRequest & { feedback?: string } = await request.json();
+  const { username, lastMessage, creatorProfile, feedback } = body;
 
-    if (!username || !lastMessage) {
-      return NextResponse.json(
-        { success: false, error: "Missing username or lastMessage" },
-        { status: 400 }
-      );
-    }
+  if (!username || !lastMessage) {
+    return new Response(
+      JSON.stringify({ success: false, error: "Missing username or lastMessage" }),
+      { status: 400, headers: { "Content-Type": "application/json" } }
+    );
+  }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      // Fallback when no API key configured
-      const fallback = `Salut @${username} ! Merci pour ton message 😊 Je reviens vers toi très vite !`;
-      return NextResponse.json({ success: true, data: { suggestedReply: fallback } });
-    }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    const fallback = `Salut @${username} ! Merci pour ton message 😊 Je reviens vers toi très vite !`;
+    return textStream(fallback);
+  }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
 
-    const prompt = `Tu es @${creatorProfile.username ?? "moi"}, créateur de contenu Instagram avec ${(creatorProfile.followerCount ?? 0).toLocaleString("fr-FR")} abonnés.
+  const prompt = `Tu es @${creatorProfile.username ?? "moi"}, créateur de contenu Instagram avec ${(creatorProfile.followerCount ?? 0).toLocaleString("fr-FR")} abonnés.
 
 Tu dois répondre à ce message privé reçu de @${username} :
 
@@ -53,12 +58,27 @@ Rédige une réponse courte, authentique et chaleureuse en français (2-3 phrase
 
 Réponds UNIQUEMENT avec le texte de la réponse, sans guillemets ni explications.${feedback ? `\n\nRetours utilisateur sur la version précédente : ${feedback}` : ""}`;
 
-    const result = await model.generateContent(prompt);
-    const suggestedReply = result.response.text().trim();
+  try {
+    const stream = await model.generateContentStream(prompt);
 
-    return NextResponse.json({ success: true, data: { suggestedReply } });
+    const readable = new ReadableStream({
+      async start(controller) {
+        for await (const chunk of stream.stream) {
+          const text = chunk.text();
+          if (text) controller.enqueue(encoder.encode(text));
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(readable, {
+      headers: { "Content-Type": "text/plain; charset=utf-8" },
+    });
   } catch (error) {
     console.error("Error in /api/responses/compose:", error);
-    return NextResponse.json({ success: false, error: "Failed to compose reply" }, { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to compose reply" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
