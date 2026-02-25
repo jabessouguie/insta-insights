@@ -1,7 +1,18 @@
 "use client";
 
 import { useState, useCallback, useMemo, useRef } from "react";
-import { Download, Share2, Palette, Edit3, Eye, Plus, X, RefreshCw, Sparkles } from "lucide-react";
+import {
+  Download,
+  Share2,
+  Palette,
+  Edit3,
+  Eye,
+  Plus,
+  X,
+  RefreshCw,
+  Sparkles,
+  ImageIcon,
+} from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +24,42 @@ import {
   defaultMediaKitConfig,
   type MediaKitConfig,
 } from "@/lib/mediakit-generator";
+
+// ─── Color picker with hex input ──────────────────────────────────────────────
+
+function ColorPickerField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-10 shrink-0 cursor-pointer rounded border border-border"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (/^#[0-9a-fA-F]{0,6}$/.test(v)) onChange(v);
+          }}
+          maxLength={7}
+          className="w-full rounded-md border border-border bg-background px-2 py-1 font-mono text-xs outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      </div>
+    </div>
+  );
+}
 
 // ─── Color presets ────────────────────────────────────────────────────────────
 
@@ -75,6 +122,7 @@ export default function MediaKitPage() {
           ? data.profile.website
           : `contact@${data.profile.username}.com`,
         tagline: data.profile.bio?.split("\n")[0] ?? c.tagline,
+        profilePicUrl: data.profile.profilePicUrl ?? c.profilePicUrl,
       }));
     }
   });
@@ -225,24 +273,22 @@ export default function MediaKitPage() {
                     />
                   ))}
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["primaryColor", "secondaryColor", "accentColor"] as const).map((key) => (
-                    <div key={key} className="space-y-1">
-                      <label className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        {key === "primaryColor"
-                          ? "Primaire"
-                          : key === "secondaryColor"
-                            ? "Secondaire"
-                            : "Accent"}
-                      </label>
-                      <input
-                        type="color"
-                        value={config[key]}
-                        onChange={(e) => updateConfig(key, e.target.value)}
-                        className="h-8 w-full cursor-pointer rounded border border-border"
-                      />
-                    </div>
-                  ))}
+                <div className="space-y-2">
+                  <ColorPickerField
+                    label="Primaire"
+                    value={config.primaryColor}
+                    onChange={(v) => updateConfig("primaryColor", v)}
+                  />
+                  <ColorPickerField
+                    label="Secondaire"
+                    value={config.secondaryColor}
+                    onChange={(v) => updateConfig("secondaryColor", v)}
+                  />
+                  <ColorPickerField
+                    label="Accent"
+                    value={config.accentColor}
+                    onChange={(v) => updateConfig("accentColor", v)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -256,6 +302,27 @@ export default function MediaKitPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    <ImageIcon className="h-3 w-3" />
+                    Photo de profil (URL)
+                  </label>
+                  <input
+                    type="url"
+                    value={config.profilePicUrl ?? ""}
+                    onChange={(e) => updateConfig("profilePicUrl", e.target.value)}
+                    placeholder="https://..."
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                  />
+                  {config.profilePicUrl && (
+                    <img
+                      src={config.profilePicUrl}
+                      alt="Aperçu"
+                      className="h-12 w-12 rounded-full border border-border object-cover"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  )}
+                </div>
                 <LabeledInput
                   label="Tagline"
                   value={config.tagline}

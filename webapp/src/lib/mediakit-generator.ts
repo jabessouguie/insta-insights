@@ -13,6 +13,7 @@ export interface MediaKitConfig {
   services: string[];
   contactEmail: string;
   ratePerPost?: string; // e.g. "500€"
+  profilePicUrl?: string; // URL of the creator's profile picture
 }
 
 export const defaultMediaKitConfig: MediaKitConfig = {
@@ -104,8 +105,9 @@ export function generateMediaKitHTML(
       background: rgba(255,255,255,0.1);
       display: flex; align-items: center; justify-content: center;
       font-size: 40px; font-weight: 800; color: white;
-      flex-shrink: 0;
+      flex-shrink: 0; overflow: hidden;
     }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
     .hero-text h1 { font-size: 2.5rem; font-weight: 800; color: white; }
     .hero-text .handle { font-size: 1.1rem; color: rgba(255,255,255,0.8); margin-top: 4px; }
     .hero-text .tagline { font-size: 1rem; color: rgba(255,255,255,0.7); margin-top: 10px; font-style: italic; }
@@ -197,7 +199,11 @@ export function generateMediaKitHTML(
   <!-- Hero -->
   <div class="hero">
     <div class="hero-inner">
-      <div class="avatar">${profile.username.charAt(0).toUpperCase()}</div>
+      <div class="avatar">${
+        config.profilePicUrl
+          ? `<img src="${config.profilePicUrl}" alt="@${profile.username}" />`
+          : profile.username.charAt(0).toUpperCase()
+      }</div>
       <div class="hero-text">
         <h1>${profile.fullName || profile.username}</h1>
         <div class="handle">@${profile.username}</div>
