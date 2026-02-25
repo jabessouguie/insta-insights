@@ -210,6 +210,7 @@ export default function CarouselPage() {
   const [primaryColor, setPrimaryColor] = useState("#1a1a2e");
   const [accentColor, setAccentColor] = useState("#e91e8c");
   const [numSlides, setNumSlides] = useState(6);
+  const [language, setLanguage] = useState<"en" | "fr">("en");
   const [photos, setPhotos] = useState<string[]>([]); // base64
   const [photoNames, setPhotoNames] = useState<string[]>([]);
 
@@ -269,6 +270,7 @@ export default function CarouselPage() {
       numSlides,
       photos,
       previousCaptions,
+      language,
     };
 
     try {
@@ -385,6 +387,22 @@ export default function CarouselPage() {
                       }`}
                     >
                       {n}
+                    </button>
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <label className="text-xs text-muted-foreground">Langue des slides :</label>
+                  {(["en", "fr"] as const).map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => setLanguage(lang)}
+                      className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${
+                        language === lang
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border text-muted-foreground hover:border-primary/50"
+                      }`}
+                    >
+                      {lang === "en" ? "🇬🇧 English" : "🇫🇷 Français"}
                     </button>
                   ))}
                 </div>

@@ -285,6 +285,8 @@ export interface CarouselGenerateRequest {
   photos: string[];
   /** Recent post captions for style analysis */
   previousCaptions: string[];
+  /** Language for slide text and Instagram description. Defaults to "en". */
+  language?: "en" | "fr";
 }
 
 export interface CarouselGenerateResponse {
