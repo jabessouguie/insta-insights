@@ -39,7 +39,7 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function CreatorDashboard() {
-  const { data, isLoading, mutate, setData } = useInstagramData();
+  const { data, isLoading, mutate } = useInstagramData();
   const t = useT();
   const [includeReels, setIncludeReels] = useState(false);
 
@@ -83,7 +83,7 @@ export default function CreatorDashboard() {
     setUploadError("");
     setUploadProgress(0);
     try {
-      let lastData: unknown = null;
+      let allOk = true;
       for (let i = 0; i < zips.length; i++) {
         setUploadFileName(zips.length > 1 ? `(${i + 1}/${zips.length}) ${zips[i].name}` : zips[i].name);
         setUploadProgress(0);
@@ -91,16 +91,12 @@ export default function CreatorDashboard() {
         const json = await uploadOneFile(zips[i], url);
         if (!json.success) {
           setUploadError(`${zips[i].name}: ${json.error ?? t("upload.error")}`);
+          allOk = false;
           break;
         }
-        if (json.data) lastData = json.data;
       }
-      // Inject the parsed data directly into the SWR cache — no extra /api/data round-trip needed
-      if (lastData) {
-        setData(lastData as Parameters<typeof setData>[0]);
-      } else {
-        mutate();
-      }
+      // After all ZIPs are extracted, re-fetch /api/data to parse the merged export
+      if (allOk) mutate();
     } catch {
       setUploadError(t("upload.error"));
     } finally {
@@ -108,7 +104,7 @@ export default function CreatorDashboard() {
       setUploadProgress(0);
       setUploadFileName("");
     }
-  }, [mutate, setData, t, uploadOneFile]);
+  }, [mutate, t, uploadOneFile]);
 
   // Natural language query
   const [queryInput, setQueryInput] = useState("");

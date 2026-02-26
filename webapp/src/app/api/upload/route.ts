@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import AdmZip from "adm-zip";
 import fs from "fs";
 import path from "path";
-import { parseInstagramExport } from "@/lib/instagram-parser";
-import type { DataApiResponse } from "@/types/instagram";
 
 export const dynamic = "force-dynamic";
 // Allow large Instagram export zips
@@ -11,7 +9,7 @@ export const maxDuration = 60;
 
 const DATA_ROOT = path.join(process.cwd(), "..", "data");
 
-export async function POST(request: Request): Promise<NextResponse<DataApiResponse>> {
+export async function POST(request: Request): Promise<NextResponse<{ success: boolean; error?: string }>> {
   try {
     // Read the raw body — avoids the formData() size limit
     const arrayBuffer = await request.arrayBuffer();
@@ -128,16 +126,9 @@ export async function POST(request: Request): Promise<NextResponse<DataApiRespon
       fs.writeFileSync(outPath, entry.getData());
     }
 
-    // Re-parse the export
-    const data = await parseInstagramExport();
-    if (!data) {
-      return NextResponse.json(
-        { success: false, error: "Could not parse the uploaded export" },
-        { status: 422 }
-      );
-    }
-
-    return NextResponse.json({ success: true, data });
+    // Files extracted successfully. The client will re-fetch /api/data to get parsed analytics.
+    // We deliberately do NOT parse here — parsing all ZIPs at once (after merge) is more reliable.
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error in /api/upload:", error);
     const message = error instanceof Error ? error.message : "Erreur lors de l'import";

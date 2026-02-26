@@ -4,6 +4,8 @@
  * - Followers who have never interacted with your posts
  * - Accounts to DM (you follow, they don't follow back, never interacted)
  * - Accounts to unfollow (you follow, they don't follow back, DM sent > 1 month ago)
+ *
+ * Supports both HTML and JSON Instagram export formats.
  */
 
 import fs from "fs";
@@ -35,12 +37,151 @@ function loadHtml(filePath: string): cheerio.CheerioAPI | null {
   return cheerio.load(html);
 }
 
-// ─── Parse commenter usernames from export ────────────────────────────────────
+// ─── Format detection ─────────────────────────────────────────────────────────
+
+function checkIsJsonExport(exportFolder: string): boolean {
+  return (
+    fs.existsSync(
+      path.join(exportFolder, "connections", "followers_and_following", "followers_1.json")
+    ) ||
+    fs.existsSync(
+      path.join(
+        exportFolder,
+        "personal_information",
+        "personal_information",
+        "personal_information.json"
+      )
+    )
+  );
+}
+
+// ─── JSON helpers ─────────────────────────────────────────────────────────────
+
+function readJsonFile<T>(filePath: string): T | null {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+interface JsonStringListItem {
+  value?: string;
+  timestamp?: number;
+}
+
+interface JsonFollowerEntry {
+  string_list_data?: JsonStringListItem[];
+}
+
+interface JsonMessage {
+  sender_name: string;
+  timestamp_ms: number;
+}
+
+interface JsonMessageFile {
+  messages?: JsonMessage[];
+}
+
+// ─── JSON-format parsers ──────────────────────────────────────────────────────
+
+function parseFollowersJsonAnalyser(exportFolder: string): Map<string, Date> {
+  const dir = path.join(exportFolder, "connections", "followers_and_following");
+  const result = new Map<string, Date>();
+  if (!fs.existsSync(dir)) return result;
+
+  const files = fs
+    .readdirSync(dir)
+    .filter((f) => f.startsWith("followers") && f.endsWith(".json"));
+
+  for (const file of files) {
+    const data = readJsonFile<JsonFollowerEntry[]>(path.join(dir, file));
+    if (!Array.isArray(data)) continue;
+    for (const entry of data) {
+      for (const item of entry?.string_list_data ?? []) {
+        if (!item.value) continue;
+        result.set(
+          item.value.toLowerCase(),
+          item.timestamp ? new Date(item.timestamp * 1000) : new Date(0)
+        );
+      }
+    }
+  }
+  return result;
+}
+
+function parseFollowingJsonAnalyser(exportFolder: string): Map<string, Date> {
+  const dir = path.join(exportFolder, "connections", "followers_and_following");
+  const result = new Map<string, Date>();
+  if (!fs.existsSync(dir)) return result;
+
+  const file = path.join(dir, "following.json");
+  const data = readJsonFile<Record<string, JsonFollowerEntry[]>>(file);
+  if (!data) return result;
+
+  for (const arr of Object.values(data)) {
+    if (!Array.isArray(arr)) continue;
+    for (const entry of arr) {
+      for (const item of entry?.string_list_data ?? []) {
+        if (!item.value) continue;
+        result.set(
+          item.value.toLowerCase(),
+          item.timestamp ? new Date(item.timestamp * 1000) : new Date(0)
+        );
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Parse DM conversations from JSON export inbox.
+ * Returns a Map<username, { username, lastSentAt }> where lastSentAt is the
+ * most recent message timestamp in the conversation (regardless of direction).
+ * Inbox conversations = ones we're part of (bidirectional or initiated by us).
+ */
+function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
+  const dms = new Map<string, DMRecord>();
+  const inboxDir = path.join(
+    exportFolder,
+    "your_instagram_activity",
+    "messages",
+    "inbox"
+  );
+  if (!fs.existsSync(inboxDir)) return dms;
+
+  for (const convDir of fs.readdirSync(inboxDir)) {
+    const fullPath = path.join(inboxDir, convDir);
+    if (!fs.statSync(fullPath).isDirectory()) continue;
+
+    // Extract username from folder name: {username}_{numeric_id}
+    const match = convDir.match(/^(.+)_\d+$/);
+    if (!match) continue;
+    const username = match[1].toLowerCase();
+
+    // Read the most recent message file
+    const msgFile = path.join(fullPath, "message_1.json");
+    const data = readJsonFile<JsonMessageFile>(msgFile);
+    if (!data?.messages?.length) continue;
+
+    const latestTs = Math.max(...data.messages.map((m) => m.timestamp_ms));
+    const lastDate = new Date(latestTs);
+
+    const existing = dms.get(username);
+    if (!existing || existing.lastSentAt.getTime() < lastDate.getTime()) {
+      dms.set(username, { username, lastSentAt: lastDate });
+    }
+  }
+
+  return dms;
+}
+
+// ─── HTML-format parsers ──────────────────────────────────────────────────────
 
 function parseCommenters(exportFolder: string): Set<string> {
   const commenters = new Set<string>();
 
-  // Instagram exports comments in your_instagram_activity/comments/
   const dirs = [
     path.join(exportFolder, "your_instagram_activity", "comments"),
     path.join(exportFolder, "your_instagram_activity", "media"),
@@ -52,7 +193,6 @@ function parseCommenters(exportFolder: string): Set<string> {
     for (const file of files) {
       const $ = loadHtml(path.join(dir, file));
       if (!$) continue;
-      // Comments often have the format: username: comment text
       $("div._a706, table tr td a").each((_: number, el: AnyNode) => {
         const text = $(el).text().trim();
         if (text && text.length > 1 && !text.includes(" ")) {
@@ -65,8 +205,6 @@ function parseCommenters(exportFolder: string): Set<string> {
   return commenters;
 }
 
-// ─── Parse liked usernames (from liked posts list in export) ──────────────────
-
 function parseLikers(exportFolder: string): Set<string> {
   const likers = new Set<string>();
   const likesDir = path.join(exportFolder, "your_instagram_activity", "likes");
@@ -78,7 +216,6 @@ function parseLikers(exportFolder: string): Set<string> {
     if (!$) continue;
     $("a[href*='instagram.com']").each((_: number, el: AnyNode) => {
       const href = $(el).attr("href") ?? "";
-      // Instagram exports use _u/ redirect URLs — try that pattern first
       const match =
         href.match(/instagram\.com\/_u\/([^/?#]+)/) ?? href.match(/instagram\.com\/([^/?#]+)/);
       if (match) likers.add(match[1].toLowerCase());
@@ -88,7 +225,7 @@ function parseLikers(exportFolder: string): Set<string> {
   return likers;
 }
 
-// ─── Parse sent DMs from export ───────────────────────────────────────────────
+// ─── DM record type & HTML DM parser ──────────────────────────────────────────
 
 interface DMRecord {
   username: string;
@@ -110,15 +247,12 @@ function parseSentDMs(exportFolder: string): Map<string, DMRecord> {
       const $ = loadHtml(path.join(dmDir, file));
       if (!$) continue;
 
-      // Try to find the username this thread belongs to
       const title = $("title").text().trim().toLowerCase().replace(/\s+/g, "_");
-      if (!title || title.includes("group")) continue; // skip group chats
+      if (!title || title.includes("group")) continue;
 
-      // Find the most recent message sent by us (look for message blocks)
       let lastDate: Date | null = null;
       $("div._a706, table tr").each((_: number, el: AnyNode) => {
         const text = $(el).text().trim();
-        // Look for ISO date patterns
         const dateMatch = text.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
         if (dateMatch) {
           const d = new Date(dateMatch[0]);
@@ -143,41 +277,25 @@ function parseSentDMs(exportFolder: string): Map<string, DMRecord> {
   return dms;
 }
 
-// ─── French date parser (Instagram export uses locale-formatted dates) ────────
+// ─── French date parser ────────────────────────────────────────────────────────
 
 const FR_MONTHS: Record<string, number> = {
-  janv: 0,
-  jan: 0,
-  janvier: 0,
-  févr: 1,
-  fév: 1,
-  feb: 1,
-  février: 1,
-  mars: 2,
-  mar: 2,
-  avr: 3,
-  avril: 3,
+  janv: 0, jan: 0, janvier: 0,
+  févr: 1, fév: 1, feb: 1, février: 1,
+  mars: 2, mar: 2,
+  avr: 3, avril: 3,
   mai: 4,
   juin: 5,
-  juil: 6,
-  juillet: 6,
-  août: 7,
-  aout: 7,
-  sept: 8,
-  sep: 8,
-  septembre: 8,
-  oct: 9,
-  octobre: 9,
-  nov: 10,
-  novembre: 10,
-  déc: 11,
-  dec: 11,
-  décembre: 11,
+  juil: 6, juillet: 6,
+  août: 7, aout: 7,
+  sept: 8, sep: 8, septembre: 8,
+  oct: 9, octobre: 9,
+  nov: 10, novembre: 10,
+  déc: 11, dec: 11, décembre: 11,
 };
 
 function parseFrDate(text: string): Date | null {
   if (!text) return null;
-  // Format: "fév 24, 2026 5:55 am"  or  "janv. 3, 2025 10:00 pm"
   const m = text
     .trim()
     .match(/^([a-zéûôàèùâêîäëïöü]+)\.?\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*(am|pm)/i);
@@ -192,29 +310,21 @@ function parseFrDate(text: string): Date | null {
   return new Date(parseInt(m[3]), month, parseInt(m[2]), hour, min);
 }
 
-// ─── Parse followers / following from export ──────────────────────────────────
+// ─── HTML follower file parser ────────────────────────────────────────────────
 
 function parseFollowerFile(filePath: string): InstagramFollower[] {
   const $ = loadHtml(filePath);
   if (!$) return [];
   const result: InstagramFollower[] = [];
 
-  // Instagram HTML export structure:
-  // <h2 class="..._a6-h _a6-i">{username}</h2>
-  // <div class="_a6-p"><div>
-  //   <div><a href="https://www.instagram.com/_u/{username}">…</a></div>
-  //   <div>{date: "fév 24, 2026 5:55 am"}</div>
-  // </div></div>
   $("a[href*='instagram.com']").each((_: number, el: AnyNode) => {
     const href = $(el).attr("href") ?? "";
-    // Extract username from href — anchor text is the full URL, not just the username
     const match =
       href.match(/instagram\.com\/_u\/([^/?#]+)/) ?? href.match(/instagram\.com\/([^/?#]+)/);
     if (!match) return;
     const username = match[1].toLowerCase();
     if (!username || username.length < 2) return;
 
-    // Date is in the next sibling <div> of the anchor's parent wrapper
     const dateText =
       $(el).parent().next("div").text().trim() ||
       $(el).closest("li, tr").find("div[class*='_a72_']").text().trim();
@@ -238,49 +348,73 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
   const ffDir = path.join(exportFolder, "connections", "followers_and_following");
   if (!fs.existsSync(ffDir)) return null;
 
-  // 1. Build follower/following sets
-  const followerFiles = fs.readdirSync(ffDir).filter((f) => f.startsWith("followers"));
-  const followerSet = new Set<string>();
-  const followerDates = new Map<string, Date>();
-  for (const file of followerFiles) {
-    for (const f of parseFollowerFile(path.join(ffDir, file))) {
-      followerSet.add(f.username);
-      followerDates.set(f.username, f.followedAt);
+  const isJson = checkIsJsonExport(exportFolder);
+
+  let followerSet: Set<string>;
+  let followerDates: Map<string, Date>;
+  let followingSet: Set<string>;
+  let followingDates: Map<string, Date>;
+  let interactors: Set<string>;
+  let sentDMs: Map<string, DMRecord>;
+
+  if (isJson) {
+    // ── JSON export ───────────────────────────────────────────────────────────
+    const followerMap = parseFollowersJsonAnalyser(exportFolder);
+    const followingMap = parseFollowingJsonAnalyser(exportFolder);
+
+    followerSet = new Set(followerMap.keys());
+    followerDates = followerMap;
+    followingSet = new Set(followingMap.keys());
+    followingDates = followingMap;
+
+    // In JSON exports, use inbox conversations as a proxy for "has interacted".
+    // Anyone with a DM thread is treated as having been in contact.
+    sentDMs = parseSentDmsJson(exportFolder);
+    interactors = new Set(sentDMs.keys());
+  } else {
+    // ── HTML export ───────────────────────────────────────────────────────────
+    const followerFiles = fs
+      .readdirSync(ffDir)
+      .filter((f) => f.startsWith("followers") && f.endsWith(".html"));
+
+    followerSet = new Set<string>();
+    followerDates = new Map<string, Date>();
+    for (const file of followerFiles) {
+      for (const f of parseFollowerFile(path.join(ffDir, file))) {
+        followerSet.add(f.username);
+        followerDates.set(f.username, f.followedAt);
+      }
     }
-  }
 
-  const followingSet = new Set<string>();
-  const followingDates = new Map<string, Date>();
-  for (const file of ["following.html"]) {
-    const fp = path.join(ffDir, file);
-    if (!fs.existsSync(fp)) continue;
-    for (const f of parseFollowerFile(fp)) {
-      followingSet.add(f.username);
-      followingDates.set(f.username, f.followedAt);
+    followingSet = new Set<string>();
+    followingDates = new Map<string, Date>();
+    const followingHtml = path.join(ffDir, "following.html");
+    if (fs.existsSync(followingHtml)) {
+      for (const f of parseFollowerFile(followingHtml)) {
+        followingSet.add(f.username);
+        followingDates.set(f.username, f.followedAt);
+      }
     }
+
+    const commenters = parseCommenters(exportFolder);
+    const likers = parseLikers(exportFolder);
+    interactors = new Set([...commenters, ...likers]);
+    sentDMs = parseSentDMs(exportFolder);
   }
-
-  // 2. Who interacted (liked or commented) on our posts
-  const commenters = parseCommenters(exportFolder);
-  const likers = parseLikers(exportFolder);
-  const interactors = new Set([...commenters, ...likers]);
-
-  // 3. Sent DM history
-  const sentDMs = parseSentDMs(exportFolder);
 
   const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
-  // Category A: accounts you follow who have NEVER interacted with your posts
+  // Tab 1: mutual follows who have never interacted (liked/commented or DM'd)
   const neverInteracted: UnfollowCandidate[] = [];
-  // Category B: accounts you follow but they don't follow back → suggest DM (if never DM'd)
+  // Tab 2: you follow, they don't follow back, never had any DM conversation
   const dmSuggestions: Array<{
     username: string;
     profileUrl: string;
     followedSince: Date;
     reason: string;
   }> = [];
-  // Category C: they don't follow back + DM sent > 1 month ago → unfollow
+  // Tab 3: you follow, they don't follow back, last DM > 1 month ago
   const unfollowCandidates: UnfollowCandidate[] = [];
 
   for (const username of followingSet) {
@@ -289,16 +423,16 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
     const theyFollowBack = followerSet.has(username);
     const neverInteractedWith = !interactors.has(username);
 
-    // Category A: follows you back but never interacted
+    // Tab 1: mutual follows who never interacted
     if (theyFollowBack && neverInteractedWith) {
       neverInteracted.push({ username, followedSince, profileUrl });
     }
 
-    // Category B + C: they don't follow back
+    // Tab 2 + 3: they don't follow back
     if (!theyFollowBack) {
       const dmRecord = sentDMs.get(username);
       if (dmRecord && now - dmRecord.lastSentAt.getTime() > ONE_MONTH_MS) {
-        // DM was sent > 1 month ago, no follow-back → unfollow candidate
+        // Conversation exists but last message > 1 month ago → unfollow candidate
         unfollowCandidates.push({
           username,
           followedSince,
@@ -306,7 +440,7 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
           lastDmSentAt: dmRecord.lastSentAt,
         });
       } else if (!dmRecord) {
-        // Never DM'd → suggest reaching out
+        // No conversation at all → suggest reaching out
         dmSuggestions.push({
           username,
           profileUrl,
@@ -320,7 +454,6 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
     }
   }
 
-  // Sort by most recently followed first
   const byFollowedDesc = (a: UnfollowCandidate, b: UnfollowCandidate) =>
     b.followedSince.getTime() - a.followedSince.getTime();
 
@@ -329,7 +462,7 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
     dmSuggestions: dmSuggestions
       .sort((a, b) => b.followedSince.getTime() - a.followedSince.getTime())
       .slice(0, 50)
-      .map((s) => ({ ...s, suggestedDm: "" })), // DMs generated on demand via Gemini
+      .map((s) => ({ ...s, suggestedDm: "" })),
     unfollowCandidates: unfollowCandidates.sort(byFollowedDesc).slice(0, 100),
   };
 }
