@@ -684,6 +684,6 @@ export default function CreatorDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </div >
+    </div>
   );
 }

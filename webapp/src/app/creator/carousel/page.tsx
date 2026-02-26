@@ -728,10 +728,11 @@ export default function CarouselPage() {
             <button
               key={fmt}
               onClick={() => setActiveFormat(fmt)}
-              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${activeFormat === fmt
-                ? "bg-background text-foreground shadow"
-                : "text-muted-foreground hover:text-foreground"
-                }`}
+              className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                activeFormat === fmt
+                  ? "bg-background text-foreground shadow"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
             >
               {t(`format.${fmt}` as Parameters<typeof t>[0])}
             </button>
@@ -782,10 +783,11 @@ export default function CarouselPage() {
                       <button
                         key={lang}
                         onClick={() => setLanguage(lang)}
-                        className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${language === lang
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/50"
-                          }`}
+                        className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${
+                          language === lang
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
                       >
                         {lang === "en" ? "🇬🇧 English" : "🇫🇷 Français"}
                       </button>
@@ -1017,10 +1019,11 @@ export default function CarouselPage() {
                         key={id}
                         onClick={() => setAiModel(id)}
                         title={desc}
-                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${aiModel === id
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/50"
-                          }`}
+                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${
+                          aiModel === id
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
                       >
                         <span className="text-xs font-semibold">{label}</span>
                         <span className="text-[10px] leading-tight opacity-70">{desc}</span>
@@ -1103,8 +1106,9 @@ export default function CarouselPage() {
                                 <button
                                   key={i}
                                   onClick={() => setPreviewIndex(i)}
-                                  className={`h-1.5 rounded-full transition-all ${i === previewIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                                    }`}
+                                  className={`h-1.5 rounded-full transition-all ${
+                                    i === previewIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                                  }`}
                                 />
                               ))}
                             </div>
@@ -1238,10 +1242,11 @@ export default function CarouselPage() {
                       <button
                         key={lang}
                         onClick={() => setStoryLanguage(lang)}
-                        className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${storyLanguage === lang
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/50"
-                          }`}
+                        className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${
+                          storyLanguage === lang
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
                       >
                         {lang === "en" ? "🇬🇧 English" : "🇫🇷 Français"}
                       </button>
@@ -1465,10 +1470,11 @@ export default function CarouselPage() {
                         key={id}
                         onClick={() => setAiModel(id)}
                         title={desc}
-                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${aiModel === id
-                          ? "border-primary bg-primary/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-primary/50"
-                          }`}
+                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${
+                          aiModel === id
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
                       >
                         <span className="text-xs font-semibold">{label}</span>
                         <span className="text-[10px] leading-tight opacity-70">{desc}</span>
@@ -1554,8 +1560,9 @@ export default function CarouselPage() {
                                 <button
                                   key={i}
                                   onClick={() => setStoryPreviewIndex(i)}
-                                  className={`h-1.5 rounded-full transition-all ${i === storyPreviewIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
-                                    }`}
+                                  className={`h-1.5 rounded-full transition-all ${
+                                    i === storyPreviewIndex ? "w-4 bg-white" : "w-1.5 bg-white/50"
+                                  }`}
                                 />
                               ))}
                             </div>
@@ -1675,10 +1682,11 @@ export default function CarouselPage() {
                         <button
                           key={d}
                           onClick={() => setReelDuration(d)}
-                          className={`rounded-md border px-4 py-1.5 text-xs font-semibold transition-colors ${reelDuration === d
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                            }`}
+                          className={`rounded-md border px-4 py-1.5 text-xs font-semibold transition-colors ${
+                            reelDuration === d
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border text-muted-foreground hover:border-primary/50"
+                          }`}
                         >
                           {d}s
                         </button>

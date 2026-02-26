@@ -66,8 +66,6 @@ function readJsonFile<T>(filePath: string): T | null {
   }
 }
 
-
-
 interface JsonMessage {
   sender_name: string;
   timestamp_ms: number;
