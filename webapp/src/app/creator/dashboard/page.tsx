@@ -310,7 +310,7 @@ export default function CreatorDashboard() {
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                !isUploading && zipInputRef.current?.click();
+                if (!isUploading) zipInputRef.current?.click();
               }
             }}
             onDragOver={(e) => {
@@ -684,6 +684,6 @@ export default function CreatorDashboard() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </div >
   );
 }

@@ -454,29 +454,29 @@ function parseAudienceInsightsJson(exportFolder: string): AudienceInsights | nul
     ),
     topCities: parseKVPcts(
       map.get("Pourcentage de followers en fonction de la ville") ||
-        map.get("Follower percentage by city") ||
-        ""
+      map.get("Follower percentage by city") ||
+      ""
     ),
     topCountries: parseKVPcts(
       map.get("Pourcentage de followers en fonction du pays") ||
-        map.get("Follower percentage by country") ||
-        ""
+      map.get("Follower percentage by country") ||
+      ""
     ),
     ageGroups: parseKVPcts(
       map.get("Pourcentage de followers en fonction de l'âge pour tous les genres") ||
-        map.get("Follower percentage by age for all genders") ||
-        ""
+      map.get("Follower percentage by age for all genders") ||
+      ""
     ),
     genderSplit: {
       male: parsePct(
         map.get("Pourcentage du total des followers hommes") ||
-          map.get("Male follower percentage") ||
-          "0"
+        map.get("Male follower percentage") ||
+        "0"
       ),
       female: parsePct(
         map.get("Pourcentage du total des de followers femmes") ||
-          map.get("Female follower percentage") ||
-          "0"
+        map.get("Female follower percentage") ||
+        "0"
       ),
     },
     dailyActivity,
@@ -675,7 +675,7 @@ export function parseJsonExport(
 ): InstagramAnalytics | null {
   try {
     let followers = parseFollowersJson(exportFolder);
-    let following = parseFollowingJson(exportFolder);
+    const following = parseFollowingJson(exportFolder);
     let posts = parsePostsJson(exportFolder);
 
     // Filter by date

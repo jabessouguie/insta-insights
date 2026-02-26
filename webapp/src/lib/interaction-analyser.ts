@@ -151,7 +151,7 @@ function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
 
     // Extract username from folder name: {username}_{numeric_id} or just numeric_id
     const match = convDir.match(/^(.+)_\d+$/);
-    let username = match ? match[1].toLowerCase() : null;
+    const username = match ? match[1].toLowerCase() : null;
 
     // Read the most recent message file
     const msgFile = path.join(fullPath, "message_1.json");

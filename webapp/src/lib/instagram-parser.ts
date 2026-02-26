@@ -889,9 +889,9 @@ export function computeMetrics(
   // came from non-followers. We estimate active followers from accountsInteracted.
   const followerInteractors = contentInteractions
     ? Math.round(
-        contentInteractions.accountsInteracted *
-          (1 - contentInteractions.nonFollowerInteractionPct / 100)
-      )
+      contentInteractions.accountsInteracted *
+      (1 - contentInteractions.nonFollowerInteractionPct / 100)
+    )
     : 0;
   const inactiveCount = contentInteractions
     ? Math.max(0, followerCount - followerInteractors)
@@ -962,7 +962,7 @@ export async function parseInstagramExport(
 
   try {
     let followers = parseFollowers(exportFolder);
-    let following = parseFollowing(exportFolder);
+    const following = parseFollowing(exportFolder);
     let posts = parsePosts(exportFolder);
 
     // Apply date filters
