@@ -661,33 +661,57 @@ function parseProfile(
 
 // ─── Metrics computation ──────────────────────────────────────────────────────
 
-function computeFollowerGrowth(
+export function computeFollowerGrowth(
   followers: InstagramFollower[],
   realFollowerCount?: number
 ): FollowerGrowthPoint[] {
   const byMonth = new Map<string, number>();
 
+  if (followers.length === 0) return [];
+
+  // 1. Group by month
   for (const f of followers) {
-    // Skip entries with no reliable timestamp (epoch = parse failure fallback)
     if (f.followedAt.getTime() === 0) continue;
     const key = `${f.followedAt.getFullYear()}-${String(f.followedAt.getMonth() + 1).padStart(2, "0")}`;
     byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
   }
 
-  const sorted = [...byMonth.entries()].sort(([a], [b]) => a.localeCompare(b));
+  const sortedKeys = [...byMonth.keys()].sort();
+  if (sortedKeys.length === 0) return [];
 
-  // Offset the cumulative base so the last data point matches the real follower count.
-  // Instagram exports often only contain a subset of followers (1 HTML file = ~1 000 entries),
-  // while the actual total comes from audience_insights.html (e.g. 3 826).
-  const parsedTotal = sorted.reduce((sum, [, gain]) => sum + gain, 0);
-  const base =
-    realFollowerCount && realFollowerCount > parsedTotal ? realFollowerCount - parsedTotal : 0;
+  // 2. Fill gaps between first and last month
+  const result: FollowerGrowthPoint[] = [];
+  const startKey = sortedKeys[0];
+  const [startYear, startMonth] = startKey.split("-").map(Number);
+  const lastKey = sortedKeys[sortedKeys.length - 1];
+  const [lastYear, lastMonth] = lastKey.split("-").map(Number);
+
+  let currYear = startYear;
+  let currMonth = startMonth;
+
+  while (currYear < lastYear || (currYear === lastYear && currMonth <= lastMonth)) {
+    const key = `${currYear}-${String(currMonth).padStart(2, "0")}`;
+    const gain = byMonth.get(key) ?? 0;
+    result.push({ month: key, count: 0, gain, loss: 0 });
+
+    currMonth++;
+    if (currMonth > 12) {
+      currMonth = 1;
+      currYear++;
+    }
+  }
+
+  // 3. Offset base so last point reaches real total
+  const parsedTotal = result.reduce((sum, p) => sum + p.gain, 0);
+  const base = realFollowerCount && realFollowerCount > parsedTotal ? realFollowerCount - parsedTotal : 0;
 
   let cumulative = base;
-  return sorted.map(([month, gain]) => {
-    cumulative += gain;
-    return { month, count: cumulative, gain, loss: 0 };
-  });
+  for (const p of result) {
+    cumulative += p.gain;
+    p.count = cumulative;
+  }
+
+  return result;
 }
 
 function computePostingTimes(posts: InstagramPost[]) {
@@ -889,9 +913,9 @@ export function computeMetrics(
   // came from non-followers. We estimate active followers from accountsInteracted.
   const followerInteractors = contentInteractions
     ? Math.round(
-        contentInteractions.accountsInteracted *
-          (1 - contentInteractions.nonFollowerInteractionPct / 100)
-      )
+      contentInteractions.accountsInteracted *
+      (1 - contentInteractions.nonFollowerInteractionPct / 100)
+    )
     : 0;
   const inactiveCount = contentInteractions
     ? Math.max(0, followerCount - followerInteractors)

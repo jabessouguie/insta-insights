@@ -69,7 +69,8 @@ function extractStringMap(data: unknown): Map<string, string> {
       for (const [rawLabel, entry] of Object.entries(smd as Record<string, StringMapEntry>)) {
         const label = fixMojibake(rawLabel)
           .replace(/\u2019/g, "'") // typographic apostrophe
-          .replace(/\u00a0/g, " "); // non-breaking space
+          .replace(/\u00a0/g, " ") // non-breaking space
+          .replace(/followers/gi, "Abonnés"); // normalize for internally-used keys
         const value = entry?.value != null ? fixMojibake(String(entry.value)) : "";
         if (label && value) map.set(label, value);
       }
@@ -454,29 +455,30 @@ function parseAudienceInsightsJson(exportFolder: string): AudienceInsights | nul
     ),
     topCities: parseKVPcts(
       map.get("Pourcentage de followers en fonction de la ville") ||
-        map.get("Follower percentage by city") ||
-        ""
+      map.get("Follower percentage by city") ||
+      ""
     ),
     topCountries: parseKVPcts(
       map.get("Pourcentage de followers en fonction du pays") ||
-        map.get("Follower percentage by country") ||
-        ""
+      map.get("Follower percentage by country") ||
+      ""
     ),
     ageGroups: parseKVPcts(
-      map.get("Pourcentage de followers en fonction de l'âge pour tous les genres") ||
-        map.get("Follower percentage by age for all genders") ||
-        ""
+      map.get("Pourcentage de followers en fonction de l'âge pour tous les genres") ??
+      map.get("Pourcentage d'abonnés par tranche d'âge pour tous les genres") ??
+      map.get("Follower percentage by age for all genders") ??
+      ""
     ),
     genderSplit: {
       male: parsePct(
         map.get("Pourcentage du total des followers hommes") ||
-          map.get("Male follower percentage") ||
-          "0"
+        map.get("Male follower percentage") ||
+        "0"
       ),
       female: parsePct(
         map.get("Pourcentage du total des de followers femmes") ||
-          map.get("Female follower percentage") ||
-          "0"
+        map.get("Female follower percentage") ||
+        "0"
       ),
     },
     dailyActivity,
