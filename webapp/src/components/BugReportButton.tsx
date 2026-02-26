@@ -285,7 +285,11 @@ export function BugReportButton() {
               size="sm"
               className="w-full text-xs"
               onClick={submit}
-              disabled={status === "analyzing" || isRecording || (!screenshot && !videoBase64 && !description.trim())}
+              disabled={
+                status === "analyzing" ||
+                isRecording ||
+                (!screenshot && !videoBase64 && !description.trim())
+              }
             >
               {status === "analyzing" ? (
                 <>

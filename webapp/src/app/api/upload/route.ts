@@ -9,15 +9,14 @@ export const maxDuration = 60;
 
 const DATA_ROOT = path.join(process.cwd(), "..", "data");
 
-export async function POST(request: Request): Promise<NextResponse<{ success: boolean; error?: string }>> {
+export async function POST(
+  request: Request
+): Promise<NextResponse<{ success: boolean; error?: string }>> {
   try {
     // Read the raw body — avoids the formData() size limit
     const arrayBuffer = await request.arrayBuffer();
     if (arrayBuffer.byteLength === 0) {
-      return NextResponse.json(
-        { success: false, error: "No file provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 });
     }
 
     const fileName = request.headers.get("x-file-name") ?? "upload.zip";
@@ -48,9 +47,15 @@ export async function POST(request: Request): Promise<NextResponse<{ success: bo
     // Accept any zip that has known Instagram export directories.
     if (!exportPrefix) {
       const knownDirs = [
-        "connections/", "your_instagram_activity/", "personal_information/",
-        "logged_information/", "media/", "ads_information/", "preferences/",
-        "security_and_login_information/", "apps_and_websites_off_of_instagram/",
+        "connections/",
+        "your_instagram_activity/",
+        "personal_information/",
+        "logged_information/",
+        "media/",
+        "ads_information/",
+        "preferences/",
+        "security_and_login_information/",
+        "apps_and_websites_off_of_instagram/",
       ];
       const looksLikeExport = entries.some((e) =>
         knownDirs.some((d) => e.entryName.startsWith(d) || e.entryName.includes(`/${d}`))
@@ -85,9 +90,12 @@ export async function POST(request: Request): Promise<NextResponse<{ success: bo
     if (keepExisting) {
       // When merging, reuse the first existing instagram- folder if present
       const existingDirs = fs.existsSync(DATA_ROOT)
-        ? fs.readdirSync(DATA_ROOT).filter(
-            (e) => fs.statSync(path.join(DATA_ROOT, e)).isDirectory() && e.startsWith("instagram-")
-          )
+        ? fs
+            .readdirSync(DATA_ROOT)
+            .filter(
+              (e) =>
+                fs.statSync(path.join(DATA_ROOT, e)).isDirectory() && e.startsWith("instagram-")
+            )
         : [];
       if (existingDirs.length > 0) {
         targetFolder = existingDirs[0];
@@ -132,9 +140,6 @@ export async function POST(request: Request): Promise<NextResponse<{ success: bo
   } catch (error) {
     console.error("Error in /api/upload:", error);
     const message = error instanceof Error ? error.message : "Erreur lors de l'import";
-    return NextResponse.json(
-      { success: false, error: message },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

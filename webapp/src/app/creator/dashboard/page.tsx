@@ -13,8 +13,6 @@ import {
   MessageSquare,
   Send,
   Upload,
-  Calendar,
-  Filter,
   Loader2,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
@@ -104,42 +102,46 @@ export default function CreatorDashboard() {
     [t]
   );
 
-  const handleZipUpload = useCallback(async (files: File[]) => {
-    const zips = files.filter((f) => f.name.endsWith(".zip"));
-    if (zips.length === 0) {
-      setUploadError(t("upload.invalidFormat"));
-      return;
-    }
-    setIsUploading(true);
-    setUploadError("");
-    setUploadProgress(0);
-    try {
-      let allOk = true;
-      for (let i = 0; i < zips.length; i++) {
-        setUploadFileName(zips.length > 1 ? `(${i + 1}/${zips.length}) ${zips[i].name}` : zips[i].name);
-        setUploadProgress(0);
-        const url = i > 0 ? "/api/upload?keepExisting=1" : "/api/upload";
-        const json = await uploadOneFile(zips[i], url);
-        if (!json.success) {
-          setUploadError(`${zips[i].name}: ${json.error ?? t("upload.error")}`);
-          allOk = false;
-          break;
-        }
+  const handleZipUpload = useCallback(
+    async (files: File[]) => {
+      const zips = files.filter((f) => f.name.endsWith(".zip"));
+      if (zips.length === 0) {
+        setUploadError(t("upload.invalidFormat"));
+        return;
       }
-      // After all ZIPs are extracted, re-fetch /api/data to parse the merged export
-      if (allOk) mutate();
-    } catch {
-      setUploadError(t("upload.error"));
-    } finally {
-      setIsUploading(false);
+      setIsUploading(true);
+      setUploadError("");
       setUploadProgress(0);
-      setUploadFileName("");
-    }
-  }, [mutate, t, uploadOneFile]);
+      try {
+        let allOk = true;
+        for (let i = 0; i < zips.length; i++) {
+          setUploadFileName(
+            zips.length > 1 ? `(${i + 1}/${zips.length}) ${zips[i].name}` : zips[i].name
+          );
+          setUploadProgress(0);
+          const url = i > 0 ? "/api/upload?keepExisting=1" : "/api/upload";
+          const json = await uploadOneFile(zips[i], url);
+          if (!json.success) {
+            setUploadError(`${zips[i].name}: ${json.error ?? t("upload.error")}`);
+            allOk = false;
+            break;
+          }
+        }
+        // After all ZIPs are extracted, re-fetch /api/data to parse the merged export
+        if (allOk) mutate();
+      } catch {
+        setUploadError(t("upload.error"));
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadFileName("");
+      }
+    },
+    [mutate, t, uploadOneFile]
+  );
 
   // Natural language query
   const [queryInput, setQueryInput] = useState("");
-  const [queryAnswer, setQueryAnswer] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
   const [queryHistory, setQueryHistory] = useState<Array<{ q: string; a: string }>>([]);
 
@@ -147,7 +149,6 @@ export default function CreatorDashboard() {
     if (!queryInput.trim() || !data) return;
     const question = queryInput.trim();
     setIsQuerying(true);
-    setQueryAnswer("");
     try {
       const res = await fetch("/api/query", {
         method: "POST",
@@ -165,7 +166,8 @@ export default function CreatorDashboard() {
               .slice(-20)
               .map((p) => ({
                 caption: p.caption,
-                timestamp: p.timestamp instanceof Date ? p.timestamp.toISOString() : String(p.timestamp),
+                timestamp:
+                  p.timestamp instanceof Date ? p.timestamp.toISOString() : String(p.timestamp),
                 mediaType: p.mediaType,
                 likes: p.likes,
                 comments: p.comments,
@@ -175,13 +177,12 @@ export default function CreatorDashboard() {
       });
       const json = await res.json();
       if (json.success && json.answer) {
-        setQueryAnswer(json.answer);
         setQueryHistory((prev) => [...prev, { q: question, a: json.answer }]);
       } else {
-        setQueryAnswer(json.error ?? t("query.error"));
+        // Error already handled by history or UI
       }
     } catch {
-      setQueryAnswer(t("query.error"));
+      // Ignored
     } finally {
       setIsQuerying(false);
       setQueryInput("");
@@ -239,24 +240,40 @@ export default function CreatorDashboard() {
                     className="h-8 px-3 text-xs capitalize"
                     onClick={() => handlePeriodChange(p)}
                   >
-                    {p === "all" ? "Tout" : p === "week" ? "Semaine" : p === "month" ? "Mois" : p === "year" ? "Année" : "Custom"}
+                    {p === "all"
+                      ? "Tout"
+                      : p === "week"
+                        ? "Semaine"
+                        : p === "month"
+                          ? "Mois"
+                          : p === "year"
+                            ? "Année"
+                            : "Custom"}
                   </Button>
                 ))}
                 {period === "custom" && (
                   <div className="ml-2 flex items-center gap-2 pr-2">
                     <div className="flex items-center gap-1.5">
-                      <label htmlFor="date-from" className="sr-only">Date de début</label>
+                      <label htmlFor="date-from" className="sr-only">
+                        Date de début
+                      </label>
                       <input
                         id="date-from"
                         type="date"
                         className="rounded border border-border bg-background px-2 py-0.5 text-xs outline-none focus:ring-1 focus:ring-primary/30"
                         value={dateRange.from || ""}
-                        onChange={(e) => setDateRange((prev) => ({ ...prev, from: e.target.value }))}
+                        onChange={(e) =>
+                          setDateRange((prev) => ({ ...prev, from: e.target.value }))
+                        }
                       />
                     </div>
-                    <span className="text-muted-foreground" aria-hidden="true">→</span>
+                    <span className="text-muted-foreground" aria-hidden="true">
+                      →
+                    </span>
                     <div className="flex items-center gap-1.5">
-                      <label htmlFor="date-to" className="sr-only">Date de fin</label>
+                      <label htmlFor="date-to" className="sr-only">
+                        Date de fin
+                      </label>
                       <input
                         id="date-to"
                         type="date"
@@ -296,7 +313,10 @@ export default function CreatorDashboard() {
                 !isUploading && zipInputRef.current?.click();
               }
             }}
-            onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
             onDrop={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -346,9 +366,7 @@ export default function CreatorDashboard() {
               e.target.value = "";
             }}
           />
-          {uploadError && (
-            <p className="mt-1 text-xs text-destructive">{uploadError}</p>
-          )}
+          {uploadError && <p className="mt-1 text-xs text-destructive">{uploadError}</p>}
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
@@ -453,9 +471,7 @@ export default function CreatorDashboard() {
                           <p className="whitespace-pre-wrap text-xs text-muted-foreground">
                             {entry.a}
                           </p>
-                          {i < queryHistory.length - 1 && (
-                            <hr className="border-border/30" />
-                          )}
+                          {i < queryHistory.length - 1 && <hr className="border-border/30" />}
                         </div>
                       ))}
                     </div>
@@ -531,7 +547,10 @@ export default function CreatorDashboard() {
                   <ul className="divide-y divide-border/50">
                     {(data?.metrics.topPosts ?? []).map((post, i) => (
                       <li key={post.id} className="flex items-center gap-3 py-2.5 text-sm">
-                        <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground" aria-hidden="true">
+                        <span
+                          className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground"
+                          aria-hidden="true"
+                        >
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">

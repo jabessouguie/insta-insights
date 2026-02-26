@@ -66,8 +66,12 @@ export function MetricCard({
             {(change !== undefined || description) && (
               <div className="mt-2 flex items-center gap-1.5">
                 {change !== undefined && (
-                  <div className={cn("flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
-                    change > 0 ? "bg-emerald-500/10" : change < 0 ? "bg-red-500/10" : "bg-muted")}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-0.5 rounded-full px-1.5 py-0.5",
+                      change > 0 ? "bg-emerald-500/10" : change < 0 ? "bg-red-500/10" : "bg-muted"
+                    )}
+                  >
                     <TrendIcon className={cn("h-3 w-3", trendColor)} />
                     <span className={cn("text-[10px] font-bold", trendColor)}>
                       {formatPercent(Math.abs(change))}
@@ -83,7 +87,12 @@ export function MetricCard({
             )}
           </div>
 
-          <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl transition-colors", iconBg)}>
+          <div
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-xl transition-colors",
+              iconBg
+            )}
+          >
             <Icon className={cn("h-5 w-5", iconColor)} />
           </div>
         </div>

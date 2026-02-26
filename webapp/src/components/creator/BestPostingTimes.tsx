@@ -40,7 +40,9 @@ export function BestPostingTimes({ days, hours, isLoading }: BestPostingTimesPro
     <Card>
       <CardHeader>
         <CardTitle className="text-base font-semibold">Quand tu publies</CardTitle>
-        <CardDescription>Nombre de posts par jour et créneau horaire (hors stories)</CardDescription>
+        <CardDescription>
+          Nombre de posts par jour et créneau horaire (hors stories)
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Days */}

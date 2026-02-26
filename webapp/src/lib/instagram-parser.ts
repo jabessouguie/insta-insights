@@ -341,7 +341,11 @@ function parseAudienceInsights(exportFolder: string): AudienceInsights | null {
 function countSubDirs(dir: string): number {
   if (!fs.existsSync(dir)) return 0;
   return fs.readdirSync(dir).filter((f) => {
-    try { return fs.statSync(path.join(dir, f)).isDirectory(); } catch { return false; }
+    try {
+      return fs.statSync(path.join(dir, f)).isDirectory();
+    } catch {
+      return false;
+    }
   }).length;
 }
 
@@ -352,7 +356,9 @@ function countJsonArray(filePath: string, rootKey: string): number {
     const raw = JSON.parse(fs.readFileSync(filePath, "utf-8")) as Record<string, unknown>;
     const arr = raw[rootKey];
     return Array.isArray(arr) ? arr.length : 0;
-  } catch { return 0; }
+  } catch {
+    return 0;
+  }
 }
 
 /**
@@ -371,10 +377,19 @@ function deriveInteractionsFromActivity(exportFolder: string): ContentInteractio
   const totalDmAccounts = inboxCount + requestsCount;
 
   const siDir = path.join(activityDir, "story_interactions");
-  const storyLikes = countJsonArray(path.join(siDir, "story_likes.json"), "story_activities_story_likes");
+  const storyLikes = countJsonArray(
+    path.join(siDir, "story_likes.json"),
+    "story_activities_story_likes"
+  );
   const storyPolls = countJsonArray(path.join(siDir, "polls.json"), "story_activities_polls");
-  const storyQuestions = countJsonArray(path.join(siDir, "questions.json"), "story_activities_questions");
-  const storySliders = countJsonArray(path.join(siDir, "emoji_sliders.json"), "story_activities_emoji_sliders");
+  const storyQuestions = countJsonArray(
+    path.join(siDir, "questions.json"),
+    "story_activities_questions"
+  );
+  const storySliders = countJsonArray(
+    path.join(siDir, "emoji_sliders.json"),
+    "story_activities_emoji_sliders"
+  );
   const storyQuizzes = countJsonArray(path.join(siDir, "quizzes.json"), "story_activities_quizzes");
 
   const storyReplies = storyPolls + storyQuestions + storySliders + storyQuizzes;
@@ -874,9 +889,9 @@ export function computeMetrics(
   // came from non-followers. We estimate active followers from accountsInteracted.
   const followerInteractors = contentInteractions
     ? Math.round(
-      contentInteractions.accountsInteracted *
-      (1 - contentInteractions.nonFollowerInteractionPct / 100)
-    )
+        contentInteractions.accountsInteracted *
+          (1 - contentInteractions.nonFollowerInteractionPct / 100)
+      )
     : 0;
   const inactiveCount = contentInteractions
     ? Math.max(0, followerCount - followerInteractors)

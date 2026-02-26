@@ -68,7 +68,7 @@ function extractStringMap(data: unknown): Map<string, string> {
       if (!smd || typeof smd !== "object") continue;
       for (const [rawLabel, entry] of Object.entries(smd as Record<string, StringMapEntry>)) {
         const label = fixMojibake(rawLabel)
-          .replace(/\u2019/g, "'")  // typographic apostrophe
+          .replace(/\u2019/g, "'") // typographic apostrophe
           .replace(/\u00a0/g, " "); // non-breaking space
         const value = entry?.value != null ? fixMojibake(String(entry.value)) : "";
         if (label && value) map.set(label, value);
@@ -148,7 +148,8 @@ function parseProfile(
   if (data) {
     // Structure: { profile_user: [{ string_map_data: { "Nom de profil": { value }, ... } }] }
     const map = extractStringMap(data);
-    username = map.get("Nom de profil") || map.get("Profile name") || map.get("Username") || "unknown";
+    username =
+      map.get("Nom de profil") || map.get("Profile name") || map.get("Username") || "unknown";
     fullName = map.get("Nom") || map.get("Name") || "";
     bio = map.get("Bio") || map.get("Biographie") || "";
     website = map.get("Site web") || map.get("Website") || "";
@@ -369,8 +370,9 @@ function enrichPostsWithInsights(exportFolder: string, posts: InstagramPost[]): 
       if (!smd || typeof smd !== "object") continue;
 
       // Get timestamp from string_map_data
-      const tsEntry = (smd as Record<string, StringMapEntry>)["Timestamp de la création"]
-        || (smd as Record<string, StringMapEntry>)["Creation timestamp"];
+      const tsEntry =
+        (smd as Record<string, StringMapEntry>)["Timestamp de la création"] ||
+        (smd as Record<string, StringMapEntry>)["Creation timestamp"];
       const ts = tsEntry?.timestamp;
       if (!ts) continue;
 
@@ -387,7 +389,9 @@ function enrichPostsWithInsights(exportFolder: string, posts: InstagramPost[]): 
 
       const map = new Map<string, string>();
       for (const [rawLabel, entry2] of Object.entries(smd as Record<string, StringMapEntry>)) {
-        const label = fixMojibake(rawLabel).replace(/\u2019/g, "'").replace(/\u00a0/g, " ");
+        const label = fixMojibake(rawLabel)
+          .replace(/\u2019/g, "'")
+          .replace(/\u00a0/g, " ");
         const value = entry2?.value != null ? String(entry2.value) : "";
         map.set(label, value);
       }
@@ -445,27 +449,34 @@ function parseAudienceInsightsJson(exportFolder: string): AudienceInsights | nul
     followerCountChange: map.get("Nombre de followers") || map.get("Follower count") || "",
     followersGained: parseNum(map.get("Followers en plus") || map.get("Followers gained") || "0"),
     followersLost: parseNum(map.get("Followers en moins") || map.get("Followers lost") || "0"),
-    netFollowerChange: parseNum(map.get("Total des followers") || map.get("Total followers") || "0"),
+    netFollowerChange: parseNum(
+      map.get("Total des followers") || map.get("Total followers") || "0"
+    ),
     topCities: parseKVPcts(
-      map.get("Pourcentage de followers en fonction de la ville")
-      || map.get("Follower percentage by city") || ""
+      map.get("Pourcentage de followers en fonction de la ville") ||
+        map.get("Follower percentage by city") ||
+        ""
     ),
     topCountries: parseKVPcts(
-      map.get("Pourcentage de followers en fonction du pays")
-      || map.get("Follower percentage by country") || ""
+      map.get("Pourcentage de followers en fonction du pays") ||
+        map.get("Follower percentage by country") ||
+        ""
     ),
     ageGroups: parseKVPcts(
-      map.get("Pourcentage de followers en fonction de l'âge pour tous les genres")
-      || map.get("Follower percentage by age for all genders") || ""
+      map.get("Pourcentage de followers en fonction de l'âge pour tous les genres") ||
+        map.get("Follower percentage by age for all genders") ||
+        ""
     ),
     genderSplit: {
       male: parsePct(
-        map.get("Pourcentage du total des followers hommes")
-        || map.get("Male follower percentage") || "0"
+        map.get("Pourcentage du total des followers hommes") ||
+          map.get("Male follower percentage") ||
+          "0"
       ),
       female: parsePct(
-        map.get("Pourcentage du total des de followers femmes")
-        || map.get("Female follower percentage") || "0"
+        map.get("Pourcentage du total des de followers femmes") ||
+          map.get("Female follower percentage") ||
+          "0"
       ),
     },
     dailyActivity,
@@ -505,7 +516,11 @@ function deriveInteractionsFromActivity(exportFolder: string): ContentInteractio
   const countDirs = (dir: string) => {
     if (!fs.existsSync(dir)) return 0;
     return fs.readdirSync(dir).filter((f) => {
-      try { return fs.statSync(path.join(dir, f)).isDirectory(); } catch { return false; }
+      try {
+        return fs.statSync(path.join(dir, f)).isDirectory();
+      } catch {
+        return false;
+      }
     }).length;
   };
 
@@ -579,7 +594,9 @@ function parseContentInteractionsJson(exportFolder: string): ContentInteractions
 
       return {
         period: map.get("Période") || map.get("Period") || "",
-        totalInteractions: parseNum(map.get("Interactions avec le contenu") || map.get("Content interactions") || "0"),
+        totalInteractions: parseNum(
+          map.get("Interactions avec le contenu") || map.get("Content interactions") || "0"
+        ),
         totalInteractionsChange: map.get("Nombre d'interactions avec le contenu") || "",
         posts: {
           interactions: parseNum(map.get("Interactions avec les publications") || "0"),

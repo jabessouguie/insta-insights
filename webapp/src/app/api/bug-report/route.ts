@@ -135,7 +135,8 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
 
       if (video) {
         const url = await upload("video.webm", video);
-        if (url) attachmentsMarkdown += `\n\n### Vidéo du bug\n[Télécharger / Voir la vidéo](${url})`;
+        if (url)
+          attachmentsMarkdown += `\n\n### Vidéo du bug\n[Télécharger / Voir la vidéo](${url})`;
       }
     }
 

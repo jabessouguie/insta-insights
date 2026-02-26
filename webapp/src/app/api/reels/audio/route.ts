@@ -46,7 +46,6 @@ export async function POST(request: Request): Promise<NextResponse<AudioResponse
     const ai = new GoogleGenAI({ apiKey, apiVersion: "v1alpha" });
 
     const audioChunks: Buffer[] = [];
-    let sessionClosed = false;
 
     const session = await (ai as any).live.music.connect({
       model: "models/lyria-realtime-exp",
@@ -62,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse<AudioResponse
           console.error("Lyria session error:", error);
         },
         onclose: () => {
-          sessionClosed = true;
+          // Closed
         },
       },
     });

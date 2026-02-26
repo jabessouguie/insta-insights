@@ -66,14 +66,7 @@ function readJsonFile<T>(filePath: string): T | null {
   }
 }
 
-interface JsonStringListItem {
-  value?: string;
-  timestamp?: number;
-}
 
-interface JsonFollowerEntry {
-  string_list_data?: JsonStringListItem[];
-}
 
 interface JsonMessage {
   sender_name: string;
@@ -91,16 +84,14 @@ function parseFollowersJsonAnalyser(exportFolder: string): Map<string, Date> {
   const result = new Map<string, Date>();
   if (!fs.existsSync(dir)) return result;
 
-  const files = fs
-    .readdirSync(dir)
-    .filter((f) => f.startsWith("followers") && f.endsWith(".json"));
+  const files = fs.readdirSync(dir).filter((f) => f.startsWith("followers") && f.endsWith(".json"));
 
   for (const file of files) {
     const data = readJsonFile<any>(path.join(dir, file));
     if (!data) continue;
 
     // Handle both { relationships_followers: [...] } and top-level [...]
-    const entries = Array.isArray(data) ? data : (data.relationships_followers || []);
+    const entries = Array.isArray(data) ? data : data.relationships_followers || [];
 
     for (const entry of entries) {
       const items = entry?.string_list_data ?? [];
@@ -137,10 +128,7 @@ function parseFollowingJsonAnalyser(exportFolder: string): Map<string, Date> {
       const finalUsername = item.value?.toLowerCase() || username;
       if (!finalUsername) continue;
 
-      result.set(
-        finalUsername,
-        item.timestamp ? new Date(item.timestamp * 1000) : new Date(0)
-      );
+      result.set(finalUsername, item.timestamp ? new Date(item.timestamp * 1000) : new Date(0));
     }
   }
   return result;
@@ -154,12 +142,7 @@ function parseFollowingJsonAnalyser(exportFolder: string): Map<string, Date> {
  */
 function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
   const dms = new Map<string, DMRecord>();
-  const inboxDir = path.join(
-    exportFolder,
-    "your_instagram_activity",
-    "messages",
-    "inbox"
-  );
+  const inboxDir = path.join(exportFolder, "your_instagram_activity", "messages", "inbox");
   if (!fs.existsSync(inboxDir)) return dms;
 
   for (const convDir of fs.readdirSync(inboxDir)) {
@@ -295,18 +278,33 @@ function parseSentDMs(exportFolder: string): Map<string, DMRecord> {
 // ─── French date parser ────────────────────────────────────────────────────────
 
 const FR_MONTHS: Record<string, number> = {
-  janv: 0, jan: 0, janvier: 0,
-  févr: 1, fév: 1, feb: 1, février: 1,
-  mars: 2, mar: 2,
-  avr: 3, avril: 3,
+  janv: 0,
+  jan: 0,
+  janvier: 0,
+  févr: 1,
+  fév: 1,
+  feb: 1,
+  février: 1,
+  mars: 2,
+  mar: 2,
+  avr: 3,
+  avril: 3,
   mai: 4,
   juin: 5,
-  juil: 6, juillet: 6,
-  août: 7, aout: 7,
-  sept: 8, sep: 8, septembre: 8,
-  oct: 9, octobre: 9,
-  nov: 10, novembre: 10,
-  déc: 11, dec: 11, décembre: 11,
+  juil: 6,
+  juillet: 6,
+  août: 7,
+  aout: 7,
+  sept: 8,
+  sep: 8,
+  septembre: 8,
+  oct: 9,
+  octobre: 9,
+  nov: 10,
+  novembre: 10,
+  déc: 11,
+  dec: 11,
+  décembre: 11,
 };
 
 function parseFrDate(text: string): Date | null {

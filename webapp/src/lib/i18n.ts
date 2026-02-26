@@ -354,7 +354,8 @@ const FR = {
   // ── Natural language query ────────────────────────────────────────────────
   "query.title": "Interroge tes données",
   "query.subtitle": "Pose une question en langage naturel sur tes stats Instagram",
-  "query.placeholder": "Ex: quel est mon meilleur jour pour publier ? Quel type de contenu performe le mieux ?",
+  "query.placeholder":
+    "Ex: quel est mon meilleur jour pour publier ? Quel type de contenu performe le mieux ?",
   "query.error": "Erreur lors de la requête",
 
   // ── Upload ──────────────────────────────────────────────────────────────

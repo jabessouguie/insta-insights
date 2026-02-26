@@ -103,8 +103,7 @@ export async function POST(request: Request): Promise<NextResponse<ReelGenerateR
       // If it's a public HTTPS URI, proxy it as base64 so the client can embed it
       if (videoUri.startsWith("https://")) {
         // Some Veo 3 URIs require the API key for access; try with it first
-        const fetchWithKey = (uri: string) =>
-          fetch(uri, { headers: { "x-goog-api-key": apiKey } });
+        const fetchWithKey = (uri: string) => fetch(uri, { headers: { "x-goog-api-key": apiKey } });
 
         let resp = await fetchWithKey(videoUri);
 
@@ -127,9 +126,16 @@ export async function POST(request: Request): Promise<NextResponse<ReelGenerateR
         const contentType = resp.headers.get("content-type") ?? "";
         if (!contentType.startsWith("video/") && !contentType.startsWith("application/octet")) {
           const preview = await resp.text();
-          console.error("Video URI returned non-video content:", contentType, preview.slice(0, 200));
+          console.error(
+            "Video URI returned non-video content:",
+            contentType,
+            preview.slice(0, 200)
+          );
           return NextResponse.json(
-            { success: false, error: "Video URL returned unexpected content — the signed link may have expired" },
+            {
+              success: false,
+              error: "Video URL returned unexpected content — the signed link may have expired",
+            },
             { status: 502 }
           );
         }
@@ -145,14 +151,10 @@ export async function POST(request: Request): Promise<NextResponse<ReelGenerateR
       return NextResponse.json({ success: true, video: videoUri });
     }
 
-    return NextResponse.json(
-      { success: false, error: "No video data returned" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "No video data returned" }, { status: 500 });
   } catch (error) {
     console.error("Error in /api/reels/generate:", error);
-    const message =
-      error instanceof Error ? error.message : "Erreur lors de la génération du reel";
+    const message = error instanceof Error ? error.message : "Erreur lors de la génération du reel";
     // Common causes: Veo 3 not enabled for this API key, quota exceeded, invalid model
     const isAccessError =
       message.includes("not found") ||

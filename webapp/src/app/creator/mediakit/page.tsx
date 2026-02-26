@@ -580,7 +580,9 @@ export default function MediaKitPage() {
                     </Button>
                     {config.bannerImageUrl && (
                       <button
-                        onClick={() => updateConfig("bannerImageUrl", undefined as unknown as string)}
+                        onClick={() =>
+                          updateConfig("bannerImageUrl", undefined as unknown as string)
+                        }
                         className="text-xs text-muted-foreground hover:text-destructive"
                       >
                         <X className="h-3.5 w-3.5" />

@@ -13,7 +13,13 @@ interface QueryRequest {
     audienceInsights?: Record<string, unknown>;
     contentInteractions?: Record<string, unknown>;
     reachInsights?: Record<string, unknown>;
-    recentPosts?: Array<{ caption: string; timestamp: string; mediaType: string; likes?: number; comments?: number }>;
+    recentPosts?: Array<{
+      caption: string;
+      timestamp: string;
+      mediaType: string;
+      likes?: number;
+      comments?: number;
+    }>;
   };
 }
 
@@ -29,10 +35,7 @@ export async function POST(request: Request): Promise<NextResponse<QueryResponse
     const { question, context } = body;
 
     if (!question?.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Missing question" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Missing question" }, { status: 400 });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;

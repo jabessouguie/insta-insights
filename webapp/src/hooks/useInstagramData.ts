@@ -22,8 +22,8 @@ export interface UseInstagramDataParams {
 export function useInstagramData(params?: UseInstagramDataParams): UseInstagramDataReturn {
   const queryString = params
     ? new URLSearchParams(
-      Object.entries(params).filter(([_, v]) => v != null) as [string, string][]
-    ).toString()
+        Object.entries(params).filter(([_, v]) => v != null) as [string, string][]
+      ).toString()
     : "";
   const url = queryString ? `/api/data?${queryString}` : "/api/data";
 
@@ -38,7 +38,9 @@ export function useInstagramData(params?: UseInstagramDataParams): UseInstagramD
     isLoading,
     isError: !!error || (!!data && !data.success),
     // Force revalidation ignoring cache/dedup
-    mutate: () => { void mutate(undefined, { revalidate: true }); },
+    mutate: () => {
+      void mutate(undefined, { revalidate: true });
+    },
     // Directly inject parsed data into the SWR cache (no extra /api/data round-trip)
     setData: (analytics: InstagramAnalytics) => {
       void mutate({ success: true, data: analytics }, { revalidate: false });

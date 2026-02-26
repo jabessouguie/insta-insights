@@ -70,8 +70,7 @@ function buildCreatorPrompt(req: InsightsApiRequest): string {
   // ── Most active days (from dailyActivity) ─────────────────────────────────
   let dailyActivitySection = "";
   if (audienceInsights?.dailyActivity && Object.keys(audienceInsights.dailyActivity).length > 0) {
-    const sorted = Object.entries(audienceInsights.dailyActivity)
-      .sort(([, a], [, b]) => b - a);
+    const sorted = Object.entries(audienceInsights.dailyActivity).sort(([, a], [, b]) => b - a);
     const topDay = sorted[0]?.[0];
     const bottomDay = sorted[sorted.length - 1]?.[0];
     const dayList = sorted.map(([day, count]) => `${day}: ${count}`).join(", ");

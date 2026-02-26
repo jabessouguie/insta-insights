@@ -65,7 +65,13 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
           <>
             <nav className="hidden items-center gap-1 md:flex">
               {navLinks.map((link) => (
-                <Button key={link.href} variant="ghost" size="sm" className="gap-1.5 text-xs" asChild>
+                <Button
+                  key={link.href}
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  asChild
+                >
                   <Link href={link.href}>
                     {link.icon && <link.icon className="h-3.5 w-3.5" />}
                     {link.label}
@@ -132,8 +138,8 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && mode === "creator" && (
-        <div className="fixed inset-x-0 top-16 z-50 animate-in fade-in slide-in-from-top-4 md:hidden">
-          <div className="border-b border-border bg-background/95 p-4 backdrop-blur-lg shadow-xl">
+        <div className="animate-in fade-in slide-in-from-top-4 fixed inset-x-0 top-16 z-50 md:hidden">
+          <div className="border-b border-border bg-background/95 p-4 shadow-xl backdrop-blur-lg">
             <nav className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <Button
