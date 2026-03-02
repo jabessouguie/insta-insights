@@ -13,6 +13,7 @@ import {
   Handshake,
   MessageSquarePlus,
   LayoutPanelLeft,
+  CalendarDays,
   Menu,
   X,
 } from "lucide-react";
@@ -37,6 +38,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },
     { href: "/creator/carousel", label: t("nav.carousel"), icon: LayoutPanelLeft },
+    { href: "/creator/calendar", label: t("nav.calendar"), icon: CalendarDays },
     { href: "/creator/collabs", label: t("nav.collabs"), icon: Handshake },
     { href: "/creator/comments", label: t("nav.comments"), icon: MessageSquarePlus },
   ];

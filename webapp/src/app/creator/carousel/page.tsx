@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
@@ -19,6 +19,9 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { ScheduleModal } from "@/components/calendar/ScheduleModal";
+import { saveItem } from "@/lib/calendar-store";
+import { computeOptimalSlots } from "@/lib/slot-analyzer";
 import type {
   CarouselGenerateRequest,
   CarouselGenerateResponse,
@@ -426,6 +429,15 @@ export default function CarouselPage() {
   const [storyPreviewIndex, setStoryPreviewIndex] = useState(0);
   const [isRenderingStory, setIsRenderingStory] = useState(false);
   const [storyCopied, setStoryCopied] = useState(false);
+
+  // ── Calendar scheduling ───────────────────────────────────────────────────
+  const calendarSlots = useMemo(
+    () => (data?.metrics ? computeOptimalSlots(data.metrics) : []),
+    [data?.metrics]
+  );
+  const [showCarouselSchedule, setShowCarouselSchedule] = useState(false);
+  const [showStorySchedule, setShowStorySchedule] = useState(false);
+  const [showReelSchedule, setShowReelSchedule] = useState(false);
 
   // ── Photo upload ──────────────────────────────────────────────────────────
   const handlePhotoUpload = useCallback((files: FileList | null) => {
@@ -1185,6 +1197,16 @@ export default function CarouselPage() {
                     </div>
                   )}
 
+                  {/* Schedule CTA */}
+                  {result?.success && previewBlobs.length > 0 && !showCarouselSchedule && (
+                    <button
+                      onClick={() => setShowCarouselSchedule(true)}
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      📅 {t("calendar.schedule.cta")}
+                    </button>
+                  )}
+
                   {/* Error */}
                   {result && !result.success && (
                     <p className="text-xs text-destructive">
@@ -1641,6 +1663,16 @@ export default function CarouselPage() {
                     </div>
                   )}
 
+                  {/* Schedule CTA */}
+                  {storyResult?.success && storyPreviewBlobs.length > 0 && !showStorySchedule && (
+                    <button
+                      onClick={() => setShowStorySchedule(true)}
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      📅 {t("calendar.schedule.cta")}
+                    </button>
+                  )}
+
                   {/* Error */}
                   {storyResult && !storyResult.success && (
                     <p className="text-xs text-destructive">
@@ -2017,6 +2049,16 @@ export default function CarouselPage() {
                     </a>
                   )}
 
+                  {/* Schedule CTA */}
+                  {reelResult?.success && reelBlobUrl && !showReelSchedule && (
+                    <button
+                      onClick={() => setShowReelSchedule(true)}
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      📅 {t("calendar.schedule.cta")}
+                    </button>
+                  )}
+
                   {/* Error */}
                   {reelResult && !reelResult.success && (
                     <p className="text-xs text-destructive">
@@ -2032,6 +2074,59 @@ export default function CarouselPage() {
         )}{" "}
         {/* end activeFormat === "reels" */}
       </div>
+
+      {/* ── Schedule modals ───────────────────────────────────────────────── */}
+      {showCarouselSchedule && (
+        <ScheduleModal
+          draft={{
+            type: "carousel",
+            caption: result?.instagramDescription ?? "",
+            hashtags: result?.hashtags ?? [],
+            assets: previewBlobs,
+            igInstructions: {},
+          }}
+          slots={calendarSlots}
+          onSchedule={(item) => {
+            saveItem(item);
+            setShowCarouselSchedule(false);
+          }}
+          onDismiss={() => setShowCarouselSchedule(false)}
+        />
+      )}
+      {showStorySchedule && (
+        <ScheduleModal
+          draft={{
+            type: "story",
+            caption: storyResult?.instagramDescription ?? "",
+            hashtags: storyResult?.hashtags ?? [],
+            assets: storyPreviewBlobs,
+            igInstructions: { stickers: ["Add a Poll sticker", "Add a Question sticker"] },
+          }}
+          slots={calendarSlots}
+          onSchedule={(item) => {
+            saveItem(item);
+            setShowStorySchedule(false);
+          }}
+          onDismiss={() => setShowStorySchedule(false)}
+        />
+      )}
+      {showReelSchedule && reelBlobUrl && (
+        <ScheduleModal
+          draft={{
+            type: "reel",
+            caption: reelPrompt,
+            hashtags: [],
+            assets: [reelBlobUrl],
+            igInstructions: {},
+          }}
+          slots={calendarSlots}
+          onSchedule={(item) => {
+            saveItem(item);
+            setShowReelSchedule(false);
+          }}
+          onDismiss={() => setShowReelSchedule(false)}
+        />
+      )}
     </div>
   );
 }
