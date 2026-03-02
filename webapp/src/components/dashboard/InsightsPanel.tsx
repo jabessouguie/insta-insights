@@ -84,7 +84,12 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
 
   const handleGenerate = async (feedback?: string) => {
     setHasGenerated(true);
-    await generate({ ...request, userFeedback: feedback });
+    await generate({
+      ...request,
+      userFeedback: feedback,
+      // Pass current insights so Gemini can deepen the analysis on regeneration
+      previousInsights: hasGenerated ? (displayInsights ?? undefined) : undefined,
+    });
   };
 
   return (

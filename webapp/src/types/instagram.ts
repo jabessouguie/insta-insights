@@ -247,6 +247,8 @@ export interface InsightsApiRequest {
   reachInsights?: Partial<ReachInsights>;
   /** Optional user feedback to steer regeneration */
   userFeedback?: string;
+  /** Previously generated insights — used to deepen analysis on regeneration */
+  previousInsights?: AIInsight[];
 }
 
 export interface InsightsApiResponse {

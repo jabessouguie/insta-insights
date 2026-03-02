@@ -270,7 +270,7 @@ export class InstagramGraphAPI {
     return this.gPost<{ id: string }>(`/${mediaId}/comments`, { message });
   }
 
-  /** Account-level insights (reach, impressions, profile views). */
+  /** Account-level insights (reach, impressions, profile views, follower counts). */
   private async getAccountInsights(
     sinceTs?: number,
     untilTs?: number
@@ -278,27 +278,48 @@ export class InstagramGraphAPI {
     reach: number;
     impressions: number;
     profileViews: number;
+    followerCountByDay: Array<{ endTime: string; value: number }>;
   }> {
     try {
       const since = sinceTs ?? Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
       const until = untilTs ?? Math.floor(Date.now() / 1000);
-      const res = await gFetch<{ data: GInsight[] }>(`/${this.accountId}/insights`, this.token, {
-        metric: "reach,impressions,profile_views",
-        period: "day",
-        since: String(since),
-        until: String(until),
-      });
+
+      // follower_count may not be available on all tokens — fetch separately, gracefully
+      const [baseRes, followerRes] = await Promise.all([
+        gFetch<{ data: GInsight[] }>(`/${this.accountId}/insights`, this.token, {
+          metric: "reach,impressions,profile_views",
+          period: "day",
+          since: String(since),
+          until: String(until),
+        }),
+        gFetch<{
+          data: Array<{ name: string; values: Array<{ value: number; end_time: string }> }>;
+        }>(`/${this.accountId}/insights`, this.token, {
+          metric: "follower_count",
+          period: "day",
+          since: String(since),
+          until: String(until),
+        }).catch(() => ({ data: [] })),
+      ]);
+
       const sum = (name: string) =>
-        (res.data ?? []).find((i) => i.name === name)?.values?.reduce((s, v) => s + v.value, 0) ??
-        0;
+        (baseRes.data ?? [])
+          .find((i) => i.name === name)
+          ?.values?.reduce((s, v) => s + v.value, 0) ?? 0;
+
+      const followerCountByDay =
+        (followerRes.data ?? [])
+          .find((d) => d.name === "follower_count")
+          ?.values?.map((v) => ({ endTime: v.end_time, value: v.value })) ?? [];
 
       return {
         reach: sum("reach"),
         impressions: sum("impressions"),
         profileViews: sum("profile_views"),
+        followerCountByDay,
       };
     } catch {
-      return { reach: 0, impressions: 0, profileViews: 0 };
+      return { reach: 0, impressions: 0, profileViews: 0, followerCountByDay: [] };
     }
   }
 
@@ -447,13 +468,50 @@ export class InstagramGraphAPI {
           : 0,
     }));
 
+    // ── Account-level insights ─────────────────────────────────────────────
+    const [accountInsights, demographics] = await Promise.all([
+      this.getAccountInsights(sinceTs, untilTs),
+      this.getAudienceDemographics(),
+    ]);
+
+    // ── Follower growth from daily follower_count metric ───────────────────
+    const followerCountByDay = accountInsights.followerCountByDay;
+    let followerGrowthRate = 0;
+    let followerGrowthByMonth: Array<{ month: string; count: number; gain: number; loss: number }> =
+      [];
+
+    if (followerCountByDay.length >= 2) {
+      const firstCount = followerCountByDay[0].value;
+      const lastCount = followerCountByDay[followerCountByDay.length - 1].value;
+      const netChange = lastCount - firstCount;
+      followerGrowthRate = firstCount > 0 ? Math.round((netChange / firstCount) * 10000) / 100 : 0;
+
+      // Group by month
+      const monthMap: Record<string, { values: number[] }> = {};
+      for (const { endTime, value } of followerCountByDay) {
+        const month = endTime.substring(0, 7); // "YYYY-MM"
+        if (!monthMap[month]) monthMap[month] = { values: [] };
+        monthMap[month].values.push(value);
+      }
+      followerGrowthByMonth = Object.entries(monthMap).map(([month, { values }]) => {
+        const gain = Math.max(0, values[values.length - 1] - values[0]);
+        const loss = Math.max(0, values[0] - values[values.length - 1]);
+        return { month, count: values[values.length - 1], gain, loss };
+      });
+    } else if (profile.followerCount > 0) {
+      // Fallback: use net follower change from demographics
+      const net = demographics.netFollowerChange ?? 0;
+      const baseline = profile.followerCount - net;
+      followerGrowthRate = baseline > 0 ? Math.round((net / baseline) * 10000) / 100 : 0;
+    }
+
     const metrics: InstagramMetrics = {
       engagementRate: Math.round(engagementRate * 100) / 100,
       avgLikesPerPost: Math.round(totalLikes / totalPosts),
       avgCommentsPerPost: Math.round(totalComments / totalPosts),
       avgReachPerPost: Math.round(totalReach / totalPosts),
-      followerGrowthRate: 0,
-      followerGrowthByMonth: [],
+      followerGrowthRate,
+      followerGrowthByMonth,
       bestPostingDays,
       bestPostingHours,
       contentTypePerformance,
@@ -464,12 +522,6 @@ export class InstagramGraphAPI {
         .sort((a, b) => b.likes + b.comments - (a.likes + a.comments))
         .slice(0, 10),
     };
-
-    // ── Account-level insights ─────────────────────────────────────────────
-    const [accountInsights, demographics] = await Promise.all([
-      this.getAccountInsights(sinceTs, untilTs),
-      this.getAudienceDemographics(),
-    ]);
 
     const reachInsights: ReachInsights = {
       period: "30 derniers jours",

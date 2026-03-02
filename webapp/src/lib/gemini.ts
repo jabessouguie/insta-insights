@@ -218,7 +218,15 @@ ${nicheHint}
     : ""
 }
 
-Génère exactement 6 insights JSON hyper-personnalisés (sans markdown, juste le JSON).
+${
+  req.previousInsights && req.previousInsights.length > 0
+    ? `### Insights précédemment générés (à approfondir — ne pas répéter, aller plus loin)
+${req.previousInsights.map((i) => `- [${i.category}] ${i.title} : ${i.description}`).join("\n")}
+
+→ Génère 6 nouveaux insights qui approfondissent ou complètent ceux ci-dessus. Explore des angles non encore couverts, affine les recommandations avec plus de précision, ou identifie des opportunités cachées dans les données.
+`
+    : ""
+}Génère exactement 6 insights JSON hyper-personnalisés (sans markdown, juste le JSON).
 Chaque insight doit mentionner des chiffres réels issus des données, citer la niche et/ou l'audience, et donner une recommandation concrète et spécifique.
 Inclus obligatoirement :
 - 1 insight "timing" sur le meilleur jour/créneau selon les données d'activité des followers (utilise la section "Activité des followers par jour" si disponible)

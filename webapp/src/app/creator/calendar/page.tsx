@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, CalendarDays } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, Download } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { WeekCalendar } from "@/components/calendar/WeekCalendar";
 import { ReadyToPostPanel } from "@/components/calendar/ReadyToPostPanel";
@@ -13,6 +13,7 @@ import {
   deleteItem,
   CALENDAR_UPDATED_EVENT,
 } from "@/lib/calendar-store";
+import { downloadIcs } from "@/lib/ical-export";
 import { computeOptimalSlots } from "@/lib/slot-analyzer";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import type { ScheduledItem, ContentType } from "@/types/instagram";
@@ -155,8 +156,18 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {/* Legend + new button */}
+        {/* Legend + export + new button */}
         <div className="flex items-center gap-3">
+          {items.length > 0 && (
+            <button
+              onClick={() => downloadIcs(items)}
+              title="Exporter vers Apple Calendar / Google Calendar (.ics)"
+              className="hidden items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted sm:flex"
+            >
+              <Download className="h-3.5 w-3.5" />
+              .ics
+            </button>
+          )}
           <div className="hidden items-center gap-2 text-[10px] text-muted-foreground sm:flex">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-green-500" />
