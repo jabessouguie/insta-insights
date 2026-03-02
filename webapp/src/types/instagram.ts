@@ -410,3 +410,74 @@ export interface OptimalSlot {
   score: number;
   isTopSlot: boolean;
 }
+
+// ============================================================
+// Instagram Graph API Types
+// ============================================================
+
+export interface RawComment {
+  id: string;
+  text: string;
+  timestamp: string;
+  username: string;
+}
+
+// ============================================================
+// Audience Intelligence Types
+// ============================================================
+
+export interface BigFiveScores {
+  openness: number; // 0-100
+  conscientiousness: number;
+  extraversion: number;
+  agreeableness: number;
+  neuroticism: number;
+}
+
+export interface AudiencePersona {
+  name: string; // e.g. "L'Explorateur Ambitieux"
+  emoji: string;
+  description: string;
+  sharePercent: number; // % of audience this persona represents
+  bigFive: BigFiveScores;
+  motivations: string[]; // e.g. ["Découverte", "Statut social"]
+  contentPillars: string[]; // e.g. ["Behind-the-scenes", "Tutoriels"]
+}
+
+export interface BrandVoiceAudit {
+  consistencyScore: number; // 0-100
+  dominantTone: string; // e.g. "Inspirant et authentique"
+  avgCaptionLength: number;
+  ctaUsageRate: number; // % of posts with a CTA
+  suggestions: string[];
+}
+
+export interface AudienceSegmentsResponse {
+  success: boolean;
+  personas?: AudiencePersona[];
+  brandVoice?: BrandVoiceAudit;
+  commentCount?: number; // how many real comments were analysed
+  dataSource: "graph_api" | "export_inference";
+  error?: string;
+}
+
+// ============================================================
+// Executive Report Types
+// ============================================================
+
+export interface ExecutiveReport {
+  period: string;
+  executiveSummary: string;
+  keyWins: string[];
+  keyAlerts: string[];
+  contentPerformance: string;
+  audienceTrends: string;
+  nextMonthRecommendations: string[];
+  generatedAt: string;
+}
+
+export interface ReportGenerateResponse {
+  success: boolean;
+  report?: ExecutiveReport;
+  error?: string;
+}

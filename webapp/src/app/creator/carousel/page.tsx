@@ -818,18 +818,19 @@ export default function CarouselPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {/* Drop zone */}
-                  <div
+                  <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                       e.preventDefault();
                       handlePhotoUpload(e.dataTransfer.files);
                     }}
-                    className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
                   >
                     <Upload className="h-6 w-6" />
                     <span>{t("carousel.photos.dropzone")}</span>
-                  </div>
+                  </button>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -1201,7 +1202,7 @@ export default function CarouselPage() {
                   {result?.success && previewBlobs.length > 0 && !showCarouselSchedule && (
                     <button
                       onClick={() => setShowCarouselSchedule(true)}
-                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>
@@ -1286,18 +1287,19 @@ export default function CarouselPage() {
                   <CardDescription>{t("carousel.photos.description")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div
+                  <button
+                    type="button"
                     onClick={() => storyFileInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                       e.preventDefault();
                       handlePhotoUpload(e.dataTransfer.files);
                     }}
-                    className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
                   >
                     <Upload className="h-6 w-6" />
                     <span>{t("carousel.photos.dropzone")}</span>
-                  </div>
+                  </button>
                   <input
                     ref={storyFileInputRef}
                     type="file"
@@ -1667,7 +1669,7 @@ export default function CarouselPage() {
                   {storyResult?.success && storyPreviewBlobs.length > 0 && !showStorySchedule && (
                     <button
                       onClick={() => setShowStorySchedule(true)}
-                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>
@@ -1747,18 +1749,19 @@ export default function CarouselPage() {
                   <CardDescription>{t("reels.clips.description")}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div
+                  <button
+                    type="button"
                     onClick={() => videoInputRef.current?.click()}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => {
                       e.preventDefault();
                       handleVideoUpload(e.dataTransfer.files);
                     }}
-                    className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                    className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
                   >
                     <Upload className="h-6 w-6" />
                     <span>MP4 / MOV</span>
-                  </div>
+                  </button>
                   <input
                     ref={videoInputRef}
                     type="file"
@@ -1928,8 +1931,11 @@ export default function CarouselPage() {
                     className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
                   />
                   <div className="flex items-center gap-3">
-                    <label className="text-xs text-muted-foreground">BPM</label>
+                    <label htmlFor="audio-bpm" className="text-xs text-muted-foreground">
+                      BPM
+                    </label>
                     <input
+                      id="audio-bpm"
                       type="range"
                       min={60}
                       max={200}
@@ -2053,7 +2059,7 @@ export default function CarouselPage() {
                   {reelResult?.success && reelBlobUrl && !showReelSchedule && (
                     <button
                       onClick={() => setShowReelSchedule(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>

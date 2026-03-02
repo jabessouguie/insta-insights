@@ -44,10 +44,6 @@ function addDays(date: Date, n: number): Date {
   return d;
 }
 
-function sameCell(date: Date, colDayIndex: number, hour: number): boolean {
-  return date.getDay() === colDayIndex && date.getHours() === hour;
-}
-
 // ─── Toast ────────────────────────────────────────────────────────────────────
 
 function useToast() {
@@ -81,7 +77,7 @@ export function WeekCalendar({
   selectedId,
   weekStart,
   onSelectItem,
-  onWeekChange,
+  onWeekChange: _onWeekChange,
   onItemsChanged,
 }: WeekCalendarProps) {
   const t = useT();
@@ -183,9 +179,8 @@ export function WeekCalendar({
     setStoryChain(null);
   }
 
-  const lang = typeof window !== "undefined"
-    ? (localStorage.getItem("instainsights-lang") ?? "fr")
-    : "fr";
+  const lang =
+    typeof window !== "undefined" ? (localStorage.getItem("instainsights-lang") ?? "fr") : "fr";
   const dayLabels = lang === "fr" ? DAYS_FR : DAYS_EN;
 
   // Column dates for header
@@ -270,8 +265,7 @@ export function WeekCalendar({
               const quality = slotMap.get(`${dayIndex}-${hour}`);
               const cellItems = itemMap.get(`${dayIndex}-${hour}`) ?? [];
 
-              let cellClass =
-                "relative min-h-14 border-l border-border/40 p-0.5 transition-colors";
+              let cellClass = "relative min-h-14 border-l border-border/40 p-0.5 transition-colors";
               if (quality === "top")
                 cellClass += " bg-green-500/10 ring-inset ring-1 ring-green-500/30";
               else if (quality === "good")
@@ -293,10 +287,8 @@ export function WeekCalendar({
                         setDragId(item.id);
                       }}
                       onDragEnd={() => setDragId(null)}
-                      onClick={() =>
-                        onSelectItem(selectedId === item.id ? null : item.id)
-                      }
-                      className={`mb-0.5 cursor-grab rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight select-none transition-opacity ${
+                      onClick={() => onSelectItem(selectedId === item.id ? null : item.id)}
+                      className={`mb-0.5 cursor-grab select-none rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight transition-opacity ${
                         TYPE_PILL[item.type]
                       } ${dragId === item.id ? "opacity-40" : ""} ${
                         selectedId === item.id ? "ring-2 ring-white/50" : ""

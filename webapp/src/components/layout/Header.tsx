@@ -14,6 +14,8 @@ import {
   MessageSquarePlus,
   LayoutPanelLeft,
   CalendarDays,
+  BarChart2,
+  Link2,
   Menu,
   X,
 } from "lucide-react";
@@ -36,11 +38,14 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
   const navLinks = [
     { href: "/creator/dashboard", label: t("nav.dashboard"), icon: null },
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
+    { href: "/creator/audience", label: t("nav.audience"), icon: Users },
+    { href: "/creator/reports", label: t("nav.reports"), icon: BarChart2 },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },
     { href: "/creator/carousel", label: t("nav.carousel"), icon: LayoutPanelLeft },
     { href: "/creator/calendar", label: t("nav.calendar"), icon: CalendarDays },
     { href: "/creator/collabs", label: t("nav.collabs"), icon: Handshake },
     { href: "/creator/comments", label: t("nav.comments"), icon: MessageSquarePlus },
+    { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
   ];
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">

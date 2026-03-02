@@ -3,7 +3,20 @@
 import useSWR from "swr";
 import type { DataApiResponse, InstagramAnalytics } from "@/types/instagram";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+function getIgHeaders(): HeadersInit {
+  if (typeof window === "undefined") return {};
+  const token = localStorage.getItem("ig_access_token");
+  const accountId = localStorage.getItem("ig_account_id");
+  if (token && accountId) {
+    return {
+      "X-Instagram-Token": token,
+      "X-Instagram-Account-Id": accountId,
+    };
+  }
+  return {};
+}
+
+const fetcher = (url: string) => fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
 
 export interface UseInstagramDataReturn {
   data: InstagramAnalytics | undefined;

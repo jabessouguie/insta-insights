@@ -80,12 +80,10 @@ export function ScheduleModal({ draft, slots, onSchedule, onDismiss }: ScheduleM
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="space-y-4 p-5">
           {/* Type badge + thumbnail */}
           <div className="flex items-start gap-3">
-            <Badge
-              className={`${TYPE_COLORS[draft.type ?? "post"]} border-0 capitalize shrink-0`}
-            >
+            <Badge className={`${TYPE_COLORS[draft.type ?? "post"]} shrink-0 border-0 capitalize`}>
               {draft.type ?? "post"}
             </Badge>
             {firstAsset && !isVideo && (
@@ -96,20 +94,18 @@ export function ScheduleModal({ draft, slots, onSchedule, onDismiss }: ScheduleM
               />
             )}
             {firstAsset && isVideo && (
-              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted ring-1 ring-border text-xs text-muted-foreground">
+              <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground ring-1 ring-border">
                 🎬 Reel
               </div>
             )}
             {draft.caption && (
-              <p className="line-clamp-3 text-xs text-muted-foreground flex-1">
-                {draft.caption}
-              </p>
+              <p className="line-clamp-3 flex-1 text-xs text-muted-foreground">{draft.caption}</p>
             )}
           </div>
 
           {/* Suggested slot */}
-          <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/30 px-3 py-2">
-            <Clock className="h-3.5 w-3.5 text-green-400 shrink-0" />
+          <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-green-400" />
             <span className="text-xs text-green-300">
               {t("calendar.schedule.next")}{" "}
               <span className="font-medium capitalize">{formattedSuggested}</span>

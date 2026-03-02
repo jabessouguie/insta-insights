@@ -34,7 +34,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 rounded-md px-2 py-1 text-xs hover:bg-muted transition-colors"
+      className="flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors hover:bg-muted"
     >
       {copied ? (
         <Check className="h-3 w-3 text-green-400" />
@@ -95,19 +95,25 @@ function AssetCard({ src, index }: { src: string; index: number }) {
   }
 
   return (
-    <div className="group relative rounded-lg overflow-hidden ring-1 ring-border">
+    <div className="group relative overflow-hidden rounded-lg ring-1 ring-border">
       {isVideo ? (
         thumbnail ? (
-          <img src={thumbnail} alt={`asset ${index + 1}`} className="aspect-square w-full object-cover" />
+          <img
+            src={thumbnail}
+            alt={`asset ${index + 1}`}
+            className="aspect-square w-full object-cover"
+          />
         ) : (
-          <div className="aspect-square w-full flex items-center justify-center bg-muted text-2xl">🎬</div>
+          <div className="flex aspect-square w-full items-center justify-center bg-muted text-2xl">
+            🎬
+          </div>
         )
       ) : (
         <img src={src} alt={`asset ${index + 1}`} className="aspect-square w-full object-cover" />
       )}
       <button
         onClick={download}
-        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
       >
         <Download className="h-5 w-5 text-white" />
       </button>
@@ -115,12 +121,7 @@ function AssetCard({ src, index }: { src: string; index: number }) {
   );
 }
 
-export function ReadyToPostPanel({
-  item,
-  onClose,
-  onPublished,
-  onDelete,
-}: ReadyToPostPanelProps) {
+export function ReadyToPostPanel({ item, onClose, onPublished, onDelete }: ReadyToPostPanelProps) {
   const t = useT();
   const [checklist, setChecklist] = useState<Record<string, boolean>>({});
 
@@ -153,14 +154,14 @@ export function ReadyToPostPanel({
   const stickers = item.igInstructions?.stickers ?? [];
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col border-l border-border bg-card overflow-y-auto">
+    <aside className="flex h-full w-80 shrink-0 flex-col overflow-y-auto border-l border-border bg-card">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-4 py-3">
         <div className="flex items-center gap-2">
-          <Badge className={`${TYPE_COLORS[item.type]} border-0 capitalize text-xs`}>
+          <Badge className={`${TYPE_COLORS[item.type]} border-0 text-xs capitalize`}>
             {item.type}
           </Badge>
-          <span className="text-xs text-muted-foreground capitalize">{formattedDate}</span>
+          <span className="text-xs capitalize text-muted-foreground">{formattedDate}</span>
         </div>
         <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
           <X className="h-4 w-4" />
@@ -241,23 +242,27 @@ export function ReadyToPostPanel({
             </h3>
             <ul className="space-y-1.5">
               {stickers.map((sticker) => (
-                <li
-                  key={sticker}
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
-                  onClick={() => toggleSticker(sticker)}
-                >
-                  {checklist[sticker] ? (
-                    <CheckSquare className="h-4 w-4 text-green-400 shrink-0" />
-                  ) : (
-                    <Square className="h-4 w-4 text-muted-foreground shrink-0" />
-                  )}
-                  <span
-                    className={`text-xs ${
-                      checklist[sticker] ? "line-through text-muted-foreground" : "text-foreground"
-                    }`}
+                <li key={sticker}>
+                  <button
+                    type="button"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted"
+                    onClick={() => toggleSticker(sticker)}
                   >
-                    {sticker}
-                  </span>
+                    {checklist[sticker] ? (
+                      <CheckSquare className="h-4 w-4 shrink-0 text-green-400" />
+                    ) : (
+                      <Square className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    )}
+                    <span
+                      className={`text-xs ${
+                        checklist[sticker]
+                          ? "text-muted-foreground line-through"
+                          : "text-foreground"
+                      }`}
+                    >
+                      {sticker}
+                    </span>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -266,7 +271,7 @@ export function ReadyToPostPanel({
       </div>
 
       {/* Footer actions */}
-      <div className="sticky bottom-0 border-t border-border bg-card p-4 space-y-2">
+      <div className="sticky bottom-0 space-y-2 border-t border-border bg-card p-4">
         <Button
           size="sm"
           className="w-full bg-green-600 hover:bg-green-700"
@@ -278,7 +283,7 @@ export function ReadyToPostPanel({
         <Button
           size="sm"
           variant="outline"
-          className="w-full text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
+          className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
           onClick={() => onDelete(item.id)}
         >
           <Trash2 className="mr-1.5 h-3.5 w-3.5" />
