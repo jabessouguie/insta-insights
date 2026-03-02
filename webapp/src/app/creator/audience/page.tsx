@@ -190,29 +190,6 @@ function BrandVoiceCard({
   );
 }
 
-// ─── Locked Feature Card ───────────────────────────────────────────────────────
-
-function LockedCard({ title, desc, cta }: { title: string; desc: string; cta: string }) {
-  return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card/50 p-5">
-      <div className="flex items-start gap-3 opacity-40">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div>
-          <h3 className="text-sm font-semibold">{title}</h3>
-          <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
-        </div>
-      </div>
-      <a
-        href="/creator/connect"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
-      >
-        <Lock className="h-3 w-3" />
-        {cta}
-      </a>
-    </div>
-  );
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AudiencePage() {
