@@ -1,17 +1,19 @@
 "use client";
 
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   BarChart2,
   CheckCircle2,
   Download,
   FileText,
   Loader2,
-  Lock,
   Send,
   AlertTriangle,
   Star,
   Lightbulb,
+  Video,
+  TrendingUp,
+  ArrowRight,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
@@ -187,26 +189,35 @@ function ReportCard({ report, t }: { report: ExecutiveReport; t: ReturnType<type
   );
 }
 
-// ─── Locked Feature Card ───────────────────────────────────────────────────────
+// ─── Active Feature Card ──────────────────────────────────────────────────────
 
-function LockedCard({ title, desc, cta }: { title: string; desc: string; cta: string }) {
+function ActiveFeatureCard({
+  href,
+  icon: Icon,
+  title,
+  desc,
+}: {
+  href: string;
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+}) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-border bg-card/50 p-5">
-      <div className="flex items-start gap-3 opacity-40">
-        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div>
+    <a
+      href={href}
+      className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40 hover:bg-card/80"
+    >
+      <div className="flex items-start gap-3">
+        <Icon className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold">{title}</h3>
           <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
         </div>
       </div>
-      <a
-        href="/creator/connect"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-      >
-        <Lock className="h-3 w-3" />
-        {cta}
-      </a>
-    </div>
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+        Explorer <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+      </span>
+    </a>
   );
 }
 
@@ -345,21 +356,23 @@ export default function ReportsPage() {
           ) : null}
         </div>
 
-        {/* Locked features */}
+        {/* Advanced features */}
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Fonctionnalités avancées
+            {t("reports.advanced_features")}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <LockedCard
+            <ActiveFeatureCard
+              href="/creator/reels"
+              icon={Video}
               title={t("reports.locked.skiprate.title")}
               desc={t("reports.locked.skiprate.desc")}
-              cta={t("reports.locked.cta")}
             />
-            <LockedCard
+            <ActiveFeatureCard
+              href="/creator/competitive"
+              icon={TrendingUp}
               title={t("reports.locked.competitive.title")}
               desc={t("reports.locked.competitive.desc")}
-              cta={t("reports.locked.cta")}
             />
           </div>
         </div>

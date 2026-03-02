@@ -20,11 +20,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useInstagramData } from "@/hooks/useInstagramData";
+import { useInstagramData, getIgHeaders } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
 import type { InteractionAnalysis, UnfollowCandidate, DMSuggestion } from "@/types/instagram";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) => fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -284,6 +284,10 @@ export default function InteractionsPage() {
                       </div>
                     ))}
                   </div>
+                ) : analysis?.dataSource === "api" ? (
+                  <p className="rounded-lg bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+                    {t("interactions.api.inactive_unavailable")}
+                  </p>
                 ) : analysis?.neverInteracted.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     {t("interactions.inactive.empty")}
@@ -356,6 +360,10 @@ export default function InteractionsPage() {
                       </div>
                     ))}
                   </div>
+                ) : analysis?.dataSource === "api" ? (
+                  <p className="rounded-lg bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
+                    {t("interactions.api.unfollow_unavailable")}
+                  </p>
                 ) : analysis?.unfollowCandidates.length === 0 ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     {t("interactions.unfollow.empty")}

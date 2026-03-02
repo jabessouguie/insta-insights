@@ -146,12 +146,13 @@ export class InstagramGraphAPI {
     });
   }
 
-  /** Fetch per-media insights (reach, impressions, saved, shares). */
-  private async getMediaInsights(mediaId: string): Promise<Record<string, number>> {
+  /** Fetch per-media insights (reach, impressions, saved, shares). For REELs also fetches watch time. */
+  private async getMediaInsights(mediaId: string, isReel = false): Promise<Record<string, number>> {
     try {
-      const res = await gFetch<GMediaInsights>(`/${mediaId}/insights`, this.token, {
-        metric: "reach,impressions,saved,shares,likes",
-      });
+      const metric = isReel
+        ? "reach,impressions,saved,shares,likes,ig_reels_avg_watch_time,video_views"
+        : "reach,impressions,saved,shares,likes";
+      const res = await gFetch<GMediaInsights>(`/${mediaId}/insights`, this.token, { metric });
       const out: Record<string, number> = {};
       for (const item of res.data ?? []) {
         out[item.name] = item.value ?? item.values?.[0]?.value ?? 0;
@@ -190,14 +191,17 @@ export class InstagramGraphAPI {
   }
 
   /** Account-level insights (reach, impressions, profile views). */
-  private async getAccountInsights(): Promise<{
+  private async getAccountInsights(
+    sinceTs?: number,
+    untilTs?: number
+  ): Promise<{
     reach: number;
     impressions: number;
     profileViews: number;
   }> {
     try {
-      const since = Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
-      const until = Math.floor(Date.now() / 1000);
+      const since = sinceTs ?? Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
+      const until = untilTs ?? Math.floor(Date.now() / 1000);
       const res = await gFetch<{ data: GInsight[] }>(`/${this.accountId}/insights`, this.token, {
         metric: "reach,impressions,profile_views",
         period: "day",
@@ -275,24 +279,22 @@ export class InstagramGraphAPI {
 
   // ─── Assemble full InstagramAnalytics ────────────────────────────────────
 
-  async buildAnalytics(): Promise<InstagramAnalytics> {
+  async buildAnalytics(sinceTs?: number, untilTs?: number): Promise<InstagramAnalytics> {
     const [profile, rawMedia] = await Promise.all([this.getProfile(), this.getMedia(100)]);
 
-    // Fetch per-media insights for all posts (batched to avoid blowing rate limit)
-    const insightsBatch = await Promise.all(rawMedia.map((m) => this.getMediaInsights(m.id)));
+    // Fetch per-media insights for all posts; pass isReel flag for watch time metrics
+    const insightsBatch = await Promise.all(
+      rawMedia.map((m) => this.getMediaInsights(m.id, m.media_type === "REEL"))
+    );
 
     const posts: InstagramPost[] = rawMedia.map((m, i) => {
       const ins = insightsBatch[i];
+      const isReel = m.media_type === "REEL";
       return {
         id: m.id,
         timestamp: new Date(m.timestamp),
         caption: m.caption ?? "",
-        mediaType:
-          m.media_type === "CAROUSEL_ALBUM"
-            ? "CAROUSEL"
-            : m.media_type === "REEL"
-              ? "REEL"
-              : "IMAGE",
+        mediaType: m.media_type === "CAROUSEL_ALBUM" ? "CAROUSEL" : isReel ? "REEL" : "IMAGE",
         likes: m.like_count ?? 0,
         comments: m.comments_count ?? 0,
         shares: ins.shares ?? 0,
@@ -300,6 +302,10 @@ export class InstagramGraphAPI {
         impressions: ins.impressions ?? 0,
         savedCount: ins.saved ?? 0,
         thumbnailUrl: m.thumbnail_url,
+        ...(isReel && {
+          avgWatchTime: ins.ig_reels_avg_watch_time,
+          videoViews: ins.video_views,
+        }),
       };
     });
 
@@ -381,7 +387,7 @@ export class InstagramGraphAPI {
 
     // ── Account-level insights ─────────────────────────────────────────────
     const [accountInsights, demographics] = await Promise.all([
-      this.getAccountInsights(),
+      this.getAccountInsights(sinceTs, untilTs),
       this.getAudienceDemographics(),
     ]);
 

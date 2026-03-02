@@ -19,7 +19,9 @@ export async function GET(request: Request): Promise<NextResponse<DataApiRespons
     if (token && accountId) {
       try {
         const api = new InstagramGraphAPI(token, accountId);
-        const data = await api.buildAnalytics();
+        const sinceTs = from ? Math.floor(new Date(from).getTime() / 1000) : undefined;
+        const untilTs = to ? Math.floor(new Date(to).getTime() / 1000) : undefined;
+        const data = await api.buildAnalytics(sinceTs, untilTs);
         return NextResponse.json({ success: true, data });
       } catch (apiErr) {
         console.error("Graph API error, falling back to export:", apiErr);

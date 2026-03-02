@@ -329,6 +329,7 @@ export default function CarouselPage() {
   const [accentColor, setAccentColor] = useState("#e91e8c");
   const [numSlides, setNumSlides] = useState(6);
   const [language, setLanguage] = useState<"en" | "fr">("en");
+  const [slideFormat, setSlideFormat] = useState<"square" | "story">("square");
   const [photos, setPhotos] = useState<string[]>([]); // base64
   const [photoNames, setPhotoNames] = useState<string[]>([]);
 
@@ -506,9 +507,10 @@ export default function CarouselPage() {
         await loadFont(fonts.subtitle);
         await loadFont(fonts.body);
 
+        const renderer = slideFormat === "story" ? renderStoryToBlob : renderSlideToBlob;
         const blobs: string[] = [];
         for (const [i, slide] of json.slides.entries()) {
-          const blob = await renderSlideToBlob(
+          const blob = await renderer(
             slide,
             photos,
             fonts,
@@ -536,7 +538,7 @@ export default function CarouselPage() {
     if (!url) return;
     const a = document.createElement("a");
     a.href = url;
-    a.download = `carousel-slide-${index + 1}.png`;
+    a.download = `carousel-${slideFormat}-${index + 1}.png`;
     a.click();
   };
 
@@ -802,6 +804,24 @@ export default function CarouselPage() {
                         }`}
                       >
                         {lang === "en" ? "🇬🇧 English" : "🇫🇷 Français"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center gap-3">
+                    <label className="text-xs text-muted-foreground">
+                      {t("carousel.subject.slideFormat")}
+                    </label>
+                    {(["square", "story"] as const).map((fmt) => (
+                      <button
+                        key={fmt}
+                        onClick={() => setSlideFormat(fmt)}
+                        className={`rounded-md border px-3 py-1 text-xs font-semibold transition-colors ${
+                          slideFormat === fmt
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:border-primary/50"
+                        }`}
+                      >
+                        {fmt === "square" ? "⬛ Square 1:1" : "📱 Story 9:16"}
                       </button>
                     ))}
                   </div>

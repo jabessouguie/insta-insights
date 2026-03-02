@@ -3,7 +3,7 @@
 import useSWR from "swr";
 import type { DataApiResponse, InstagramAnalytics } from "@/types/instagram";
 
-function getIgHeaders(): HeadersInit {
+export function getIgHeaders(): HeadersInit {
   if (typeof window === "undefined") return {};
   const token = localStorage.getItem("ig_access_token");
   const accountId = localStorage.getItem("ig_account_id");

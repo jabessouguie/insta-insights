@@ -475,5 +475,48 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
       .slice(0, 50)
       .map((s) => ({ ...s, suggestedDm: "" })),
     unfollowCandidates: unfollowCandidates.sort(byFollowedDesc).slice(0, 100),
+    dataSource: "export" as const,
+  };
+}
+
+// ─── Graph API path (when export not available) ───────────────────────────────
+
+/**
+ * Build an InteractionAnalysis from real Graph API comment data.
+ * - dmSuggestions: top commenters (real users who engaged with your content)
+ * - neverInteracted / unfollowCandidates: not available via API (privacy restriction)
+ */
+export async function analyseInteractionsFromAPI(
+  token: string,
+  accountId: string
+): Promise<InteractionAnalysis> {
+  const { InstagramGraphAPI } = await import("@/lib/instagram-graph-api");
+  const api = new InstagramGraphAPI(token, accountId);
+
+  const rawMedia = await api.getMedia(50);
+  const comments = await api.getAllComments(rawMedia);
+
+  // Count comments per commenter
+  const counts = new Map<string, number>();
+  for (const c of comments) {
+    counts.set(c.username, (counts.get(c.username) ?? 0) + 1);
+  }
+
+  // Build DM suggestions from top commenters (most engaged first)
+  const dmSuggestions = [...counts.entries()]
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 30)
+    .map(([username, count]) => ({
+      username,
+      profileUrl: `https://www.instagram.com/${username}/`,
+      suggestedDm: "",
+      reason: `A commenté ${count} fois sur tes publications récentes`,
+    }));
+
+  return {
+    neverInteracted: [],
+    dmSuggestions,
+    unfollowCandidates: [],
+    dataSource: "api" as const,
   };
 }

@@ -263,6 +263,7 @@ const FR = {
   "carousel.subject.placeholder": "Ex: 5 erreurs qui empêchent ta croissance sur Instagram",
   "carousel.subject.slideCount": "Nombre de slides :",
   "carousel.subject.language": "Langue des slides :",
+  "carousel.subject.slideFormat": "Format des slides :",
   "carousel.photos.title": "2. Photos",
   "carousel.photos.description": "Jusqu'à 10 photos · formats JPG, PNG, WebP",
   "carousel.photos.dropzone": "Clique ou glisse tes photos ici",
@@ -464,6 +465,51 @@ const FR = {
   "reports.locked.competitive.desc":
     "Analyse les stratégies narratives de tes concurrents et identifie les espaces blancs.",
   "reports.locked.cta": "Nécessite le compte Business Instagram",
+  "reports.advanced_features": "Fonctionnalités avancées",
+
+  // ── Skip Rate Analysis ────────────────────────────────────────────────────
+  "nav.reels": "Skip Rate",
+  "skiprate.title": "Analyse du Taux de Skip",
+  "skiprate.subtitle": "Comprends pourquoi tes Reels sont skippés dans les 3 premières secondes",
+  "skiprate.no_api":
+    "Connecte ton compte Instagram Business pour accéder à l'analyse du taux de skip.",
+  "skiprate.no_reels": "Aucun Reel trouvé dans tes données.",
+  "skiprate.col.caption": "Caption",
+  "skiprate.col.reach": "Portée",
+  "skiprate.col.views": "Vues",
+  "skiprate.col.watchtime": "Temps moyen (s)",
+  "skiprate.col.skiprisk": "Risque skip",
+  "skiprate.risk.low": "Faible",
+  "skiprate.risk.medium": "Moyen",
+  "skiprate.risk.high": "Élevé",
+  "skiprate.analyze": "Analyser avec l'IA",
+  "skiprate.analyzing": "Analyse en cours...",
+  "skiprate.insight.title": "Pourquoi tes Reels sont skippés",
+  "skiprate.insight.patterns": "Patterns identifiés",
+  "skiprate.insight.reco": "Recommandations",
+
+  // ── Competitive Intelligence ──────────────────────────────────────────────
+  "nav.competitive": "Compétitif",
+  "competitive.title": "Intelligence Compétitive",
+  "competitive.subtitle":
+    "Analyse les stratégies de ta niche et identifie les espaces blancs à exploiter",
+  "competitive.niche.label": "Ta niche",
+  "competitive.niche.placeholder": "Ex : Fitness, Finance, Lifestyle...",
+  "competitive.competitors.label": "Comptes concurrents (optionnel, max 3)",
+  "competitive.competitors.placeholder": "@handle1, @handle2",
+  "competitive.analyze": "Analyser",
+  "competitive.analyzing": "Analyse en cours...",
+  "competitive.section.position": "Ton positionnement",
+  "competitive.section.strengths": "Tes forces",
+  "competitive.section.gaps": "Lacunes identifiées",
+  "competitive.section.formats": "Formats à explorer",
+  "competitive.section.reco": "Recommandations stratégiques",
+
+  // ── Interactions API ──────────────────────────────────────────────────────
+  "interactions.api.inactive_unavailable":
+    "L'analyse des abonnés inactifs nécessite un export Instagram. Connecte-toi via l'API pour les suggestions DM en temps réel.",
+  "interactions.api.unfollow_unavailable":
+    "L'analyse des candidats à unfollow nécessite un export Instagram.",
 } as const;
 
 const EN: Record<keyof typeof FR, string> = {
@@ -722,6 +768,7 @@ const EN: Record<keyof typeof FR, string> = {
   "carousel.subject.placeholder": "E.g.: 5 mistakes holding back your Instagram growth",
   "carousel.subject.slideCount": "Number of slides:",
   "carousel.subject.language": "Slide language:",
+  "carousel.subject.slideFormat": "Slide format:",
   "carousel.photos.title": "2. Photos",
   "carousel.photos.description": "Up to 10 photos · JPG, PNG, WebP formats",
   "carousel.photos.dropzone": "Click or drag your photos here",
@@ -919,6 +966,49 @@ const EN: Record<keyof typeof FR, string> = {
   "reports.locked.competitive.desc":
     "Analyse competitor content strategies and identify narrative white space.",
   "reports.locked.cta": "Requires Instagram Business account",
+  "reports.advanced_features": "Advanced features",
+
+  // ── Skip Rate Analysis ────────────────────────────────────────────────────
+  "nav.reels": "Skip Rate",
+  "skiprate.title": "Skip Rate Analysis",
+  "skiprate.subtitle": "Understand why your Reels are skipped in the first 3 seconds",
+  "skiprate.no_api": "Connect your Instagram Business account to access skip rate analysis.",
+  "skiprate.no_reels": "No Reels found in your data.",
+  "skiprate.col.caption": "Caption",
+  "skiprate.col.reach": "Reach",
+  "skiprate.col.views": "Views",
+  "skiprate.col.watchtime": "Avg watch time (s)",
+  "skiprate.col.skiprisk": "Skip risk",
+  "skiprate.risk.low": "Low",
+  "skiprate.risk.medium": "Medium",
+  "skiprate.risk.high": "High",
+  "skiprate.analyze": "Analyse with AI",
+  "skiprate.analyzing": "Analysing...",
+  "skiprate.insight.title": "Why your Reels are being skipped",
+  "skiprate.insight.patterns": "Identified patterns",
+  "skiprate.insight.reco": "Recommendations",
+
+  // ── Competitive Intelligence ──────────────────────────────────────────────
+  "nav.competitive": "Competitive",
+  "competitive.title": "Competitive Intelligence",
+  "competitive.subtitle": "Analyse your niche strategies and identify white spaces to exploit",
+  "competitive.niche.label": "Your niche",
+  "competitive.niche.placeholder": "e.g. Fitness, Finance, Lifestyle...",
+  "competitive.competitors.label": "Competitor accounts (optional, max 3)",
+  "competitive.competitors.placeholder": "@handle1, @handle2",
+  "competitive.analyze": "Analyse",
+  "competitive.analyzing": "Analysing...",
+  "competitive.section.position": "Your positioning",
+  "competitive.section.strengths": "Your strengths",
+  "competitive.section.gaps": "Identified gaps",
+  "competitive.section.formats": "Formats to explore",
+  "competitive.section.reco": "Strategic recommendations",
+
+  // ── Interactions API ──────────────────────────────────────────────────────
+  "interactions.api.inactive_unavailable":
+    "Inactive follower analysis requires an Instagram export. Connect via API for real-time DM suggestions.",
+  "interactions.api.unfollow_unavailable":
+    "Unfollow candidate analysis requires an Instagram export.",
 };
 
 export type TranslationKey = keyof typeof FR;
