@@ -391,13 +391,16 @@ const FR = {
   // ── Connect (Instagram Graph API) ────────────────────────────────────────
   "nav.connect": "Connexion API",
   "connect.title": "Connecter Instagram",
-  "connect.subtitle": "Relie ton compte Business ou Créateur pour débloquer toutes les fonctionnalités avancées.",
+  "connect.subtitle":
+    "Relie ton compte Business ou Créateur pour débloquer toutes les fonctionnalités avancées.",
   "connect.step1.title": "Prérequis",
   "connect.step1.desc": "Compte Instagram Business ou Créateur + page Facebook liée",
   "connect.step2.title": "Créer une application Facebook",
-  "connect.step2.desc": "Dans Facebook Developers, crée une application et ajoute le produit Instagram.",
+  "connect.step2.desc":
+    "Dans Facebook Developers, crée une application et ajoute le produit Instagram.",
   "connect.step3.title": "Obtenir un token d'accès",
-  "connect.step3.desc": "Utilise le Graph API Explorer avec les permissions : instagram_basic, instagram_manage_insights, instagram_manage_comments.",
+  "connect.step3.desc":
+    "Utilise le Graph API Explorer avec les permissions : instagram_basic, instagram_manage_insights, instagram_manage_comments.",
   "connect.step4.title": "Coller le token",
   "connect.token.label": "Access Token (long-lived, 60 jours)",
   "connect.token.placeholder": "EAAxxxxx...",
@@ -453,9 +456,11 @@ const FR = {
   "reports.exec.reco": "Recommandations",
   "reports.export_pdf": "Exporter PDF",
   "reports.locked.skiprate.title": "Analyse du Taux de Skip",
-  "reports.locked.skiprate.desc": "Comprends pourquoi tes Reels sont ignorés dans les 3 premières secondes.",
+  "reports.locked.skiprate.desc":
+    "Comprends pourquoi tes Reels sont ignorés dans les 3 premières secondes.",
   "reports.locked.competitive.title": "Intelligence Compétitive",
-  "reports.locked.competitive.desc": "Analyse les stratégies narratives de tes concurrents et identifie les espaces blancs.",
+  "reports.locked.competitive.desc":
+    "Analyse les stratégies narratives de tes concurrents et identifie les espaces blancs.",
   "reports.locked.cta": "Nécessite le compte Business Instagram",
 } as const;
 
@@ -848,7 +853,8 @@ const EN: Record<keyof typeof FR, string> = {
   "connect.step2.title": "Create a Facebook App",
   "connect.step2.desc": "In Facebook Developers, create an app and add the Instagram product.",
   "connect.step3.title": "Get an access token",
-  "connect.step3.desc": "Use the Graph API Explorer with permissions: instagram_basic, instagram_manage_insights, instagram_manage_comments.",
+  "connect.step3.desc":
+    "Use the Graph API Explorer with permissions: instagram_basic, instagram_manage_insights, instagram_manage_comments.",
   "connect.step4.title": "Paste the token",
   "connect.token.label": "Access Token (long-lived, 60 days)",
   "connect.token.placeholder": "EAAxxxxx...",
@@ -906,7 +912,8 @@ const EN: Record<keyof typeof FR, string> = {
   "reports.locked.skiprate.title": "Skip Rate Analysis",
   "reports.locked.skiprate.desc": "Understand why your Reels are skipped in the first 3 seconds.",
   "reports.locked.competitive.title": "Competitive Intelligence",
-  "reports.locked.competitive.desc": "Analyse competitor content strategies and identify narrative white space.",
+  "reports.locked.competitive.desc":
+    "Analyse competitor content strategies and identify narrative white space.",
   "reports.locked.cta": "Requires Instagram Business account",
 };
 

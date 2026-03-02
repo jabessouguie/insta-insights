@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import type {
-  ReportGenerateResponse,
-  InstagramAnalytics,
-} from "@/types/instagram";
+import type { ReportGenerateResponse, InstagramAnalytics } from "@/types/instagram";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +12,10 @@ function buildReportPrompt(data: InstagramAnalytics): string {
   const topCaptions = posts
     .filter((p) => p.caption.trim().length > 0)
     .slice(0, 10)
-    .map((p, i) => `${i + 1}. [${p.mediaType}] "${p.caption.substring(0, 120)}" — ${p.likes} likes, ${p.comments} comments`)
+    .map(
+      (p, i) =>
+        `${i + 1}. [${p.mediaType}] "${p.caption.substring(0, 120)}" — ${p.likes} likes, ${p.comments} comments`
+    )
     .join("\n");
 
   return `Tu es un analyste senior en marketing des réseaux sociaux. Génère un rapport exécutif mensuel professionnel basé sur les données Instagram suivantes.
@@ -30,33 +30,51 @@ function buildReportPrompt(data: InstagramAnalytics): string {
 - Portée moyenne/post : ${metrics.avgReachPerPost}
 
 ## Interactions contenu
-${contentInteractions ? `
+${
+  contentInteractions
+    ? `
 - Total interactions : ${contentInteractions.totalInteractions.toLocaleString("fr-FR")}
 - Posts likes : ${contentInteractions.posts.likes} | comments : ${contentInteractions.posts.comments}
 - Reels likes : ${contentInteractions.reels.likes} | comments : ${contentInteractions.reels.comments}
 - Interactions non-abonnés : ${contentInteractions.nonFollowerInteractionPct}%
-` : "Non disponible"}
+`
+    : "Non disponible"
+}
 
 ## Reach & Impressions
-${reachInsights ? `
+${
+  reachInsights
+    ? `
 - Comptes touchés : ${reachInsights.accountsReached.toLocaleString("fr-FR")}
 - Impressions : ${reachInsights.impressions.toLocaleString("fr-FR")}
 - Visites profil : ${reachInsights.profileVisits.toLocaleString("fr-FR")}
-` : "Non disponible"}
+`
+    : "Non disponible"
+}
 
 ## Audience
-${audienceInsights ? `
-- Tranche d'âge dominante : ${Object.entries(audienceInsights.ageGroups).sort((a,b) => b[1]-a[1])[0]?.[0] ?? "N/A"}
+${
+  audienceInsights
+    ? `
+- Tranche d'âge dominante : ${Object.entries(audienceInsights.ageGroups).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A"}
 - Genre : ${audienceInsights.genderSplit.female}% F / ${audienceInsights.genderSplit.male}% H
-- Top pays : ${Object.keys(audienceInsights.topCountries).slice(0,3).join(", ")}
-` : "Non disponible"}
+- Top pays : ${Object.keys(audienceInsights.topCountries).slice(0, 3).join(", ")}
+`
+    : "Non disponible"
+}
 
 ## Top contenus récents
 ${topCaptions}
 
 ## Meilleurs créneaux
-- Jours : ${metrics.bestPostingDays.slice(0,3).map(d => d.day).join(", ")}
-- Heures : ${metrics.bestPostingHours.slice(0,3).map(h => `${h.hour}h`).join(", ")}
+- Jours : ${metrics.bestPostingDays
+    .slice(0, 3)
+    .map((d) => d.day)
+    .join(", ")}
+- Heures : ${metrics.bestPostingHours
+    .slice(0, 3)
+    .map((h) => `${h.hour}h`)
+    .join(", ")}
 
 ## Tâche
 
@@ -94,7 +112,10 @@ export async function POST(request: Request): Promise<NextResponse<ReportGenerat
 
     const result = await model.generateContent(prompt);
     const text = result.response.text().trim();
-    const jsonText = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const jsonText = text
+      .replace(/^```json?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
     const report = JSON.parse(jsonText);
     report.generatedAt = report.generatedAt ?? new Date().toISOString();
 

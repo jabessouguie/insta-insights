@@ -1,21 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Loader2,
-  RefreshCw,
-  Users,
-  MessageSquare,
-  Zap,
-  Lock,
-} from "lucide-react";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  ResponsiveContainer,
-} from "recharts";
+import { Loader2, RefreshCw, Users, MessageSquare, Zap, Lock } from "lucide-react";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,9 +48,7 @@ function PersonaCard({
   }));
 
   return (
-    <div
-      className={`rounded-2xl border bg-gradient-to-br ${PERSONA_COLORS[index]} p-5 space-y-4`}
-    >
+    <div className={`rounded-2xl border bg-gradient-to-br ${PERSONA_COLORS[index]} space-y-4 p-5`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -77,7 +62,7 @@ function PersonaCard({
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground leading-relaxed">{persona.description}</p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{persona.description}</p>
 
       {/* Radar chart */}
       <div className="h-36">
@@ -105,10 +90,7 @@ function PersonaCard({
         </p>
         <div className="flex flex-wrap gap-1">
           {persona.motivations.map((m) => (
-            <Badge
-              key={m}
-              className="border-0 bg-white/10 text-[10px] text-foreground/80"
-            >
+            <Badge key={m} className="border-0 bg-white/10 text-[10px] text-foreground/80">
               {m}
             </Badge>
           ))}
@@ -122,10 +104,7 @@ function PersonaCard({
         </p>
         <div className="flex flex-wrap gap-1">
           {persona.contentPillars.map((p) => (
-            <Badge
-              key={p}
-              className="border-0 bg-primary/20 text-[10px] text-primary"
-            >
+            <Badge key={p} className="border-0 bg-primary/20 text-[10px] text-primary">
               {p}
             </Badge>
           ))}
@@ -137,15 +116,9 @@ function PersonaCard({
 
 // ─── Brand Voice Card ──────────────────────────────────────────────────────────
 
-function BrandVoiceCard({
-  audit,
-  t,
-}: {
-  audit: BrandVoiceAudit;
-  t: ReturnType<typeof useT>;
-}) {
+function BrandVoiceCard({ audit, t }: { audit: BrandVoiceAudit; t: ReturnType<typeof useT> }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2">
         <MessageSquare className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold">{t("audience.voice.title")}</h2>
@@ -161,14 +134,14 @@ function BrandVoiceCard({
               audit.avgCaptionLength < 50
                 ? "Courte"
                 : audit.avgCaptionLength < 150
-                ? "Moyenne"
-                : "Longue",
+                  ? "Moyenne"
+                  : "Longue",
           },
           { label: t("audience.voice.ctaRate"), value: `${audit.ctaUsageRate}%` },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-lg bg-muted/40 px-3 py-2">
             <p className="text-[10px] text-muted-foreground">{label}</p>
-            <p className="mt-0.5 text-xs font-semibold truncate">{value}</p>
+            <p className="mt-0.5 truncate text-xs font-semibold">{value}</p>
           </div>
         ))}
       </div>
@@ -203,8 +176,7 @@ export default function AudiencePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isApiConnected =
-    typeof window !== "undefined" && !!localStorage.getItem("ig_access_token");
+  const isApiConnected = typeof window !== "undefined" && !!localStorage.getItem("ig_access_token");
 
   async function handleGenerate() {
     if (!data) return;
@@ -257,11 +229,11 @@ export default function AudiencePage() {
     <div className="flex min-h-screen flex-col bg-background">
       <Header mode="creator" />
 
-      <main className="mx-auto w-full max-w-5xl px-4 py-8 space-y-8">
+      <main className="mx-auto w-full max-w-5xl space-y-8 px-4 py-8">
         {/* Title */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
+            <h1 className="flex items-center gap-2 text-xl font-bold">
               <Users className="h-5 w-5 text-primary" />
               {t("audience.title")}
             </h1>
@@ -282,7 +254,12 @@ export default function AudiencePage() {
                   : t("audience.persona.based_on_inference")}
               </Badge>
             )}
-            <Button onClick={handleGenerate} disabled={loading || !data} size="sm" className="gap-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={loading || !data}
+              size="sm"
+              className="gap-2"
+            >
               {loading ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -306,7 +283,10 @@ export default function AudiencePage() {
             <Lock className="h-4 w-4 shrink-0" />
             <span>
               {t("audience.connect.cta")}{" "}
-              <a href="/creator/connect" className="font-medium underline underline-offset-2 hover:text-amber-200">
+              <a
+                href="/creator/connect"
+                className="font-medium underline underline-offset-2 hover:text-amber-200"
+              >
                 {t("nav.connect")} →
               </a>
             </span>

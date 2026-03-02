@@ -171,9 +171,7 @@ export default function CalendarPage() {
             {TYPE_OPTIONS.map(({ type, icon, label }) => (
               <button
                 key={type}
-                onClick={() =>
-                  setShowModal({ open: true, draft: { type, igInstructions: {} } })
-                }
+                onClick={() => setShowModal({ open: true, draft: { type, igInstructions: {} } })}
                 className="hidden items-center gap-1 rounded-lg border border-border px-2 py-1.5 text-xs hover:bg-muted sm:flex"
                 title={`Nouveau ${label}`}
               >

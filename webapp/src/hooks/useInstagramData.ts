@@ -16,8 +16,7 @@ function getIgHeaders(): HeadersInit {
   return {};
 }
 
-const fetcher = (url: string) =>
-  fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
+const fetcher = (url: string) => fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
 
 export interface UseInstagramDataReturn {
   data: InstagramAnalytics | undefined;

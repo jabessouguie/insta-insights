@@ -34,18 +34,32 @@ Analyse les données suivantes d'un créateur de contenu et génère 4 personas 
 - Taux d'engagement : ${metrics.engagementRate ?? "N/A"}%
 
 ## Données d'audience
-${audienceInsights ? `
+${
+  audienceInsights
+    ? `
 - Tranches d'âge : ${JSON.stringify(audienceInsights.ageGroups ?? {})}
 - Genre : ${JSON.stringify(audienceInsights.genderSplit ?? {})}
 - Top pays : ${JSON.stringify(audienceInsights.topCountries ?? {})}
 - Top villes : ${JSON.stringify(audienceInsights.topCities ?? {})}
-` : "Non disponible"}
+`
+    : "Non disponible"
+}
 
 ## 20 dernières légendes du créateur
-${captions.slice(0, 20).map((c, i) => `${i + 1}. "${c.substring(0, 150)}"`).join("\n")}
+${captions
+  .slice(0, 20)
+  .map((c, i) => `${i + 1}. "${c.substring(0, 150)}"`)
+  .join("\n")}
 
-${comments.length > 0 ? `## Commentaires réels de l'audience (${comments.length} commentaires)
-${comments.slice(0, 100).map((c, i) => `${i + 1}. "${c.substring(0, 100)}"`).join("\n")}` : ""}
+${
+  comments.length > 0
+    ? `## Commentaires réels de l'audience (${comments.length} commentaires)
+${comments
+  .slice(0, 100)
+  .map((c, i) => `${i + 1}. "${c.substring(0, 100)}"`)
+  .join("\n")}`
+    : ""
+}
 
 ## Tâche
 
@@ -135,7 +149,10 @@ export async function POST(request: Request): Promise<NextResponse<AudienceSegme
     const text = result.response.text().trim();
 
     // Strip possible markdown fences
-    const jsonText = text.replace(/^```json?\s*/i, "").replace(/\s*```$/i, "").trim();
+    const jsonText = text
+      .replace(/^```json?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
     const parsed = JSON.parse(jsonText) as {
       personas: AudiencePersona[];
       brandVoice: BrandVoiceAudit;

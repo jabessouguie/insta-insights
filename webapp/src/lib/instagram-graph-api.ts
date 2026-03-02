@@ -40,7 +40,11 @@ function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T>
 
 // ─── Graph API fetch helper ────────────────────────────────────────────────────
 
-async function gFetch<T>(path: string, token: string, params: Record<string, string> = {}): Promise<T> {
+async function gFetch<T>(
+  path: string,
+  token: string,
+  params: Record<string, string> = {}
+): Promise<T> {
   const url = new URL(`${BASE}${path}`);
   url.searchParams.set("access_token", token);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
@@ -48,7 +52,9 @@ async function gFetch<T>(path: string, token: string, params: Record<string, str
   const res = await fetch(url.toString(), { cache: "no-store" });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: { message?: string } }).error?.message ?? `Graph API error ${res.status}`);
+    throw new Error(
+      (err as { error?: { message?: string } }).error?.message ?? `Graph API error ${res.status}`
+    );
   }
   return res.json() as Promise<T>;
 }
@@ -89,11 +95,9 @@ export class InstagramGraphAPI {
 
   /** Validate the token with a lightweight /me call. Returns username or throws. */
   async validateToken(): Promise<string> {
-    const res = await gFetch<{ username?: string; id?: string }>(
-      `/${this.accountId}`,
-      this.token,
-      { fields: "id,username" }
-    );
+    const res = await gFetch<{ username?: string; id?: string }>(`/${this.accountId}`, this.token, {
+      fields: "id,username",
+    });
     if (!res.username) throw new Error("Token validated but no username returned");
     return res.username;
   }
@@ -110,14 +114,10 @@ export class InstagramGraphAPI {
         follows_count?: number;
         media_count?: number;
         profile_picture_url?: string;
-      }>(
-        `/${this.accountId}`,
-        this.token,
-        {
-          fields:
-            "id,username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url",
-        }
-      );
+      }>(`/${this.accountId}`, this.token, {
+        fields:
+          "id,username,name,biography,website,followers_count,follows_count,media_count,profile_picture_url",
+      });
 
       return {
         username: res.username,
@@ -135,14 +135,10 @@ export class InstagramGraphAPI {
 
   async getMedia(limit = 100): Promise<GMedia[]> {
     return cached(`media-${this.accountId}-${limit}`, 5 * 60_000, async () => {
-      const res = await gFetch<{ data: GMedia[] }>(
-        `/${this.accountId}/media`,
-        this.token,
-        {
-          fields: "id,timestamp,caption,media_type,like_count,comments_count,thumbnail_url",
-          limit: String(limit),
-        }
-      );
+      const res = await gFetch<{ data: GMedia[] }>(`/${this.accountId}/media`, this.token, {
+        fields: "id,timestamp,caption,media_type,like_count,comments_count,thumbnail_url",
+        limit: String(limit),
+      });
       return res.data ?? [];
     });
   }
@@ -150,11 +146,9 @@ export class InstagramGraphAPI {
   /** Fetch per-media insights (reach, impressions, saved, shares). */
   private async getMediaInsights(mediaId: string): Promise<Record<string, number>> {
     try {
-      const res = await gFetch<GMediaInsights>(
-        `/${mediaId}/insights`,
-        this.token,
-        { metric: "reach,impressions,saved,shares,likes" }
-      );
+      const res = await gFetch<GMediaInsights>(`/${mediaId}/insights`, this.token, {
+        metric: "reach,impressions,saved,shares,likes",
+      });
       const out: Record<string, number> = {};
       for (const item of res.data ?? []) {
         out[item.name] = item.value ?? item.values?.[0]?.value ?? 0;
@@ -168,11 +162,10 @@ export class InstagramGraphAPI {
   /** Fetch individual comments for a media object (up to 100). */
   async getMediaComments(mediaId: string): Promise<RawComment[]> {
     try {
-      const res = await gFetch<{ data: RawComment[] }>(
-        `/${mediaId}/comments`,
-        this.token,
-        { fields: "id,text,timestamp,username", limit: "100" }
-      );
+      const res = await gFetch<{ data: RawComment[] }>(`/${mediaId}/comments`, this.token, {
+        fields: "id,text,timestamp,username",
+        limit: "100",
+      });
       return res.data ?? [];
     } catch {
       return [];
@@ -194,26 +187,29 @@ export class InstagramGraphAPI {
   }
 
   /** Account-level insights (reach, impressions, profile views). */
-  private async getAccountInsights(): Promise<{ reach: number; impressions: number; profileViews: number }> {
+  private async getAccountInsights(): Promise<{
+    reach: number;
+    impressions: number;
+    profileViews: number;
+  }> {
     try {
       const since = Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
       const until = Math.floor(Date.now() / 1000);
-      const res = await gFetch<{ data: GInsight[] }>(
-        `/${this.accountId}/insights`,
-        this.token,
-        {
-          metric: "reach,impressions,profile_views",
-          period: "day",
-          since: String(since),
-          until: String(until),
-        }
-      );
+      const res = await gFetch<{ data: GInsight[] }>(`/${this.accountId}/insights`, this.token, {
+        metric: "reach,impressions,profile_views",
+        period: "day",
+        since: String(since),
+        until: String(until),
+      });
       const sum = (name: string) =>
-        (res.data ?? [])
-          .find((i) => i.name === name)
-          ?.values?.reduce((s, v) => s + v.value, 0) ?? 0;
+        (res.data ?? []).find((i) => i.name === name)?.values?.reduce((s, v) => s + v.value, 0) ??
+        0;
 
-      return { reach: sum("reach"), impressions: sum("impressions"), profileViews: sum("profile_views") };
+      return {
+        reach: sum("reach"),
+        impressions: sum("impressions"),
+        profileViews: sum("profile_views"),
+      };
     } catch {
       return { reach: 0, impressions: 0, profileViews: 0 };
     }
@@ -227,20 +223,18 @@ export class InstagramGraphAPI {
           name: string;
           values: Array<{ value: Record<string, number> }>;
         }>;
-      }>(
-        `/${this.accountId}/insights`,
-        this.token,
-        {
-          metric: "audience_country,audience_city,audience_gender_age",
-          period: "lifetime",
-        }
-      );
+      }>(`/${this.accountId}/insights`, this.token, {
+        metric: "audience_country,audience_city,audience_gender_age",
+        period: "lifetime",
+      });
 
       const findValues = (name: string) =>
         res.data?.find((d) => d.name === name)?.values?.[0]?.value ?? {};
 
       const genderAge = findValues("audience_gender_age");
-      let male = 0, female = 0, total = 0;
+      let male = 0,
+        female = 0,
+        total = 0;
       const ageGroups: Record<string, number> = {};
       for (const [key, count] of Object.entries(genderAge)) {
         const [gender, age] = key.split(".");
@@ -251,7 +245,8 @@ export class InstagramGraphAPI {
       }
       // Convert age groups to percentages
       if (total > 0) {
-        for (const k of Object.keys(ageGroups)) ageGroups[k] = Math.round((ageGroups[k] / total) * 100);
+        for (const k of Object.keys(ageGroups))
+          ageGroups[k] = Math.round((ageGroups[k] / total) * 100);
       }
 
       return {
@@ -289,11 +284,12 @@ export class InstagramGraphAPI {
         id: m.id,
         timestamp: new Date(m.timestamp),
         caption: m.caption ?? "",
-        mediaType: m.media_type === "CAROUSEL_ALBUM"
-          ? "CAROUSEL"
-          : m.media_type === "REEL"
-          ? "REEL"
-          : "IMAGE",
+        mediaType:
+          m.media_type === "CAROUSEL_ALBUM"
+            ? "CAROUSEL"
+            : m.media_type === "REEL"
+              ? "REEL"
+              : "IMAGE",
         likes: m.like_count ?? 0,
         comments: m.comments_count ?? 0,
         shares: ins.shares ?? 0,
@@ -375,7 +371,9 @@ export class InstagramGraphAPI {
       inactiveFollowersCount: 0,
       inactiveFollowersPercentage: 0,
       nonReciprocalFollowsCount: 0,
-      topPosts: [...posts].sort((a, b) => b.likes + b.comments - (a.likes + a.comments)).slice(0, 10),
+      topPosts: [...posts]
+        .sort((a, b) => b.likes + b.comments - (a.likes + a.comments))
+        .slice(0, 10),
     };
 
     // ── Account-level insights ─────────────────────────────────────────────

@@ -69,7 +69,7 @@ function QuerySection({ t }: { t: ReturnType<typeof useT> }) {
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+    <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-2">
         <Send className="h-4 w-4 text-primary" />
         <h2 className="text-sm font-semibold">{t("reports.query.title")}</h2>
@@ -90,35 +90,23 @@ function QuerySection({ t }: { t: ReturnType<typeof useT> }) {
           size="sm"
           className="gap-2"
         >
-          {loading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            t("reports.query.ask")
-          )}
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("reports.query.ask")}
         </Button>
       </div>
 
       {answer && (
-        <div className="rounded-xl bg-muted/40 px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="whitespace-pre-wrap rounded-xl bg-muted/40 px-4 py-3 text-sm leading-relaxed">
           {answer}
         </div>
       )}
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
 
 // ─── Executive Report ─────────────────────────────────────────────────────────
 
-function ReportCard({
-  report,
-  t,
-}: {
-  report: ExecutiveReport;
-  t: ReturnType<typeof useT>;
-}) {
+function ReportCard({ report, t }: { report: ExecutiveReport; t: ReturnType<typeof useT> }) {
   return (
     <div className="space-y-4">
       {/* Summary */}
@@ -166,7 +154,9 @@ function ReportCard({
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             {t("reports.exec.content")}
           </p>
-          <p className="text-xs leading-relaxed text-muted-foreground">{report.contentPerformance}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {report.contentPerformance}
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card/60 p-4">
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -211,7 +201,7 @@ function LockedCard({ title, desc, cta }: { title: string; desc: string; cta: st
       </div>
       <a
         href="/creator/connect"
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
       >
         <Lock className="h-3 w-3" />
         {cta}
@@ -286,10 +276,10 @@ export default function ReportsPage() {
     <div className="flex min-h-screen flex-col bg-background">
       <Header mode="creator" />
 
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 space-y-8">
+      <main className="mx-auto w-full max-w-4xl space-y-8 px-4 py-8">
         {/* Title */}
         <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-bold">
             <BarChart2 className="h-5 w-5 text-primary" />
             {t("reports.title")}
           </h1>
@@ -338,7 +328,7 @@ export default function ReportsPage() {
           )}
 
           {report ? (
-            <div ref={reportRef} className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            <div ref={reportRef} className="space-y-4 rounded-2xl border border-border bg-card p-5">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <h3 className="font-semibold">{report.period}</h3>
                 <span className="text-xs text-muted-foreground">

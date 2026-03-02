@@ -100,12 +100,8 @@ export default function ConnectPage() {
         {isConnected ? (
           <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-6 text-center">
             <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-green-400" />
-            <p className="mb-1 text-sm font-semibold text-green-300">
-              {t("connect.success")}
-            </p>
-            {username && (
-              <p className="mb-4 text-xs text-muted-foreground">@{username}</p>
-            )}
+            <p className="mb-1 text-sm font-semibold text-green-300">{t("connect.success")}</p>
+            {username && <p className="mb-4 text-xs text-muted-foreground">@{username}</p>}
             <div className="flex justify-center gap-3">
               <Button variant="outline" size="sm" onClick={handleDisconnect} className="gap-2">
                 <Link2Off className="h-3.5 w-3.5" />
@@ -158,7 +154,7 @@ export default function ConnectPage() {
             </div>
 
             {/* Token form */}
-            <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+            <div className="space-y-4 rounded-2xl border border-border bg-card p-6">
               <div>
                 <label
                   htmlFor="ig-token"

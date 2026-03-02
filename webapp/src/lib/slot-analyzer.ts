@@ -135,10 +135,7 @@ export function nextFreeSlot(
 /**
  * Given an OptimalSlot list, return whether a given Date is an optimal slot.
  */
-export function slotQuality(
-  date: Date,
-  slots: OptimalSlot[]
-): "top" | "good" | "neutral" {
+export function slotQuality(date: Date, slots: OptimalSlot[]): "top" | "good" | "neutral" {
   const dayIndex = date.getDay();
   const hour = date.getHours();
   const match = slots.find((s) => s.dayIndex === dayIndex && s.hour === hour);

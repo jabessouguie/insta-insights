@@ -1202,7 +1202,7 @@ export default function CarouselPage() {
                   {result?.success && previewBlobs.length > 0 && !showCarouselSchedule && (
                     <button
                       onClick={() => setShowCarouselSchedule(true)}
-                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>
@@ -1669,7 +1669,7 @@ export default function CarouselPage() {
                   {storyResult?.success && storyPreviewBlobs.length > 0 && !showStorySchedule && (
                     <button
                       onClick={() => setShowStorySchedule(true)}
-                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>
@@ -1931,7 +1931,9 @@ export default function CarouselPage() {
                     className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
                   />
                   <div className="flex items-center gap-3">
-                    <label htmlFor="audio-bpm" className="text-xs text-muted-foreground">BPM</label>
+                    <label htmlFor="audio-bpm" className="text-xs text-muted-foreground">
+                      BPM
+                    </label>
                     <input
                       id="audio-bpm"
                       type="range"
@@ -2057,7 +2059,7 @@ export default function CarouselPage() {
                   {reelResult?.success && reelBlobUrl && !showReelSchedule && (
                     <button
                       onClick={() => setShowReelSchedule(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary hover:bg-primary/5 transition-colors"
+                      className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-primary/40 py-2 text-xs text-primary transition-colors hover:bg-primary/5"
                     >
                       📅 {t("calendar.schedule.cta")}
                     </button>

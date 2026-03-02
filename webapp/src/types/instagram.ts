@@ -427,7 +427,7 @@ export interface RawComment {
 // ============================================================
 
 export interface BigFiveScores {
-  openness: number;          // 0-100
+  openness: number; // 0-100
   conscientiousness: number;
   extraversion: number;
   agreeableness: number;
@@ -435,20 +435,20 @@ export interface BigFiveScores {
 }
 
 export interface AudiencePersona {
-  name: string;              // e.g. "L'Explorateur Ambitieux"
+  name: string; // e.g. "L'Explorateur Ambitieux"
   emoji: string;
   description: string;
-  sharePercent: number;      // % of audience this persona represents
+  sharePercent: number; // % of audience this persona represents
   bigFive: BigFiveScores;
-  motivations: string[];     // e.g. ["Découverte", "Statut social"]
-  contentPillars: string[];  // e.g. ["Behind-the-scenes", "Tutoriels"]
+  motivations: string[]; // e.g. ["Découverte", "Statut social"]
+  contentPillars: string[]; // e.g. ["Behind-the-scenes", "Tutoriels"]
 }
 
 export interface BrandVoiceAudit {
-  consistencyScore: number;  // 0-100
-  dominantTone: string;      // e.g. "Inspirant et authentique"
+  consistencyScore: number; // 0-100
+  dominantTone: string; // e.g. "Inspirant et authentique"
   avgCaptionLength: number;
-  ctaUsageRate: number;      // % of posts with a CTA
+  ctaUsageRate: number; // % of posts with a CTA
   suggestions: string[];
 }
 
@@ -456,7 +456,7 @@ export interface AudienceSegmentsResponse {
   success: boolean;
   personas?: AudiencePersona[];
   brandVoice?: BrandVoiceAudit;
-  commentCount?: number;     // how many real comments were analysed
+  commentCount?: number; // how many real comments were analysed
   dataSource: "graph_api" | "export_inference";
   error?: string;
 }
