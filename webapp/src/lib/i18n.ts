@@ -366,6 +366,27 @@ const FR = {
 
   // ── Header (remaining) ────────────────────────────────────────────────────
   "header.homeAriaLabel": "Retour à l'accueil",
+
+  // ── Calendar ──────────────────────────────────────────────────────────────
+  "nav.calendar": "Calendrier",
+  "calendar.title": "Calendrier éditorial",
+  "calendar.week.prev": "Semaine précédente",
+  "calendar.week.next": "Semaine suivante",
+  "calendar.slot.optimal": "Créneau optimal",
+  "calendar.new": "+ Nouveau",
+  "calendar.schedule.cta": "Planifier ce contenu",
+  "calendar.schedule.next": "Prochain créneau optimal :",
+  "calendar.schedule.chooseDate": "Choisir une date et heure",
+  "calendar.schedule.confirm": "Planifier",
+  "calendar.schedule.skip": "Ignorer",
+  "calendar.panel.assets": "Médias",
+  "calendar.panel.caption": "Légende",
+  "calendar.panel.checklist": "Checklist publication",
+  "calendar.panel.copy": "Copier",
+  "calendar.panel.download": "Télécharger tout",
+  "calendar.panel.published": "Marquer comme publié",
+  "calendar.story.chain": "Planifier 2 autres stories pour maintenir la visibilité ? (+2h et +4h)",
+  "calendar.collision": "Ce créneau est déjà occupé",
 } as const;
 
 const EN: Record<keyof typeof FR, string> = {
@@ -726,6 +747,27 @@ const EN: Record<keyof typeof FR, string> = {
 
   // ── Header (remaining) ────────────────────────────────────────────────────
   "header.homeAriaLabel": "Back to home",
+
+  // ── Calendar ──────────────────────────────────────────────────────────────
+  "nav.calendar": "Calendar",
+  "calendar.title": "Editorial Calendar",
+  "calendar.week.prev": "Previous week",
+  "calendar.week.next": "Next week",
+  "calendar.slot.optimal": "Optimal slot",
+  "calendar.new": "+ New",
+  "calendar.schedule.cta": "Schedule this content",
+  "calendar.schedule.next": "Next optimal slot:",
+  "calendar.schedule.chooseDate": "Choose a date and time",
+  "calendar.schedule.confirm": "Schedule",
+  "calendar.schedule.skip": "Skip",
+  "calendar.panel.assets": "Assets",
+  "calendar.panel.caption": "Caption",
+  "calendar.panel.checklist": "Publishing checklist",
+  "calendar.panel.copy": "Copy",
+  "calendar.panel.download": "Download all",
+  "calendar.panel.published": "Mark as published",
+  "calendar.story.chain": "Schedule 2 more stories to maintain visibility? (+2h and +4h)",
+  "calendar.collision": "This slot is already taken",
 };
 
 export type TranslationKey = keyof typeof FR;

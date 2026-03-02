@@ -375,3 +375,38 @@ export interface DMSuggestResponse {
   data?: { suggestedDm: string };
   error?: string;
 }
+
+// ============================================================
+// Calendar / Scheduler Types
+// ============================================================
+
+export type ContentType = "post" | "carousel" | "story" | "reel";
+export type ContentStatus = "draft" | "scheduled" | "published";
+
+export interface ScheduledItem {
+  id: string;
+  type: ContentType;
+  status: ContentStatus;
+  /** ISO 8601 string */
+  scheduledAt: string;
+  caption: string;
+  hashtags: string[];
+  /** base64 data URLs (images or video) */
+  assets: string[];
+  igInstructions: {
+    stickers?: string[];
+    links?: string[];
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OptimalSlot {
+  /** 0 = Sunday … 6 = Saturday */
+  dayIndex: number;
+  /** 0-23 */
+  hour: number;
+  /** combined engagement score (normalised 0-1) */
+  score: number;
+  isTopSlot: boolean;
+}
