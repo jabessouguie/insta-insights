@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import {
   Users,
   TrendingUp,
@@ -23,6 +23,8 @@ import { InsightsPanel } from "@/components/dashboard/InsightsPanel";
 import { BestPostingTimes } from "@/components/creator/BestPostingTimes";
 import { AudienceQuality } from "@/components/creator/AudienceQuality";
 import { AudienceDemographics } from "@/components/creator/AudienceDemographics";
+import { GrowthChart } from "@/components/creator/GrowthChart";
+import { recordSnapshot } from "@/lib/growth-store";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -48,6 +50,17 @@ export default function CreatorDashboard() {
   const { data, isLoading, mutate } = useInstagramData(dateRange);
   const t = useT();
   const [includeReels, setIncludeReels] = useState(false);
+
+  // Auto-record a daily growth snapshot whenever real data is loaded
+  useEffect(() => {
+    if (!data || data.dataSource === "mock") return;
+    recordSnapshot({
+      followers: data.profile.followerCount ?? 0,
+      engagementRate: data.metrics.engagementRate ?? 0,
+      avgLikes: Math.round(data.metrics.avgLikesPerPost ?? 0),
+      avgComments: Math.round(data.metrics.avgCommentsPerPost ?? 0),
+    });
+  }, [data]);
 
   const handlePeriodChange = (newPeriod: typeof period) => {
     setPeriod(newPeriod);
@@ -450,7 +463,10 @@ export default function CreatorDashboard() {
               )}
             </div>
 
-            {/* Followers chart */}
+            {/* Audience growth tracking */}
+            <GrowthChart />
+
+            {/* Followers chart (from export data) */}
             <div role="region" aria-label="Évolution des abonnés">
               <FollowersChart
                 data={data?.metrics.followerGrowthByMonth ?? []}
