@@ -7,7 +7,16 @@ export const dynamic = "force-dynamic";
 export interface CollabMatch {
   id: string;
   name: string;
-  type: "brand" | "creator" | "event" | "media";
+  /**
+   * Category of the collaboration partner.
+   * - brand    : commercial brand or local shop
+   * - creator  : complementary content creator
+   * - event    : festival, exhibition, conference
+   * - media    : blog, magazine, podcast
+   * - hotel    : accommodation (hotel, hostel, gîte, camping)
+   * - excursion: day-trip or activity company (boat tours, guided hikes, escape rooms, …)
+   */
+  type: "brand" | "creator" | "event" | "media" | "hotel" | "excursion";
   niche: string;
   location: string;
   reason: string;
@@ -27,6 +36,11 @@ export interface CollabFinderRequest {
   excludeNames?: string[];
   /** How many results to return (default 15, no upper limit) */
   count?: number;
+  /**
+   * UI language. Drives the language of all free-text fields in the response
+   * (reason, summary, potentialRevenue, …).
+   */
+  language?: "fr" | "en";
 }
 
 export interface CollabFinderResponse {
@@ -38,7 +52,7 @@ export interface CollabFinderResponse {
 export async function POST(request: Request): Promise<NextResponse<CollabFinderResponse>> {
   try {
     const body: CollabFinderRequest = await request.json();
-    const { location, interests, profile, excludeNames = [], count = 15 } = body;
+    const { location, interests, profile, excludeNames = [], count = 15, language = "fr" } = body;
     const n = Math.max(1, Math.min(count, 100)); // cap at 100 for sanity
 
     if (!location || !interests?.length) {
@@ -56,16 +70,93 @@ export async function POST(request: Request): Promise<NextResponse<CollabFinderR
     }
 
     const followers = profile.followerCount ?? 0;
+
+    // Tier labels are bilingual so the AI understands creator context regardless of language
     const tier =
       followers < 5_000
-        ? "nano-influencer (< 5K abonnés) — collabs locales, échanges produits, micro-marques"
+        ? language === "fr"
+          ? "nano-influencer (< 5K abonnés) — collabs locales, échanges produits, micro-marques"
+          : "nano-influencer (< 5K followers) — local collabs, product exchanges, micro-brands"
         : followers < 20_000
-          ? "micro-influencer (5K–20K abonnés) — partenariats rémunérés régionaux, marques mid-range"
+          ? language === "fr"
+            ? "micro-influencer (5K–20K abonnés) — partenariats rémunérés régionaux, marques mid-range"
+            : "micro-influencer (5K–20K followers) — paid regional partnerships, mid-range brands"
           : followers < 100_000
-            ? "influencer (20K–100K abonnés) — partenariats rémunérés nationaux, marques connues"
-            : "macro-influencer (100K+ abonnés) — grands comptes, agences, contrats significatifs";
+            ? language === "fr"
+              ? "influencer (20K–100K abonnés) — partenariats rémunérés nationaux, marques connues"
+              : "influencer (20K–100K followers) — paid national partnerships, well-known brands"
+            : language === "fr"
+              ? "macro-influencer (100K+ abonnés) — grands comptes, agences, contrats significatifs"
+              : "macro-influencer (100K+ followers) — major accounts, agencies, significant contracts";
 
-    const prompt = `Tu es un expert senior en marketing d'influence et développement commercial pour créateurs de contenu.
+    // Detect whether hospitality / excursion interests are selected to unlock dedicated guidance
+    const wantsHotel = interests.some((i) => /h[oô]tel|h[eé]berg|accommodation|lodging/i.test(i));
+    const wantsExcursion = interests.some((i) =>
+      /excursion|activit|tour|balade|randon|outdoor|adventure|loisir/i.test(i)
+    );
+
+    const hotelGuidance = wantsHotel
+      ? language === "fr"
+        ? `\n- Pour les hôtels : utilise le type "hotel". Inclus des hôtels boutique indépendants, des gîtes, des auberges de charme, des hôtels design. Le partenariat peut être : nuit offerte, week-end press, code promo exclusif pour l'audience. Ne suggère pas de grandes chaînes hôtelières internationales sauf si le tier le justifie.`
+        : `\n- For hotels: use type "hotel". Include independent boutique hotels, B&Bs, charming inns, design hotels. Partnership can be: complimentary stay, press weekend, exclusive promo code for the audience. Avoid large international hotel chains unless the creator's tier justifies it.`
+      : "";
+
+    const excursionGuidance = wantsExcursion
+      ? language === "fr"
+        ? `\n- Pour les excursions : utilise le type "excursion". Inclus des compagnies d'activités à la journée : tours en bateau, randonnées guidées, escape games, ateliers culinaires, tours vélo, activités outdoor. Le partenariat peut être : activité offerte en échange de contenu, code promo, ambassadeur saisonnier.`
+        : `\n- For excursions: use type "excursion". Include day-trip companies: boat tours, guided hikes, escape rooms, cooking workshops, bike tours, outdoor activities. Partnership can be: complimentary activity in exchange for content, promo code, seasonal brand ambassador.`
+      : "";
+
+    const isEn = language === "en";
+
+    const prompt = isEn
+      ? `You are a senior influence marketing and business development expert for content creators.
+
+An Instagram creator is looking for concrete and realistic collaboration opportunities.
+
+### Creator Profile
+- Username: @${profile.username ?? "creator"}
+- Followers: ${followers.toLocaleString("en-US")} → ${tier}
+- Instagram bio: "${profile.bio ?? "N/A"}"
+- Declared location: ${location}
+- Interests / niche: ${interests.join(", ")}
+
+### Your Mission
+Identify exactly ${n} **realistic and profile-adapted** collaboration opportunities in or around "${location}". Do thorough, varied research — avoid obvious first ideas.
+
+Key rules:
+1. Calibrate suggestions to the creator's level — an unrealistic suggestion (e.g. Nike for a 1,200-follower account) is worthless.
+2. Infer their main niche from bio and interests, then find partners in that niche.
+3. Mix types: independent local brands, complementary creators in the same niche, local events, local media/blogs, independent shops, agencies, professional associations.
+4. For brands, use realistic and verifiable names (existing brands, not fictional).
+${excludeNames.length ? `5. **IMPORTANT** — Do NOT include any of these already-contacted or ignored entities: ${excludeNames.join(", ")}. Find entirely different names.` : ""}
+6. potentialRevenue must match the creator's tier and local market.
+7. reason must concretely explain why their audiences overlap.
+8. instagramHandle should be real and verifiable Instagram handles when known.
+9. contactEmail should be realistic probable emails (e.g. contact@brand.com, hello@brand.com).
+10. **relevanceScore**: assign a score from 1 to 10 (10 = most relevant and realistic for THIS profile). Sort results from most (10) to least (1) relevant.
+${hotelGuidance}${excursionGuidance}
+
+Respond ONLY with this JSON (no markdown) — the collabs array must contain exactly ${n} items, sorted by relevanceScore descending:
+{
+  "summary": "2-sentence summary of identified opportunities, mention of creator tier",
+  "collabs": [
+    {
+      "id": "1",
+      "name": "Real brand/creator/event name",
+      "type": "brand|creator|event|media|hotel|excursion",
+      "niche": "specific shared niche",
+      "location": "precise city/region",
+      "reason": "Why this is relevant for THIS creator with THESE followers in THIS niche (2 sentences)",
+      "instagramHandle": "@Instagram handle if known",
+      "websiteHint": "probable domain name or search term",
+      "potentialRevenue": "realistic range for the tier (e.g. product exchange, £50-150, £300-800)",
+      "contactEmail": "contact email if known or probable pattern (e.g. contact@brand.com)",
+      "relevanceScore": 9
+    }
+  ]
+}`
+      : `Tu es un expert senior en marketing d'influence et développement commercial pour créateurs de contenu.
 
 Un créateur Instagram cherche des opportunités de collaboration concrètes et réalistes.
 
@@ -90,6 +181,7 @@ ${excludeNames.length ? `5. **IMPORTANT** — N'inclus ABSOLUMENT PAS ces entit�
 8. Les instagramHandle doivent être des handles Instagram réels et vérifiables quand tu les connais.
 9. Les contactEmail doivent être des emails probables et réalistes (ex: contact@brand.com, hello@brand.fr).
 10. **relevanceScore** : attribue un score de 1 à 10 (10 = opportunité la plus pertinente et réaliste pour CE profil). Trie les résultats du plus pertinent (10) au moins pertinent (1).
+${hotelGuidance}${excursionGuidance}
 
 Réponds UNIQUEMENT avec ce JSON (sans markdown) — le tableau collabs doit contenir exactement ${n} éléments, triés par relevanceScore décroissant :
 {
@@ -98,7 +190,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) — le tableau collabs doit con
     {
       "id": "1",
       "name": "Nom réel de la marque/créateur/événement",
-      "type": "brand|creator|event|media",
+      "type": "brand|creator|event|media|hotel|excursion",
       "niche": "niche spécifique en commun",
       "location": "ville/région précise",
       "reason": "Pourquoi c'est pertinent pour CE créateur avec CES abonnés dans CETTE niche (2 phrases)",

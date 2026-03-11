@@ -62,6 +62,8 @@ const TYPE_COLORS: Record<string, string> = {
   creator: "text-violet-400 border-violet-400/30 bg-violet-400/10",
   event: "text-cyan-400 border-cyan-400/30 bg-cyan-400/10",
   media: "text-pink-400 border-pink-400/30 bg-pink-400/10",
+  hotel: "text-sky-400 border-sky-400/30 bg-sky-400/10",
+  excursion: "text-emerald-400 border-emerald-400/30 bg-emerald-400/10",
 };
 
 // ─── Validation badge ─────────────────────────────────────────────────────────
@@ -660,6 +662,8 @@ function CollabCard({
     creator: t("collabs.type.creator"),
     event: t("collabs.type.event"),
     media: t("collabs.type.media"),
+    hotel: t("collabs.type.hotel"),
+    excursion: t("collabs.type.excursion"),
   };
 
   const typeColor = TYPE_COLORS[collab.type] ?? "";
@@ -1305,6 +1309,8 @@ const INTEREST_SUGGESTIONS = [
   "Business",
   "Développement personnel",
   "Photographie",
+  "Hôtels & Hébergement",
+  "Excursions & Activités",
 ];
 
 export default function CollabsPage() {
@@ -1396,6 +1402,7 @@ export default function CollabsPage() {
           profile: data?.profile ?? {},
           excludeNames,
           count,
+          language: lang,
         }),
       });
       const json = await res.json();
