@@ -21,6 +21,12 @@ import {
   Video,
   TrendingUp,
   Palette,
+  Hash,
+  Receipt,
+  Gift,
+  BookImage,
+  FlaskConical,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
@@ -43,13 +49,19 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
     { href: "/creator/audience", label: t("nav.audience"), icon: Users },
     { href: "/creator/reels", label: t("nav.reels"), icon: Video },
+    { href: "/creator/stories", label: t("nav.stories"), icon: BookImage },
     { href: "/creator/competitive", label: t("nav.competitive"), icon: TrendingUp },
+    { href: "/creator/hashtags", label: t("nav.hashtags"), icon: Hash },
     { href: "/creator/reports", label: t("nav.reports"), icon: BarChart2 },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },
     { href: "/creator/carousel", label: t("nav.carousel"), icon: LayoutPanelLeft },
+    { href: "/creator/captions", label: t("nav.captions"), icon: FlaskConical },
     { href: "/creator/calendar", label: t("nav.calendar"), icon: CalendarDays },
     { href: "/creator/collabs", label: t("nav.collabs"), icon: Handshake },
+    { href: "/creator/campaigns", label: t("nav.campaigns"), icon: Target },
     { href: "/creator/comments", label: t("nav.comments"), icon: MessageSquarePlus },
+    { href: "/creator/invoice", label: t("nav.invoice"), icon: Receipt },
+    { href: "/creator/referral", label: t("nav.referral"), icon: Gift },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
     { href: "/creator/settings", label: t("nav.settings"), icon: Palette },
   ];

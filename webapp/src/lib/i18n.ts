@@ -552,6 +552,14 @@ const FR = {
     "L'analyse des abonnés inactifs nécessite un export Instagram. Connecte-toi via l'API pour les suggestions DM en temps réel.",
   "interactions.api.unfollow_unavailable":
     "L'analyse des candidats à unfollow nécessite un export Instagram.",
+
+  // ── Phase 2 & 3 nav keys ──────────────────────────────────────────────────
+  "nav.stories": "Stories",
+  "nav.hashtags": "Hashtags",
+  "nav.captions": "Captions A/B",
+  "nav.campaigns": "Campagnes",
+  "nav.invoice": "Factures",
+  "nav.referral": "Parrainage",
 } as const;
 
 const EN: Record<keyof typeof FR, string> = {
@@ -1093,6 +1101,14 @@ const EN: Record<keyof typeof FR, string> = {
     "Inactive follower analysis requires an Instagram export. Connect via API for real-time DM suggestions.",
   "interactions.api.unfollow_unavailable":
     "Unfollow candidate analysis requires an Instagram export.",
+
+  // ── Phase 2 & 3 nav keys ──────────────────────────────────────────────────
+  "nav.stories": "Stories",
+  "nav.hashtags": "Hashtags",
+  "nav.captions": "A/B Captions",
+  "nav.campaigns": "Campaigns",
+  "nav.invoice": "Invoices",
+  "nav.referral": "Referral",
 };
 
 export type TranslationKey = keyof typeof FR;
