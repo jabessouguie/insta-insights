@@ -68,14 +68,41 @@ const TYPE_COLORS: Record<string, string> = {
 
 // ─── Validation badge ─────────────────────────────────────────────────────────
 
-function ValidBadge({ valid }: { valid: boolean | null | undefined }) {
+type EmailReason = "format" | "no_mx" | "dns_error" | "valid" | null;
+
+function ValidBadge({
+  valid,
+  reason,
+}: {
+  valid: boolean | null | undefined;
+  reason?: EmailReason;
+}) {
+  const t = useT();
   if (valid === undefined) return null;
-  if (valid === null)
-    return <AlertCircle className="h-3 w-3 text-muted-foreground" aria-label="Statut inconnu" />;
-  return valid ? (
-    <CheckCircle2 className="h-3 w-3 text-emerald-400" aria-label="Vérifié" />
-  ) : (
-    <XCircle className="h-3 w-3 text-red-400" aria-label="Invalide" />
+
+  let icon: React.ReactNode;
+  let label: string;
+
+  if (valid === null) {
+    icon = <AlertCircle className="h-3 w-3 text-muted-foreground" />;
+    label = t("collabs.validate.dns_error");
+  } else if (valid) {
+    icon = <CheckCircle2 className="h-3 w-3 text-emerald-400" />;
+    label = t("collabs.validate.valid");
+  } else {
+    icon = <XCircle className="h-3 w-3 text-red-400" />;
+    label =
+      reason === "no_mx"
+        ? t("collabs.validate.mx_fail")
+        : reason === "dns_error"
+          ? t("collabs.validate.dns_error")
+          : t("collabs.validate.format_error");
+  }
+
+  return (
+    <span title={label} className="cursor-help">
+      {icon}
+    </span>
   );
 }
 
@@ -603,14 +630,32 @@ function EmailPanel({
                 Ouvrir dans Mail (marquer comme envoyé)
               </Button>
             )}
-            {/* Adapted media kit download */}
+            {/* Adapted media kit — PDF + HTML */}
             {mediaKitUrl ? (
-              <a href={mediaKitUrl} download={kitFileName}>
-                <Button size="sm" variant="ghost" className="text-xs text-amber-400">
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-xs text-amber-400"
+                  onClick={() => {
+                    const win = window.open(mediaKitUrl, "_blank");
+                    if (!win) return;
+                    win.addEventListener("load", () => {
+                      win.focus();
+                      win.print();
+                    });
+                  }}
+                >
                   <FileText className="h-3 w-3" />
-                  Télécharger le Media Kit adapté
+                  {t("collabs.mediakit.downloadPdf")}
                 </Button>
-              </a>
+                <a href={mediaKitUrl} download={kitFileName}>
+                  <Button size="sm" variant="ghost" className="text-xs text-muted-foreground">
+                    <FileText className="h-3 w-3" />
+                    {t("collabs.mediakit.downloadHtml")}
+                  </Button>
+                </a>
+              </>
             ) : isGeneratingKit ? (
               <Button size="sm" variant="ghost" className="text-xs text-amber-400/60" disabled>
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -650,7 +695,7 @@ function CollabCard({
   collab: CollabMatch;
   profile: { username?: string; followerCount?: number; bio?: string };
   tracking: CollabTracking;
-  validation?: { emailValid: boolean | null; igValid: boolean | null };
+  validation?: { emailValid: boolean | null; emailReason?: EmailReason; igValid: boolean | null };
   onTrackingUpdate: (t: CollabTracking) => void;
   language?: "fr" | "en";
   instagramData?: InstagramAnalytics;
@@ -780,7 +825,7 @@ function CollabCard({
         {/* ── Email channel ── */}
         {hasEmail && (
           <div className="flex items-start gap-1.5">
-            <ValidBadge valid={validation?.emailValid} />
+            <ValidBadge valid={validation?.emailValid} reason={validation?.emailReason} />
             <div className="flex-1">
               <EmailPanel
                 collab={collab}
@@ -1274,12 +1319,30 @@ function QuickPitchPanel({
                 </a>
               )}
               {mediaKitUrl ? (
-                <a href={mediaKitUrl} download={kitFileName}>
-                  <Button size="sm" variant="ghost" className="text-xs text-amber-400">
+                <>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs text-amber-400"
+                    onClick={() => {
+                      const win = window.open(mediaKitUrl, "_blank");
+                      if (!win) return;
+                      win.addEventListener("load", () => {
+                        win.focus();
+                        win.print();
+                      });
+                    }}
+                  >
                     <FileText className="h-3 w-3" />
-                    Télécharger le Media Kit
+                    Télécharger PDF
                   </Button>
-                </a>
+                  <a href={mediaKitUrl} download={kitFileName}>
+                    <Button size="sm" variant="ghost" className="text-xs text-muted-foreground">
+                      <FileText className="h-3 w-3" />
+                      HTML
+                    </Button>
+                  </a>
+                </>
               ) : isGenerating ? null : (
                 <Button size="sm" variant="ghost" className="text-xs text-amber-400/50" disabled>
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -1331,9 +1394,16 @@ export default function CollabsPage() {
   // Tracking state
   const [trackings, setTrackings] = useState<Record<string, CollabTracking>>({});
 
+  // Filter state
+  const [filterAccountTypes, setFilterAccountTypes] = useState<string[]>([]);
+  const [filterCollabFormats, setFilterCollabFormats] = useState<string[]>([]);
+
   // Validation state
   const [validations, setValidations] = useState<
-    Record<string, { emailValid: boolean | null; igValid: boolean | null }>
+    Record<
+      string,
+      { emailValid: boolean | null; emailReason?: EmailReason; igValid: boolean | null }
+    >
   >({});
   const [isValidating, setIsValidating] = useState(false);
 
@@ -1432,8 +1502,10 @@ export default function CollabsPage() {
         if (newCollabs.length > 0) {
           void (async () => {
             setIsValidating(true);
-            const results: Record<string, { emailValid: boolean | null; igValid: boolean | null }> =
-              {};
+            const results: Record<
+              string,
+              { emailValid: boolean | null; emailReason?: EmailReason; igValid: boolean | null }
+            > = {};
             await Promise.allSettled(
               newCollabs.map(async (c) => {
                 if (!c.instagramHandle && !c.contactEmail) return;
@@ -1447,7 +1519,11 @@ export default function CollabsPage() {
                     }),
                   });
                   const vJson = await vRes.json();
-                  results[c.id] = { emailValid: vJson.emailValid, igValid: vJson.instagramValid };
+                  results[c.id] = {
+                    emailValid: vJson.emailValid,
+                    emailReason: vJson.emailReason as EmailReason,
+                    igValid: vJson.instagramValid,
+                  };
                 } catch {
                   results[c.id] = { emailValid: null, igValid: null };
                 }
@@ -1485,7 +1561,11 @@ export default function CollabsPage() {
             }),
           });
           const json = await res.json();
-          results[c.id] = { emailValid: json.emailValid, igValid: json.instagramValid };
+          results[c.id] = {
+            emailValid: json.emailValid,
+            emailReason: json.emailReason as EmailReason,
+            igValid: json.instagramValid,
+          };
         } catch {
           results[c.id] = { emailValid: null, igValid: null };
         }
@@ -1497,6 +1577,17 @@ export default function CollabsPage() {
   }, [collabs]);
 
   const hiddenCount = collabs.filter((c) => trackings[c.id]?.status === "not_interested").length;
+
+  const filteredCollabs = collabs.filter((c) => {
+    if (!showHidden && trackings[c.id]?.status === "not_interested") return false;
+    if (filterAccountTypes.length > 0 && !filterAccountTypes.includes(c.type)) return false;
+    if (
+      filterCollabFormats.length > 0 &&
+      !filterCollabFormats.some((f) => (c.collabFormats as string[] | undefined)?.includes(f))
+    )
+      return false;
+    return true;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -1711,26 +1802,110 @@ export default function CollabsPage() {
               </div>
             )}
 
-            {/* Collab cards */}
+            {/* ── Filters ── */}
             {collabs.length > 0 && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {collabs
-                  .filter((c) => showHidden || trackings[c.id]?.status !== "not_interested")
-                  .map((c) => {
-                    const tracking = getOrCreateTracking(c);
+              <div className="mb-4 space-y-2">
+                {/* Account type filter */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("collabs.filter.accountType")}
+                  </span>
+                  {(["brand", "creator", "hotel", "excursion", "event", "media"] as const).map(
+                    (typ) => {
+                      const active = filterAccountTypes.includes(typ);
+                      return (
+                        <button
+                          key={typ}
+                          onClick={() =>
+                            setFilterAccountTypes((prev) =>
+                              active ? prev.filter((x) => x !== typ) : [...prev, typ]
+                            )
+                          }
+                          className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                            active
+                              ? "border-primary bg-primary/15 text-primary"
+                              : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          }`}
+                        >
+                          {t(`collabs.type.${typ}` as Parameters<typeof t>[0])}
+                        </button>
+                      );
+                    }
+                  )}
+                </div>
+                {/* Collab format filter */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t("collabs.filter.collabFormat")}
+                  </span>
+                  {(
+                    [
+                      "partenariat",
+                      "nuitee_offerte",
+                      "code_promo",
+                      "sponsorise",
+                      "ugc",
+                      "ambassador",
+                    ] as const
+                  ).map((fmt) => {
+                    const active = filterCollabFormats.includes(fmt);
                     return (
-                      <CollabCard
-                        key={c.id}
-                        collab={c}
-                        profile={data?.profile ?? {}}
-                        tracking={tracking}
-                        validation={validations[c.id]}
-                        onTrackingUpdate={handleTrackingUpdate}
-                        instagramData={data ?? undefined}
-                        language={lang}
-                      />
+                      <button
+                        key={fmt}
+                        onClick={() =>
+                          setFilterCollabFormats((prev) =>
+                            active ? prev.filter((x) => x !== fmt) : [...prev, fmt]
+                          )
+                        }
+                        className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                          active
+                            ? "border-primary bg-primary/15 text-primary"
+                            : "border-border/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                        }`}
+                      >
+                        {t(`collabs.format.${fmt}` as Parameters<typeof t>[0])}
+                      </button>
                     );
                   })}
+                </div>
+                {/* Clear + count */}
+                {(filterAccountTypes.length > 0 || filterCollabFormats.length > 0) && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">
+                      {t("collabs.filter.results").replace("{n}", String(filteredCollabs.length))}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setFilterAccountTypes([]);
+                        setFilterCollabFormats([]);
+                      }}
+                      className="text-xs text-primary underline-offset-2 hover:underline"
+                    >
+                      {t("collabs.filter.clearAll")}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Collab cards */}
+            {filteredCollabs.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {filteredCollabs.map((c) => {
+                  const tracking = getOrCreateTracking(c);
+                  return (
+                    <CollabCard
+                      key={c.id}
+                      collab={c}
+                      profile={data?.profile ?? {}}
+                      tracking={tracking}
+                      validation={validations[c.id]}
+                      onTrackingUpdate={handleTrackingUpdate}
+                      instagramData={data ?? undefined}
+                      language={lang}
+                    />
+                  );
+                })}
               </div>
             )}
           </>

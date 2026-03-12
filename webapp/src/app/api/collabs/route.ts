@@ -26,6 +26,13 @@ export interface CollabMatch {
   contactEmail?: string;
   /** Relevance score 1–10 (10 = most relevant). Used for client-side sorting. */
   relevanceScore?: number;
+  /**
+   * Suggested collaboration formats for this partner (AI-generated).
+   * Used for client-side filtering.
+   */
+  collabFormats?: Array<
+    "partenariat" | "nuitee_offerte" | "code_promo" | "sponsorise" | "ugc" | "ambassador"
+  >;
 }
 
 export interface CollabFinderRequest {
@@ -152,10 +159,13 @@ Respond ONLY with this JSON (no markdown) — the collabs array must contain exa
       "websiteHint": "probable domain name or search term",
       "potentialRevenue": "realistic range for the tier (e.g. product exchange, £50-150, £300-800)",
       "contactEmail": "contact email if known or probable pattern (e.g. contact@brand.com)",
-      "relevanceScore": 9
+      "relevanceScore": 9,
+      "collabFormats": ["partenariat", "code_promo"]
     }
   ]
-}`
+}
+
+collabFormats must be a non-empty array chosen from: partenariat, nuitee_offerte, code_promo, sponsorise, ugc, ambassador. Pick 1–3 that best match this partner's type and niche.`
       : `Tu es un expert senior en marketing d'influence et développement commercial pour créateurs de contenu.
 
 Un créateur Instagram cherche des opportunités de collaboration concrètes et réalistes.
@@ -198,10 +208,13 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) — le tableau collabs doit con
       "websiteHint": "nom de domaine probable ou terme de recherche",
       "potentialRevenue": "fourchette réaliste selon le tier (ex: échange produit, 50-150€, 300-800€)",
       "contactEmail": "email de contact si connu ou pattern probable (ex: contact@brand.com, partenariats@brand.fr)",
-      "relevanceScore": 9
+      "relevanceScore": 9,
+      "collabFormats": ["partenariat", "code_promo"]
     }
   ]
-}`;
+}
+
+collabFormats doit être un tableau non-vide choisi parmi : partenariat, nuitee_offerte, code_promo, sponsorise, ugc, ambassador. Sélectionne 1 à 3 formats adaptés au type et à la niche du partenaire.`;
 
     const raw = await generateText(prompt, { model: GEMINI_PRO });
     const rawClean = stripJsonFences(raw);

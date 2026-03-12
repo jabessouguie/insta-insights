@@ -144,6 +144,27 @@ const FR = {
   "collabs.search.status.finalizeResults": "Finalisation des résultats via Gemini…",
   "collabs.summary.prefix": "Gemini : ",
 
+  // ── Collabs — filters ──────────────────────────────────────────────────────
+  "collabs.filter.accountType": "Type de compte",
+  "collabs.filter.collabFormat": "Format de collaboration",
+  "collabs.filter.clearAll": "Effacer les filtres",
+  "collabs.filter.results": "{n} résultat(s)",
+  // ── Collabs — validation email ─────────────────────────────────────────────
+  "collabs.validate.valid": "Email valide (MX vérifié)",
+  "collabs.validate.mx_fail": "Domaine sans serveur mail",
+  "collabs.validate.dns_error": "Vérification DNS impossible",
+  "collabs.validate.format_error": "Format email invalide",
+  // ── Collabs — mediakit ─────────────────────────────────────────────────────
+  "collabs.mediakit.downloadPdf": "Télécharger PDF",
+  "collabs.mediakit.downloadHtml": "Télécharger HTML",
+  // ── Collabs — collab formats ───────────────────────────────────────────────
+  "collabs.format.partenariat": "Partenariat",
+  "collabs.format.nuitee_offerte": "Nuitée offerte",
+  "collabs.format.code_promo": "Code promo",
+  "collabs.format.sponsorise": "Contenu sponsorisé",
+  "collabs.format.ugc": "UGC",
+  "collabs.format.ambassador": "Ambassadeur",
+
   // ── Comments ───────────────────────────────────────────────────────────────
   "comments.title": "Générateur de commentaires",
   "comments.subtitle":
@@ -840,6 +861,27 @@ const EN: Record<keyof typeof FR, string> = {
   "collabs.search.status.selectMatches": "Selecting best matches…",
   "collabs.search.status.finalizeResults": "Finalising results via Gemini…",
   "collabs.summary.prefix": "Gemini: ",
+
+  // ── Collabs — filters ──────────────────────────────────────────────────────
+  "collabs.filter.accountType": "Account type",
+  "collabs.filter.collabFormat": "Collaboration format",
+  "collabs.filter.clearAll": "Clear filters",
+  "collabs.filter.results": "{n} result(s)",
+  // ── Collabs — validation email ─────────────────────────────────────────────
+  "collabs.validate.valid": "Valid email (MX verified)",
+  "collabs.validate.mx_fail": "Domain has no mail server",
+  "collabs.validate.dns_error": "DNS check unavailable",
+  "collabs.validate.format_error": "Invalid email format",
+  // ── Collabs — mediakit ─────────────────────────────────────────────────────
+  "collabs.mediakit.downloadPdf": "Download PDF",
+  "collabs.mediakit.downloadHtml": "Download HTML",
+  // ── Collabs — collab formats ───────────────────────────────────────────────
+  "collabs.format.partenariat": "Partnership",
+  "collabs.format.nuitee_offerte": "Complimentary stay",
+  "collabs.format.code_promo": "Promo code",
+  "collabs.format.sponsorise": "Sponsored content",
+  "collabs.format.ugc": "UGC",
+  "collabs.format.ambassador": "Ambassador",
 
   // ── Comments ───────────────────────────────────────────────────────────────
   "comments.title": "Comment generator",
