@@ -548,6 +548,9 @@ export default function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-5 text-xs text-[#cfcbba]/50">
+            <Link href="/pricing" className="transition-colors hover:text-white">
+              Tarifs
+            </Link>
             <Link href="/privacy" className="transition-colors hover:text-white">
               Confidentialité
             </Link>
