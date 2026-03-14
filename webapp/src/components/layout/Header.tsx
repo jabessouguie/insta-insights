@@ -24,6 +24,12 @@ import {
   ChevronDown,
   Check,
   Trash2,
+  Hash,
+  Receipt,
+  Share2,
+  Layers,
+  FlaskConical,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
@@ -45,8 +51,10 @@ interface HeaderProps {
 
 export function Header({ profile, mode, agencyName }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const { lang, toggle } = useLanguage();
   const t = useT();
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Multi-account state ────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<SavedAccount[]>([]);
@@ -59,6 +67,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     setActiveId(getActiveAccountId());
   }, []);
 
+  // Close account dropdown on outside click
   useEffect(() => {
     if (!accountDropdownOpen) return;
     const handler = (e: MouseEvent) => {
@@ -69,6 +78,18 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [accountDropdownOpen]);
+
+  // Close more menu on outside click
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node)) {
+        setMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [moreMenuOpen]);
 
   const handleSwitchAccount = (id: string) => {
     setActiveAccountId(id);
@@ -97,21 +118,35 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
   const displayPicUrl = activeAccount?.profilePicUrl ?? profile?.profilePicUrl;
   const displayFollowers = activeAccount?.followerCount ?? profile?.followerCount;
 
-  const navLinks = [
+  // ── Navigation ────────────────────────────────────────────────────────
+  // 5 primary links always visible; the rest collapse into the "More" dropdown
+  const primaryLinks = [
     { href: "/creator/dashboard", label: t("nav.dashboard"), icon: null },
+    { href: "/creator/carousel", label: t("nav.carousel"), icon: LayoutPanelLeft },
+    { href: "/creator/collabs", label: t("nav.collabs"), icon: Handshake },
+    { href: "/creator/calendar", label: t("nav.calendar"), icon: CalendarDays },
+    { href: "/creator/settings", label: t("nav.settings"), icon: Palette },
+  ];
+
+  const moreLinks = [
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
     { href: "/creator/audience", label: t("nav.audience"), icon: Users },
     { href: "/creator/reels", label: t("nav.reels"), icon: Video },
     { href: "/creator/competitive", label: t("nav.competitive"), icon: TrendingUp },
     { href: "/creator/reports", label: t("nav.reports"), icon: BarChart2 },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },
-    { href: "/creator/carousel", label: t("nav.carousel"), icon: LayoutPanelLeft },
-    { href: "/creator/calendar", label: t("nav.calendar"), icon: CalendarDays },
-    { href: "/creator/collabs", label: t("nav.collabs"), icon: Handshake },
     { href: "/creator/comments", label: t("nav.comments"), icon: MessageSquarePlus },
+    { href: "/creator/hashtags", label: t("nav.hashtags"), icon: Hash },
+    { href: "/creator/stories", label: t("nav.stories"), icon: Layers },
+    { href: "/creator/captions", label: t("nav.captions"), icon: FlaskConical },
+    { href: "/creator/campaigns", label: t("nav.campaigns"), icon: Target },
+    { href: "/creator/invoice", label: t("nav.invoice"), icon: Receipt },
+    { href: "/creator/referral", label: t("nav.referral"), icon: Share2 },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
-    { href: "/creator/settings", label: t("nav.settings"), icon: Palette },
   ];
+
+  // All links (for mobile menu)
+  const allLinks = [...primaryLinks, ...moreLinks];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
@@ -137,7 +172,8 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
         {mode === "creator" && (
           <>
             <nav className="hidden items-center gap-1 md:flex">
-              {navLinks.map((link) => (
+              {/* Primary links */}
+              {primaryLinks.map((link) => (
                 <Button
                   key={link.href}
                   variant="ghost"
@@ -151,6 +187,46 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
                   </Link>
                 </Button>
               ))}
+
+              {/* More dropdown */}
+              <div className="relative" ref={moreMenuRef}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1 text-xs"
+                  onClick={() => setMoreMenuOpen((o) => !o)}
+                  aria-haspopup="menu"
+                  aria-expanded={moreMenuOpen}
+                >
+                  {t("nav.more")}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${moreMenuOpen ? "rotate-180" : ""}`}
+                  />
+                </Button>
+
+                {moreMenuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute left-0 top-full z-50 mt-1 w-52 rounded-lg border border-border bg-popover p-1 shadow-lg"
+                  >
+                    {moreLinks.map((link) => (
+                      <Button
+                        key={link.href}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start gap-2 text-xs"
+                        asChild
+                        onClick={() => setMoreMenuOpen(false)}
+                      >
+                        <Link href={link.href} role="menuitem">
+                          {link.icon && <link.icon className="h-3.5 w-3.5 shrink-0" />}
+                          {link.label}
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </nav>
 
             {/* Mobile menu toggle */}
@@ -286,7 +362,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
         <div className="animate-in fade-in slide-in-from-top-4 fixed inset-x-0 top-16 z-50 md:hidden">
           <div className="border-b border-border bg-background/95 p-4 shadow-xl backdrop-blur-lg">
             <nav className="flex flex-col gap-2">
-              {navLinks.map((link) => (
+              {allLinks.map((link) => (
                 <Button
                   key={link.href}
                   variant="ghost"
