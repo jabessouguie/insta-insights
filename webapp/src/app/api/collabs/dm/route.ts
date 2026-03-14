@@ -43,7 +43,8 @@ Contexte de la collaboration : ${collab.reason}
 Rédige un message Instagram direct (DM) en ${lang}.
 
 Règles STRICTES :
-- Max 3 phrases courtes — les DM trop longs ne sont pas lus
+- **Commence OBLIGATOIREMENT par "Bonjour @{handle}" (remplace {handle} par le handle réel)**
+- Max 3 phrases courtes après la salutation — les DM trop longs ne sont pas lus
 - Ton naturel, humain, pas corporatif — comme si tu parlais à quelqu'un que tu trouves cool
 - Mentionne brièvement pourquoi tu penses qu'il y a une synergie (1 phrase)
 - Termine avec une question ouverte ou une proposition légère (café virtuel, appel de 10 min, collab idée)

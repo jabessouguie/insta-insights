@@ -141,11 +141,38 @@ function TrackingPanel({
   collab,
   tracking,
   onUpdate,
+  profile,
+  language,
 }: {
   collab: CollabMatch;
   tracking: CollabTracking;
   onUpdate: (t: CollabTracking) => void;
+  profile?: { username?: string; followerCount?: number };
+  language?: "fr" | "en";
 }) {
+  const [followUpEmail, setFollowUpEmail] = useState<{ subject: string; body: string } | null>(
+    null
+  );
+  const [isGeneratingFollowUp, setIsGeneratingFollowUp] = useState(false);
+  const [showFollowUp, setShowFollowUp] = useState(false);
+
+  const generateFollowUpEmail = useCallback(async () => {
+    setIsGeneratingFollowUp(true);
+    setShowFollowUp(true);
+    try {
+      const res = await fetch("/api/collabs/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ collab, profile: profile ?? {}, language, followUp: true }),
+      });
+      const json = await res.json();
+      if (json.success && json.data)
+        setFollowUpEmail(json.data as { subject: string; body: string });
+    } finally {
+      setIsGeneratingFollowUp(false);
+    }
+  }, [collab, profile, language]);
+
   const markSent = (channel: "email" | "dm") => {
     const updated: CollabTracking = {
       ...tracking,
@@ -246,15 +273,31 @@ function TrackingPanel({
 
         {/* Follow-up sent */}
         {isFollowUp && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-6 border-orange-500/30 px-2 text-[10px] text-orange-400 hover:bg-orange-500/10"
-            onClick={markFollowUpSent}
-          >
-            <RefreshCw className="h-2.5 w-2.5" />
-            Relance envoyée
-          </Button>
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 border-orange-500/30 px-2 text-[10px] text-orange-400 hover:bg-orange-500/10"
+              onClick={generateFollowUpEmail}
+              disabled={isGeneratingFollowUp}
+            >
+              {isGeneratingFollowUp ? (
+                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-2.5 w-2.5" />
+              )}
+              {followUpEmail ? "Régénérer la relance" : "Générer email de relance"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 border-orange-500/30 px-2 text-[10px] text-orange-400 hover:bg-orange-500/10"
+              onClick={markFollowUpSent}
+            >
+              <Check className="h-2.5 w-2.5" />
+              Relance envoyée
+            </Button>
+          </>
         )}
 
         {/* Not interested */}
@@ -270,6 +313,33 @@ function TrackingPanel({
           </Button>
         )}
       </div>
+
+      {/* Follow-up email panel */}
+      {showFollowUp && followUpEmail && (
+        <div className="space-y-2 rounded-lg border border-orange-500/20 bg-orange-500/5 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-orange-400">
+              <RefreshCw className="h-3 w-3" />
+              Email de relance
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowFollowUp(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ChevronUp className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <p className="text-[10px] font-medium text-muted-foreground">
+            Objet : {followUpEmail.subject}
+          </p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed">{followUpEmail.body}</p>
+          <CopyButton
+            text={`Objet : ${followUpEmail.subject}\n\n${followUpEmail.body}`}
+            label="Copier la relance"
+          />
+        </div>
+      )}
 
       {/* Sent date */}
       {tracking.sentAt && (
@@ -797,7 +867,13 @@ function CollabCard({
         <p className="text-sm text-muted-foreground">{collab.reason}</p>
 
         {/* ── Tracking ── */}
-        <TrackingPanel collab={collab} tracking={tracking} onUpdate={onTrackingUpdate} />
+        <TrackingPanel
+          collab={collab}
+          tracking={tracking}
+          onUpdate={onTrackingUpdate}
+          profile={profile}
+          language={language}
+        />
 
         {/* ── DM channel ── */}
         {hasDM && (

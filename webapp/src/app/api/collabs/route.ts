@@ -220,8 +220,20 @@ collabFormats doit être un tableau non-vide choisi parmi : partenariat, nuitee_
     const rawClean = stripJsonFences(raw);
     const parsed = JSON.parse(rawClean) as { collabs: CollabMatch[]; summary: string };
 
-    // Ensure sorted by relevanceScore descending (in case AI didn't)
     if (parsed.collabs) {
+      // Replace AI-generated sequential IDs ("1", "2"…) with a name-derived slug so
+      // that the same brand always maps to the same tracking entry across searches.
+      parsed.collabs = parsed.collabs.map((c) => ({
+        ...c,
+        id: c.name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, ""),
+      }));
+
+      // Ensure sorted by relevanceScore descending (in case AI didn't)
       parsed.collabs.sort((a, b) => (b.relevanceScore ?? 0) - (a.relevanceScore ?? 0));
     }
 

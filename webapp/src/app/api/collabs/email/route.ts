@@ -9,6 +9,8 @@ export interface CollabEmailRequest {
   collab: CollabMatch;
   profile: Partial<InstagramProfile>;
   language?: "fr" | "en";
+  /** When true, generates a follow-up reminder email referencing the initial contact */
+  followUp?: boolean;
 }
 
 export interface CollabEmailResponse {
@@ -20,7 +22,7 @@ export interface CollabEmailResponse {
 export async function POST(request: Request): Promise<NextResponse<CollabEmailResponse>> {
   try {
     const body: CollabEmailRequest & { feedback?: string } = await request.json();
-    const { collab, profile, language = "fr", feedback } = body;
+    const { collab, profile, language = "fr", feedback, followUp = false } = body;
 
     if (!isAIConfigured()) {
       return NextResponse.json(
@@ -105,7 +107,48 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown ni guillemets autour) :
   "body": "Corps complet de l'email"
 }${feedbackLine}`;
 
-    const rawText = await generateText(prompt);
+    // Override with a follow-up prompt when requested
+    const finalPrompt = followUp
+      ? isEn
+        ? `You are an Instagram content creator @${profile.username ?? "creator"} with ${followers} followers.
+
+You previously sent a collaboration pitch to "${collab.name}" (${collab.type} · ${collab.niche}) but have not received a reply yet.
+
+Write a short, polite follow-up email IN ENGLISH to gently remind them of your initial message.
+The email must:
+- Have a concise subject line (< 60 chars) referencing the follow-up
+- Open by referencing your previous message briefly (1 sentence)
+- Reiterate your interest and the potential value in 1-2 sentences
+- Keep a friendly, non-pushy tone
+- End with a clear question or call-to-action
+- Stay within 100-150 words (follow-ups must be short)
+
+Respond ONLY with this JSON (no markdown):
+{
+  "subject": "Follow-up subject line",
+  "body": "Full follow-up email body"
+}${feedbackLine}`
+        : `Tu es un créateur de contenu Instagram @${profile.username ?? "creator"} avec ${followers} abonnés.
+
+Tu as envoyé une proposition de collaboration à "${collab.name}" (${collab.type} · ${collab.niche}) mais n'as pas encore reçu de réponse.
+
+Rédige un court email de relance EN FRANÇAIS pour rappeler poliment ton message précédent.
+L'email doit :
+- Avoir un objet court (< 60 chars) faisant référence à la relance
+- Ouvrir en faisant brièvement référence à ton message précédent (1 phrase)
+- Réitérer ton intérêt et la valeur potentielle en 1-2 phrases
+- Garder un ton amical, sans pression
+- Terminer par une question claire ou un call-to-action
+- Faire 100-150 mots max (une relance doit être courte)
+
+Réponds UNIQUEMENT avec ce JSON (sans markdown) :
+{
+  "subject": "Objet de la relance",
+  "body": "Corps complet de l'email de relance"
+}${feedbackLine}`
+      : prompt;
+
+    const rawText = await generateText(finalPrompt);
     const raw = stripJsonFences(rawText);
     const parsed = JSON.parse(raw);
 
