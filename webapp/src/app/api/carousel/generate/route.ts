@@ -160,10 +160,10 @@ export async function POST(request: Request): Promise<NextResponse<CarouselGener
       // Use Gemini Vision to analyze photos and generate carousel content
       const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [
         {
-          text: `Here are ${body.photos.length} photos provided by the creator (indexed 0 to ${body.photos.length - 1}). For each slide, set photoIndex to the photo that best matches the slide's topic and mood. Analyse their visual style to align the text content.\n`,
+          text: `Here are ${body.photos.length} photos provided by the creator (indexed 0 to ${body.photos.length - 1}). Photo 0 is the cover (first slide). For each slide, you MUST set photoIndex to the specific photo that best matches THAT slide's topic, mood, and visual content. Analyse each photo carefully. Never assign the same photoIndex to all slides — distribute photos meaningfully across slides.\n`,
         },
       ];
-      for (const photo of body.photos.slice(0, 3)) {
+      for (const photo of body.photos.slice(0, 6)) {
         const match = photo.match(/^data:([^;]+);base64,(.+)$/);
         if (match) {
           parts.push({ inlineData: { mimeType: match[1]!, data: match[2]! } });
