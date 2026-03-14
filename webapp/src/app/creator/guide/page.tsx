@@ -5,6 +5,7 @@ import { Header } from "@/components/layout/Header";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { captureEvent } from "@/lib/posthog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -102,6 +103,11 @@ export default function GuidePage() {
       const json = await res.json();
       if (json.success && json.html) {
         setGeneratedHtml(json.html as string);
+        captureEvent("guide_generated", {
+          guideType,
+          numSections: filled.length,
+          hasPhotos: photos.length > 0,
+        });
       } else {
         setError(json.error ?? "Erreur lors de la génération");
       }
@@ -114,6 +120,7 @@ export default function GuidePage() {
 
   const handleExportPDF = () => {
     if (!generatedHtml) return;
+    captureEvent("guide_exported_pdf", { guideType });
     const blob = new Blob([generatedHtml], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     const win = window.open(url, "_blank");

@@ -54,6 +54,7 @@ import { loadUserProfile, getDisplayName } from "@/lib/user-profile-store";
 import { loadMediaKitConfig } from "@/lib/mediakit-config-store";
 import type { InstagramAnalytics } from "@/types/instagram";
 import type { BrandPitchResponse } from "@/app/api/collabs/brand-pitch/route";
+import { captureEvent } from "@/lib/posthog";
 
 // ─── Type badge colors ─────────────────────────────────────────────────────────
 
@@ -174,6 +175,7 @@ function TrackingPanel({
   }, [collab, profile, language]);
 
   const markSent = (channel: "email" | "dm") => {
+    captureEvent("collab_contact_sent", { channel });
     const updated: CollabTracking = {
       ...tracking,
       status: channel === "email" ? "email_sent" : "dm_sent",

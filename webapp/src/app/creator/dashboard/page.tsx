@@ -33,6 +33,7 @@ import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { subDays, subMonths, subYears, startOfDay, endOfDay, format } from "date-fns";
 import { saveAccount } from "@/lib/accounts-store";
+import { captureEvent } from "@/lib/posthog";
 
 const TYPE_LABELS: Record<string, string> = {
   IMAGE: "📸 Photo",
@@ -143,6 +144,7 @@ export default function CreatorDashboard() {
         }
         // After all ZIPs are extracted, re-fetch /api/data to parse the merged export
         if (allOk) {
+          captureEvent("zip_imported");
           mutate();
           setUploadSuccess(true);
           setTimeout(() => setUploadSuccess(false), 5000);

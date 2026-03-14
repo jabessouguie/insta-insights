@@ -14,11 +14,17 @@ const CookieBanner = dynamic(
   { ssr: false }
 );
 
+const PosthogProvider = dynamic(
+  () => import("@/components/PosthogProvider").then((m) => m.PosthogProvider),
+  { ssr: false }
+);
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       <LanguageProvider>
         {children}
+        <PosthogProvider />
         <BugReportButton />
         <CookieBanner />
       </LanguageProvider>
