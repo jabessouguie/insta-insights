@@ -19,6 +19,7 @@ const FR = {
   "nav.responses": "Réponses",
   "nav.comments": "Commentaires",
   "nav.carousel": "Carrousel",
+  "nav.more": "Plus",
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   "dashboard.title": "Dashboard Créateur",
@@ -742,6 +743,7 @@ const EN: Record<keyof typeof FR, string> = {
   "nav.responses": "Replies",
   "nav.comments": "Comments",
   "nav.carousel": "Carousel",
+  "nav.more": "More",
 
   // ── Dashboard ─────────────────────────────────────────────────────────────
   "dashboard.title": "Creator Dashboard",
