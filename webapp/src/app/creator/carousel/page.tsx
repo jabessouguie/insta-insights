@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
+import { captureEvent } from "@/lib/posthog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -600,6 +601,12 @@ export default function CarouselPage() {
       setResult(json);
 
       if (json.success && json.slides) {
+        captureEvent("carousel_generated", {
+          numSlides: json.slides.length,
+          hasPhotos: photos.length > 0,
+          slideFormat,
+          audienceMode: audience.mode,
+        });
         // Render slides to canvas
         setIsRendering(true);
         await loadFont(fonts.title);
