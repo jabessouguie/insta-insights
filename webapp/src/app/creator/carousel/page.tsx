@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Star,
 } from "lucide-react";
 import { ScheduleModal } from "@/components/calendar/ScheduleModal";
 import { saveItem } from "@/lib/calendar-store";
@@ -545,6 +546,23 @@ export default function CarouselPage() {
     setPhotoNames((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  /** Move a photo to index 0 so it becomes the carousel cover */
+  const movePhotoToFront = useCallback((index: number) => {
+    if (index === 0) return;
+    setPhotos((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.unshift(moved);
+      return next;
+    });
+    setPhotoNames((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.unshift(moved);
+      return next;
+    });
+  }, []);
+
   // ── Generate ──────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!subject.trim()) return;
@@ -1019,9 +1037,28 @@ export default function CarouselPage() {
                           <img
                             src={src}
                             alt={photoNames[i]}
-                            className="h-16 w-16 rounded-md object-cover"
+                            className={`h-16 w-16 rounded-md object-cover ${i === 0 ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
                           />
+                          {/* Cover badge on index 0 */}
+                          {i === 0 && (
+                            <span className="absolute -bottom-1 left-0 right-0 mx-auto w-fit rounded bg-primary px-1 py-px text-[8px] font-semibold text-primary-foreground">
+                              Cover
+                            </span>
+                          )}
+                          {/* Move-to-front button on non-cover photos */}
+                          {i > 0 && (
+                            <button
+                              type="button"
+                              title={t("carousel.photos.cover")}
+                              onClick={() => movePhotoToFront(i)}
+                              className="absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                              <Star className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                          {/* Remove button */}
                           <button
+                            type="button"
                             onClick={() => removePhoto(i)}
                             className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
                           >
