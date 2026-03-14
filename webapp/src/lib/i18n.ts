@@ -390,6 +390,10 @@ const FR = {
 
   // ── Header (remaining) ────────────────────────────────────────────────────
   "header.homeAriaLabel": "Retour à l'accueil",
+  "header.accounts.switch": "Changer de compte",
+  "header.accounts.add": "Ajouter un compte",
+  "header.accounts.remove": "Supprimer ce compte",
+  "header.accounts.active": "Compte actif",
 
   // ── Inbox ─────────────────────────────────────────────────────────────────
   "inbox.title": "Boîte de réception",
@@ -1107,6 +1111,10 @@ const EN: Record<keyof typeof FR, string> = {
 
   // ── Header (remaining) ────────────────────────────────────────────────────
   "header.homeAriaLabel": "Back to home",
+  "header.accounts.switch": "Switch account",
+  "header.accounts.add": "Add account",
+  "header.accounts.remove": "Remove this account",
+  "header.accounts.active": "Active account",
 
   // ── Inbox ─────────────────────────────────────────────────────────────────
   "inbox.title": "Inbox",

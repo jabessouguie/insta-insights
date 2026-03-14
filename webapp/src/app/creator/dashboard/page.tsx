@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import {
   Users,
   TrendingUp,
@@ -32,6 +32,7 @@ import { formatNumber, formatDate } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { subDays, subMonths, subYears, startOfDay, endOfDay, format } from "date-fns";
+import { saveAccount } from "@/lib/accounts-store";
 
 const TYPE_LABELS: Record<string, string> = {
   IMAGE: "📸 Photo",
@@ -48,6 +49,18 @@ export default function CreatorDashboard() {
   const { data, isLoading, mutate } = useInstagramData(dateRange);
   const t = useT();
   const [includeReels, setIncludeReels] = useState(false);
+
+  // Auto-save account profile to multi-account store whenever data loads
+  useEffect(() => {
+    if (data?.profile?.username) {
+      saveAccount({
+        username: data.profile.username,
+        displayName: data.profile.username,
+        profilePicUrl: data.profile.profilePicUrl ?? "",
+        followerCount: data.profile.followerCount ?? 0,
+      });
+    }
+  }, [data?.profile?.username, data?.profile?.followerCount, data?.profile?.profilePicUrl]);
 
   const handlePeriodChange = (newPeriod: typeof period) => {
     setPeriod(newPeriod);
