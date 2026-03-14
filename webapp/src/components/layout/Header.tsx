@@ -30,6 +30,7 @@ import {
   Layers,
   FlaskConical,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
@@ -142,6 +143,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/campaigns", label: t("nav.campaigns"), icon: Target },
     { href: "/creator/invoice", label: t("nav.invoice"), icon: Receipt },
     { href: "/creator/referral", label: t("nav.referral"), icon: Share2 },
+    { href: "/creator/guide", label: t("nav.guide"), icon: BookOpen },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
   ];
 

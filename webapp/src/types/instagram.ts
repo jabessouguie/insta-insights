@@ -619,3 +619,33 @@ export interface InboxReplyResponse {
   id?: string;
   error?: string;
 }
+
+// ============================================================
+// Guide Generator Types
+// ============================================================
+
+export type GuideType = "travel" | "tutorial" | "recipe" | "tips" | "general";
+
+export interface GuideSection {
+  /** Section heading */
+  title: string;
+  /** Paragraph content for this section */
+  content: string;
+  /** Index into the uploaded photos array — -1 or undefined = no photo */
+  photoIndex?: number;
+}
+
+export interface GuideConfig {
+  /** Full guide title */
+  title: string;
+  /** Optional subtitle or tagline */
+  subtitle?: string;
+  type: GuideType;
+  /** Author name shown in footer */
+  authorName?: string;
+  /** Primary brand colour (hex, e.g. "#E040FB") */
+  accentColor?: string;
+  sections: GuideSection[];
+  /** Base64 data URLs for uploaded photos */
+  photos?: string[];
+}
