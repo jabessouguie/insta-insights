@@ -24,23 +24,62 @@ const montserrat = Montserrat({
   display: "swap",
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "https://instainsights.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(BASE_URL),
   title: {
-    default: "InstaInsights – Analytics Instagram",
+    default: "InstaInsights – Analytics Instagram IA",
     template: "%s | InstaInsights",
   },
   description:
-    "Plateforme d'analyse Instagram avancée pour créateurs de contenu et agences. Insights alimentés par l'IA.",
-  keywords: ["Instagram", "analytics", "influencer", "agence", "insights", "dashboard"],
-  robots: { index: false, follow: false },
+    "Transformez votre export Instagram en insights actionnables. Analytics, Media Kit PDF, Carousel IA et Collab Finder — 100% local, 100% RGPD, gratuit sans CB.",
+  keywords: [
+    "Instagram analytics",
+    "analyse Instagram",
+    "dashboard Instagram",
+    "media kit influencer",
+    "carousel Instagram IA",
+    "collab finder",
+    "créateur de contenu",
+    "agence influencer",
+    "export Instagram",
+    "insights IA",
+  ],
+  robots: { index: true, follow: true },
   manifest: "/manifest.json",
   appleWebApp: {
     statusBarStyle: "black-translucent",
     title: "InstaInsights",
+    capable: true,
   },
   icons: {
     icon: "/icon.svg",
     apple: "/icon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: BASE_URL,
+    siteName: "InstaInsights",
+    title: "InstaInsights – Analytics Instagram IA",
+    description:
+      "Transformez votre export Instagram en insights actionnables. Analytics, Media Kit PDF, Carousel IA — 100% local, gratuit sans CB.",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "InstaInsights – Analytics Instagram IA",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "InstaInsights – Analytics Instagram IA",
+    description:
+      "Analytics Instagram propulsées par l'IA. Gratuit, 100% local, sans connexion Instagram.",
+    images: ["/api/og"],
   },
 };
 
@@ -65,6 +104,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${playfair.variable} ${roboto.variable} ${montserrat.variable} font-sans`}
         suppressHydrationWarning
       >
+        {/* Skip to main content — WCAG 2.1 AA */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[99999] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:outline-none"
+        >
+          Aller au contenu principal
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>

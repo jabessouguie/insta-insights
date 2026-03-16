@@ -21,6 +21,7 @@ const FR = {
   "nav.carousel": "Carrousel",
   "nav.more": "Plus",
   "nav.guide": "Guide PDF",
+  "nav.help": "Aide",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
   "guide.title": "Générateur de Guide PDF",
@@ -777,6 +778,7 @@ const EN: Record<keyof typeof FR, string> = {
   "nav.carousel": "Carousel",
   "nav.more": "More",
   "nav.guide": "PDF Guide",
+  "nav.help": "Help",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
   "guide.title": "PDF Guide Generator",
