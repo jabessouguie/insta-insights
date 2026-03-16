@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { WaitlistForm } from "@/components/WaitlistForm";
 import {
   BarChart3,
   Building2,
@@ -488,6 +489,27 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Waitlist ── */}
+      <section id="waitlist" className="border-t border-white/5 bg-white/[0.02] px-6 py-20">
+        <div className="mx-auto max-w-xl text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#ffd953]/20 bg-[#ffd953]/5 px-4 py-1.5 text-sm font-medium text-[#ffd953]">
+            <Sparkles className="h-3.5 w-3.5" />
+            Plan Pro — Bientôt disponible
+          </div>
+          <h2 className="mb-3 text-2xl font-bold text-white">
+            Rejoins la liste d&apos;attente Pro
+          </h2>
+          <p className="mb-8 text-sm leading-relaxed text-[#cfcbba]/60">
+            Sois parmi les premiers à accéder à l&apos;IA illimitée, aux 10 thèmes Media Kit et au
+            support prioritaire. Lancement prévu très prochainement.
+          </p>
+          <WaitlistForm plan="pro" />
+          <p className="mt-4 text-xs text-[#cfcbba]/40">
+            Aucun spam. Tu recevras un email uniquement pour le lancement.
+          </p>
         </div>
       </section>
 

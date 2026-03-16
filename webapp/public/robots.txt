@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+
+# Public pages
+Allow: /pricing
+Allow: /privacy
+Allow: /deletion
+Allow: /help
+
+# Block authenticated/app routes from crawlers
+Disallow: /creator/
+Disallow: /agency/
+Disallow: /api/
+
+Sitemap: https://instainsights.app/sitemap.xml

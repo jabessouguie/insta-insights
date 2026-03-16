@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Check, X, ArrowRight, TrendingUp, Shield, Mail, Sparkles, Zap } from "lucide-react";
+import { Check, X, ArrowRight, TrendingUp, Shield, Mail, Sparkles } from "lucide-react";
+import { WaitlistForm } from "@/components/WaitlistForm";
 
 export const metadata: Metadata = {
   title: "Tarifs — InstaInsights",
   description:
     "Plans Free, Pro et Agency pour analyser tes données Instagram avec l'IA. Commence gratuitement, sans carte bancaire.",
+  openGraph: {
+    title: "Tarifs InstaInsights — Free, Pro & Agency",
+    description:
+      "Plans Free (0€), Pro (9€/mois) et Agency (29€/mois). Analytics Instagram IA, Media Kit PDF, Carousel. Gratuit sans CB.",
+    images: [{ url: "/api/og?page=pricing", width: 1200, height: 630 }],
+  },
 };
 
 // ── Feature comparison table ──────────────────────────────────────────────────
@@ -199,13 +206,9 @@ export default function PricingPage() {
                 IA illimitée, tous les modules, support prioritaire.
               </p>
             </div>
-            <a
-              href="#waitlist"
-              className="mb-6 flex items-center justify-center gap-2 rounded-lg bg-[#ffd953] px-4 py-2.5 text-sm font-semibold text-[#111c1b] transition-all hover:opacity-90"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Rejoindre la liste d&apos;attente
-            </a>
+            <div className="mb-6">
+              <WaitlistForm plan="pro" compact />
+            </div>
             <ul className="flex-1 space-y-2.5 text-sm">
               {[
                 "Tout ce qui est inclus en Free",

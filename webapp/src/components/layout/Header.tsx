@@ -31,6 +31,7 @@ import {
   FlaskConical,
   Target,
   BookOpen,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
@@ -145,6 +146,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/referral", label: t("nav.referral"), icon: Share2 },
     { href: "/creator/guide", label: t("nav.guide"), icon: BookOpen },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
+    { href: "/help", label: t("nav.help"), icon: HelpCircle },
   ];
 
   // All links (for mobile menu)

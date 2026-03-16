@@ -4,8 +4,9 @@
   "description": "Dashboard d'analyse Instagram pour créateurs et agences",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f13",
-  "theme_color": "#7c3aed",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#111c1b",
+  "theme_color": "#ffd953",
   "orientation": "portrait-primary",
   "categories": ["productivity", "social"],
   "icons": [
@@ -23,9 +24,19 @@
       "description": "Vue d'ensemble des analytics"
     },
     {
-      "name": "Interactions",
-      "url": "/creator/interactions",
-      "description": "Analyser tes interactions"
+      "name": "Carousel",
+      "url": "/creator/carousel",
+      "description": "Générer un carousel Instagram"
+    },
+    {
+      "name": "Aide",
+      "url": "/help",
+      "description": "Centre d'aide et FAQ"
+    },
+    {
+      "name": "Tarifs",
+      "url": "/pricing",
+      "description": "Plans Free, Pro & Agency"
     }
   ]
 }
