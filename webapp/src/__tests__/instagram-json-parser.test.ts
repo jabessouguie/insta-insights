@@ -20,54 +20,47 @@ beforeEach(() => {
 describe("isJsonExport", () => {
   const folder = "/mock/instagram-test";
 
-  it("returns true when personal_information.json is present", () => {
+  it("returns true for a full JSON export (personal_information.json present)", () => {
+    // JSON export — no html indicators, some json files
     mockFs.existsSync.mockImplementation((p) => String(p).endsWith("personal_information.json"));
     expect(isJsonExport(folder)).toBe(true);
   });
 
-  it("returns true when audience_insights.json is present (no personal_information.json)", () => {
-    mockFs.existsSync.mockImplementation((p) => String(p).endsWith("audience_insights.json"));
+  it("returns true for a partial JSON ZIP with no indicator files (e.g. media-only)", () => {
+    // No html indicators, no json indicators either — partial ZIP
+    mockFs.existsSync.mockReturnValue(false);
     expect(isJsonExport(folder)).toBe(true);
   });
 
-  it("returns false when neither JSON indicator file is present (HTML export)", () => {
-    mockFs.existsSync.mockReturnValue(false);
+  it("returns false when followers_1.html is present (old HTML format)", () => {
+    mockFs.existsSync.mockImplementation((p) => String(p).endsWith("followers_1.html"));
     expect(isJsonExport(folder)).toBe(false);
   });
 
-  it("checks the correct paths inside the export folder", () => {
-    const piPath = path.join(
-      folder,
-      "personal_information",
-      "personal_information",
-      "personal_information.json"
-    );
-    const insightPath = path.join(
-      folder,
-      "logged_information",
-      "past_instagram_insights",
-      "audience_insights.json"
-    );
+  it("returns false when following.html is present (old HTML format)", () => {
+    mockFs.existsSync.mockImplementation((p) => String(p).endsWith("following.html"));
+    expect(isJsonExport(folder)).toBe(false);
+  });
 
+  it("returns false when audience_insights.html is present (old HTML format)", () => {
+    mockFs.existsSync.mockImplementation((p) => String(p).endsWith("audience_insights.html"));
+    expect(isJsonExport(folder)).toBe(false);
+  });
+
+  it("returns false when content_interactions.html is present (old HTML format)", () => {
+    mockFs.existsSync.mockImplementation((p) => String(p).endsWith("content_interactions.html"));
+    expect(isJsonExport(folder)).toBe(false);
+  });
+
+  it("checks the html indicator paths inside the export folder", () => {
+    const followersHtmlPath = path.join(
+      folder,
+      "connections",
+      "followers_and_following",
+      "followers_1.html"
+    );
     mockFs.existsSync.mockReturnValue(false);
     isJsonExport(folder);
-
-    expect(mockFs.existsSync).toHaveBeenCalledWith(piPath);
-    // If pi check returns false, the insight path should also be checked
-    expect(mockFs.existsSync).toHaveBeenCalledWith(insightPath);
-  });
-});
-
-// ─── upload route — HTML format rejection (integration-level unit test) ───────
-
-describe("upload route rejects HTML exports", () => {
-  it("isJsonExport returns false for a folder with only .html files", () => {
-    // Simulate an HTML export: no .json indicator files at the expected paths
-    mockFs.existsSync.mockImplementation((p) => {
-      const s = String(p);
-      // Only .html files exist
-      return s.endsWith("followers_1.html") || s.endsWith("following.html");
-    });
-    expect(isJsonExport("/mock/instagram-html-export")).toBe(false);
+    expect(mockFs.existsSync).toHaveBeenCalledWith(followersHtmlPath);
   });
 });

@@ -42,11 +42,12 @@ describe("interaction-analyser", () => {
     });
 
     it("returns null for an HTML export (not supported)", async () => {
-      // Folder exists but is an HTML export (no personal_information.json, no audience_insights.json)
+      // HTML export: followers_1.html present → isJsonExport returns false
       mockFs.existsSync.mockImplementation((p: any) => {
         if (p === "/mock/data") return true;
         if (p === "/mock/data/instagram-test") return true;
-        return false; // no JSON indicator files
+        if (String(p).endsWith("followers_1.html")) return true; // HTML indicator
+        return false;
       });
       mockFs.readdirSync.mockImplementation((p: any): any => {
         if (p === "/mock/data") return ["instagram-test"];
