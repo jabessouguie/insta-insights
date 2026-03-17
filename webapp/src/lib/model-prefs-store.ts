@@ -13,7 +13,11 @@ export const MODEL_OPTIONS: Array<{ label: string; value: string; provider: stri
   { label: "Gemini Flash (rapide)", value: "gemini-3-flash-preview", provider: "gemini" },
   { label: "Gemini Pro (puissant)", value: "gemini-3.1-pro-preview", provider: "gemini" },
   { label: "Claude Sonnet 4.6", value: "claude-sonnet-4-6", provider: "anthropic" },
-  { label: "GPT-4o", value: "gpt-4o", provider: "openai" },
+  { label: "Claude Opus 4.6", value: "claude-opus-4-6", provider: "anthropic" },
+  { label: "GPT-4.1 (flagship)", value: "gpt-4.1", provider: "openai" },
+  { label: "GPT-4.1 mini (rapide)", value: "gpt-4.1-mini", provider: "openai" },
+  { label: "o3 (raisonnement)", value: "o3", provider: "openai" },
+  { label: "o4-mini (raisonnement rapide)", value: "o4-mini", provider: "openai" },
 ];
 
 export const DEFAULT_MODEL = "gemini-3-flash-preview";
