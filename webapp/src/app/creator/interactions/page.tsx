@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import {
   UserX,
@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useInstagramData, getIgHeaders } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { getDismissed, dismissUser } from "@/lib/dm-dismissed-store";
 import type { InteractionAnalysis, UnfollowCandidate, DMSuggestion } from "@/types/instagram";
 
 const fetcher = (url: string) => fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
@@ -80,9 +81,15 @@ function CandidateRow({ candidate }: { candidate: UnfollowCandidate }) {
 
 // ─── Free DM generator (any bio, not tied to listed accounts) ─────────────────
 
-function FreeDMGenerator() {
+function DMCard({
+  suggestion,
+  onDismiss,
+}: {
+  suggestion: DMSuggestion;
+  onDismiss: (username: string) => void;
+}) {
   const { lang } = useLanguage();
-  const [bio, setBio] = useState("");
+  const [bio, setBio] = useState<string>(suggestion.bio ?? "");
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -273,6 +280,11 @@ function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const markSent = () => {
+    dismissUser(suggestion.username);
+    onDismiss(suggestion.username);
+  };
+
   return (
     <div className="space-y-3 rounded-xl border border-border/60 bg-card/50 p-4">
       <div className="flex items-start justify-between gap-2">
@@ -332,6 +344,15 @@ function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={markSent}
+              className="ml-auto gap-1.5 text-xs text-emerald-500 hover:bg-emerald-500/10 hover:text-emerald-400"
+            >
+              <Check className="h-3 w-3" />
+              DM envoyé
+            </Button>
           </>
         )}
       </div>
@@ -400,7 +421,22 @@ export default function InteractionsPage() {
     { revalidateOnFocus: false }
   );
 
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setDismissed(new Set(getDismissed()));
+  }, []);
+
+  const handleDismiss = (username: string) => {
+    setDismissed((prev) => new Set([...prev, username]));
+  };
+
   const analysis = data?.data;
+
+  const dmNoFollowBack = analysis?.dmSuggestionsNoFollowBack?.filter(
+    (s) => !dismissed.has(s.username)
+  );
+  const dmMutual = analysis?.dmSuggestionsMutual?.filter((s) => !dismissed.has(s.username));
 
   return (
     <div className="min-h-screen bg-background">
@@ -424,9 +460,7 @@ export default function InteractionsPage() {
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <MessageCircle className="h-3.5 w-3.5 text-blue-400" />
-              {(analysis.dmSuggestionsNoFollowBack?.length ?? 0) +
-                (analysis.dmSuggestionsMutual?.length ?? 0)}{" "}
-              DM suggérés
+              {(dmNoFollowBack?.length ?? 0) + (dmMutual?.length ?? 0)} DM suggérés
             </Badge>
             <Badge variant="secondary" className="gap-1.5 px-3 py-1.5 text-sm">
               <Trash2 className="h-3.5 w-3.5 text-red-400" />
@@ -435,7 +469,10 @@ export default function InteractionsPage() {
           </div>
         )}
 
-        <FreeDMGenerator />
+        <DMCard
+          suggestion={{ username: "", followedSince: new Date(), profileUrl: "", bio: "", reason: "" }}
+          onDismiss={() => {}}
+        />
 
         <Tabs defaultValue="dm-nofollowback" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
@@ -472,14 +509,14 @@ export default function InteractionsPage() {
                     votre export depuis Instagram → Paramètres → Vos activités → Télécharger vos
                     informations.
                   </p>
-                ) : !analysis?.dmSuggestionsNoFollowBack?.length ? (
+                ) : !dmNoFollowBack?.length ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     Aucune suggestion pour le moment.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {analysis.dmSuggestionsNoFollowBack.map((s) => (
-                      <DMCard key={s.username} suggestion={s} />
+                    {dmNoFollowBack.map((s) => (
+                      <DMCard key={s.username} suggestion={s} onDismiss={handleDismiss} />
                     ))}
                   </div>
                 )}
@@ -507,14 +544,14 @@ export default function InteractionsPage() {
                   <p className="rounded-lg bg-amber-500/10 px-4 py-3 text-xs text-amber-300">
                     {t("interactions.api.inactive_unavailable")}
                   </p>
-                ) : !analysis?.dmSuggestionsMutual?.length ? (
+                ) : !dmMutual?.length ? (
                   <p className="py-6 text-center text-sm text-muted-foreground">
                     Aucune suggestion pour le moment.
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {analysis.dmSuggestionsMutual.map((s) => (
-                      <DMCard key={s.username} suggestion={s} />
+                    {dmMutual.map((s) => (
+                      <DMCard key={s.username} suggestion={s} onDismiss={handleDismiss} />
                     ))}
                   </div>
                 )}
