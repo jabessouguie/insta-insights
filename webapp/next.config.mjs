@@ -36,7 +36,7 @@ const nextConfig = {
             "img-src 'self' data: blob: https://*.cdninstagram.com https://ui-avatars.com",
             "font-src 'self' https://fonts.gstatic.com",
             "connect-src 'self' https://generativelanguage.googleapis.com https://ui-avatars.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.sentry.io https://unpkg.com",
-            "worker-src blob:",
+            "worker-src 'self' blob:",
             "media-src 'self' data: blob:",
           ].join("; "),
         },
