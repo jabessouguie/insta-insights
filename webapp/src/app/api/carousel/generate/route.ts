@@ -76,6 +76,20 @@ ${captionsSection}
 - No exclamation marks in titles unless genuinely needed
 - photoIndex: choose the photo that best matches the slide content (0-based index into available photos). If no photos are available, use -1. DO NOT just rotate — pick the most relevant photo for each slide's topic.
 
+### Text style rules (textStyle per slide)
+- bg: "none" | "highlight" | "pill" | "glass"
+  - "none": clean text, add shadow:true for readability over photos
+  - "highlight": semi-transparent color band behind each text line — bold, editorial look
+  - "pill": rounded badge around each line — modern, graphic
+  - "glass": frosted glass card over the entire title block — premium, magazine feel
+- bgColor: hex color — use primary or accent; omit to fall back to accent
+- bgOpacity: 0.7–0.92 (default 0.85)
+- shadow: true adds drop shadow — always set true when bg is "none"
+- glow: true adds a colored halo — dramatic, use on at most 1 slide
+- rotation: float –2 to +2 (subtle organic tilt). ALWAYS set 0 on the CTA slide.
+- autoScale: set true when the title has more than 5 words
+- Vary styles across slides — never repeat the same bg on more than 40% of slides.
+
 ### Instagram description rules (also in ${lang})
 - Structure: scroll-stopping hook (1 sentence) → 1–2 lines of context or strong opinion → 1–3 practical tips → CTA
 - Tone: funny, sarcastic, slightly bold, authentic — written from POV of someone who's been there
@@ -92,7 +106,15 @@ Reply ONLY with this JSON (no markdown fences, no extra text):
       "title": "Hook that stops the scroll",
       "subtitle": "One line of context",
       "body": "Short punchy insight from experience",
-      "photoIndex": 0
+      "photoIndex": 0,
+      "textStyle": {
+        "bg": "highlight",
+        "bgColor": "#e91e8c",
+        "bgOpacity": 0.85,
+        "shadow": true,
+        "rotation": 1.2,
+        "autoScale": false
+      }
     }
   ],
   "instagramDescription": "Full optimised caption ready to post...",
