@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Header } from "@/components/layout/Header";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
+import { captureEvent } from "@/lib/posthog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Star,
 } from "lucide-react";
 import { ScheduleModal } from "@/components/calendar/ScheduleModal";
 import { saveItem } from "@/lib/calendar-store";
@@ -35,6 +37,7 @@ import type {
 import { loadBrandSettings } from "@/lib/brand-settings-store";
 import { saveCarouselContext, saveStoriesContext } from "@/lib/content-prompt-context-store";
 import { OptimalSlotsWidget } from "@/components/creator/OptimalSlotsWidget";
+import { drawStyledTextBlock } from "@/lib/canvas-text-renderer";
 
 // ─── Canvas renderer ─────────────────────────────────────────────────────────
 
@@ -107,41 +110,58 @@ async function renderSlideToBlob(
   ctx.fillRect(60, SLIDE_SIZE * 0.55, 6, SLIDE_SIZE * 0.38);
 
   const textX = 90;
+  const maxTextWidth = SLIDE_SIZE - textX - 60;
+  const titleStyle = slide.textStyle ?? { shadow: true };
   let textY = SLIDE_SIZE * 0.6;
 
   // ── Title ────────────────────────────────────────────────────────────────
-  ctx.textAlign = "left";
-  ctx.font = `bold 72px "${fonts.title}"`;
-  ctx.fillStyle = "#ffffff";
-  // Word-wrap title
-  const titleLines = wrapText(ctx, slide.title, SLIDE_SIZE - textX - 60, 72);
-  for (const line of titleLines) {
-    ctx.fillText(line, textX, textY);
-    textY += 84;
-  }
+  textY = drawStyledTextBlock(ctx, {
+    text: slide.title,
+    x: textX,
+    y: textY,
+    maxWidth: maxTextWidth,
+    font: `bold 72px "${fonts.title}"`,
+    fontSize: 72,
+    color: "#ffffff",
+    align: "left",
+    maxLines: 3,
+    style: titleStyle,
+    accentColor,
+    bgPadding: 12,
+  });
 
   // ── Subtitle ─────────────────────────────────────────────────────────────
   textY += 12;
-  ctx.font = `500 44px "${fonts.subtitle}"`;
-  ctx.fillStyle = accentColor;
-  const subLines = wrapText(ctx, slide.subtitle, SLIDE_SIZE - textX - 60, 44);
-  for (const line of subLines) {
-    ctx.fillText(line, textX, textY);
-    textY += 54;
-  }
+  textY = drawStyledTextBlock(ctx, {
+    text: slide.subtitle,
+    x: textX,
+    y: textY,
+    maxWidth: maxTextWidth,
+    font: `500 44px "${fonts.subtitle}"`,
+    fontSize: 44,
+    color: accentColor,
+    align: "left",
+    maxLines: 2,
+    style: { shadow: titleStyle.shadow ?? true },
+    accentColor,
+  });
 
   // ── Body ─────────────────────────────────────────────────────────────────
-  if (slide.body) {
+  if (slide.body && textY < SLIDE_SIZE - 120) {
     textY += 16;
-    ctx.font = `400 36px "${fonts.body}"`;
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    const bodyLines = wrapText(ctx, slide.body, SLIDE_SIZE - textX - 60, 36);
-    for (const line of bodyLines) {
-      if (textY < SLIDE_SIZE - 80) {
-        ctx.fillText(line, textX, textY);
-        textY += 46;
-      }
-    }
+    drawStyledTextBlock(ctx, {
+      text: slide.body,
+      x: textX,
+      y: textY,
+      maxWidth: maxTextWidth,
+      font: `400 36px "${fonts.body}"`,
+      fontSize: 36,
+      color: "rgba(255,255,255,0.85)",
+      align: "left",
+      maxLines: 3,
+      style: { shadow: true },
+      accentColor,
+    });
   }
 
   return new Promise<Blob>((resolve, reject) =>
@@ -150,31 +170,6 @@ async function renderSlideToBlob(
       "image/png"
     )
   );
-}
-
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  fontSize: number
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  const maxLines = Math.floor((SLIDE_SIZE * 0.35) / (fontSize * 1.2));
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-      if (lines.length >= maxLines) break;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
 }
 
 // ─── Story canvas renderer (1080 × 1920, vertical 9:16) ──────────────────────
@@ -232,30 +227,42 @@ async function renderStoryToBlob(
   ctx.fillRect(STORY_WIDTH * 0.1, STORY_HEIGHT - 80, STORY_WIDTH * 0.8, 6);
 
   const textX = STORY_WIDTH / 2;
+  const maxTextWidth = STORY_WIDTH - 160;
+  const titleStyle = slide.textStyle ?? { shadow: true };
   let textY = STORY_HEIGHT * 0.62;
 
   // ── Title ────────────────────────────────────────────────────────────────
-  ctx.textAlign = "center";
-  ctx.font = `bold 100px "${fonts.title}"`;
-  ctx.fillStyle = "#ffffff";
-  const titleLines = wrapTextCentered(ctx, slide.title, STORY_WIDTH - 160, 100);
-  for (const line of titleLines) {
-    ctx.fillText(line, textX, textY);
-    textY += 118;
-  }
+  textY = drawStyledTextBlock(ctx, {
+    text: slide.title,
+    x: textX,
+    y: textY,
+    maxWidth: maxTextWidth,
+    font: `bold 100px "${fonts.title}"`,
+    fontSize: 100,
+    color: "#ffffff",
+    align: "center",
+    maxLines: 4,
+    style: titleStyle,
+    accentColor,
+    bgPadding: 16,
+  });
 
   // ── Body ─────────────────────────────────────────────────────────────────
-  if (slide.body) {
+  if (slide.body && textY < STORY_HEIGHT - 180) {
     textY += 24;
-    ctx.font = `400 52px "${fonts.body}"`;
-    ctx.fillStyle = "rgba(255,255,255,0.85)";
-    const bodyLines = wrapTextCentered(ctx, slide.body, STORY_WIDTH - 160, 52);
-    for (const line of bodyLines) {
-      if (textY < STORY_HEIGHT - 140) {
-        ctx.fillText(line, textX, textY);
-        textY += 66;
-      }
-    }
+    drawStyledTextBlock(ctx, {
+      text: slide.body,
+      x: textX,
+      y: textY,
+      maxWidth: maxTextWidth,
+      font: `400 52px "${fonts.body}"`,
+      fontSize: 52,
+      color: "rgba(255,255,255,0.85)",
+      align: "center",
+      maxLines: 3,
+      style: { shadow: true },
+      accentColor,
+    });
   }
 
   return new Promise<Blob>((resolve, reject) =>
@@ -264,31 +271,6 @@ async function renderStoryToBlob(
       "image/png"
     )
   );
-}
-
-function wrapTextCentered(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  _fontSize: number
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  const maxLines = 4;
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-      if (lines.length >= maxLines) break;
-    } else {
-      current = test;
-    }
-  }
-  if (current) lines.push(current);
-  return lines;
 }
 
 // ─── Google Fonts list (curated) ─────────────────────────────────────────────
@@ -545,6 +527,23 @@ export default function CarouselPage() {
     setPhotoNames((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  /** Move a photo to index 0 so it becomes the carousel cover */
+  const movePhotoToFront = useCallback((index: number) => {
+    if (index === 0) return;
+    setPhotos((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.unshift(moved);
+      return next;
+    });
+    setPhotoNames((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(index, 1);
+      next.unshift(moved);
+      return next;
+    });
+  }, []);
+
   // ── Generate ──────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!subject.trim()) return;
@@ -582,6 +581,12 @@ export default function CarouselPage() {
       setResult(json);
 
       if (json.success && json.slides) {
+        captureEvent("carousel_generated", {
+          numSlides: json.slides.length,
+          hasPhotos: photos.length > 0,
+          slideFormat,
+          audienceMode: audience.mode,
+        });
         // Render slides to canvas
         setIsRendering(true);
         await loadFont(fonts.title);
@@ -1019,9 +1024,28 @@ export default function CarouselPage() {
                           <img
                             src={src}
                             alt={photoNames[i]}
-                            className="h-16 w-16 rounded-md object-cover"
+                            className={`h-16 w-16 rounded-md object-cover ${i === 0 ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""}`}
                           />
+                          {/* Cover badge on index 0 */}
+                          {i === 0 && (
+                            <span className="absolute -bottom-1 left-0 right-0 mx-auto w-fit rounded bg-primary px-1 py-px text-[8px] font-semibold text-primary-foreground">
+                              Cover
+                            </span>
+                          )}
+                          {/* Move-to-front button on non-cover photos */}
+                          {i > 0 && (
+                            <button
+                              type="button"
+                              title={t("carousel.photos.cover")}
+                              onClick={() => movePhotoToFront(i)}
+                              className="absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                              <Star className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                          {/* Remove button */}
                           <button
+                            type="button"
                             onClick={() => removePhoto(i)}
                             className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
                           >

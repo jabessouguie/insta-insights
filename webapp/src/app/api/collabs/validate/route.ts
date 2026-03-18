@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { validateEmail } from "@/lib/email-validator";
+import type { EmailValidationReason } from "@/lib/email-validator";
 
 export const dynamic = "force-dynamic";
 
@@ -7,13 +9,15 @@ export interface ValidateContactRequest {
   email?: string;
 }
 
+export type { EmailValidationReason };
+
 export interface ValidateContactResponse {
   success: boolean;
   emailValid: boolean | null;
+  /** Granular reason for the email validation result */
+  emailReason: EmailValidationReason;
   instagramValid: boolean | null;
 }
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 async function checkInstagram(handle: string): Promise<boolean | null> {
   const clean = handle.replace(/^@/, "").trim();
@@ -32,7 +36,7 @@ async function checkInstagram(handle: string): Promise<boolean | null> {
     clearTimeout(timeout);
     return res.ok || res.status === 301 || res.status === 302;
   } catch {
-    return null; // network error / timeout = unknown
+    return null;
   }
 }
 
@@ -41,13 +45,22 @@ export async function POST(request: Request): Promise<NextResponse<ValidateConta
     const body: ValidateContactRequest = await request.json();
     const { instagramHandle, email } = body;
 
-    const emailValid = email ? EMAIL_REGEX.test(email.trim()) : null;
-    const instagramValid = instagramHandle ? await checkInstagram(instagramHandle) : null;
+    const [emailResult, instagramValid] = await Promise.all([
+      email
+        ? validateEmail(email)
+        : Promise.resolve({ valid: null, reason: null as EmailValidationReason }),
+      instagramHandle ? checkInstagram(instagramHandle) : Promise.resolve(null),
+    ]);
 
-    return NextResponse.json({ success: true, emailValid, instagramValid });
+    return NextResponse.json({
+      success: true,
+      emailValid: emailResult.valid,
+      emailReason: emailResult.reason,
+      instagramValid,
+    });
   } catch {
     return NextResponse.json(
-      { success: false, emailValid: null, instagramValid: null },
+      { success: false, emailValid: null, emailReason: null, instagramValid: null },
       { status: 500 }
     );
   }

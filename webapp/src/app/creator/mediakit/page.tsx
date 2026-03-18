@@ -35,6 +35,7 @@ import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
 import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { captureEvent } from "@/lib/posthog";
 
 // ─── Google Fonts ─────────────────────────────────────────────────────────────
 
@@ -275,6 +276,7 @@ export default function MediaKitPage() {
   }, [html, data]);
 
   const handlePrintPDF = useCallback(() => {
+    captureEvent("mediakit_downloaded_pdf", { theme: config.theme });
     // Inject an auto-print script and open in a new tab so fonts load before printing
     const printHtml = html.replace(
       "</body>",

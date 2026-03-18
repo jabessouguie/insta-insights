@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import AdmZip from "adm-zip";
 import fs from "fs";
 import path from "path";
+import { isJsonExport } from "@/lib/instagram-json-parser";
 
 export const dynamic = "force-dynamic";
 // Allow large Instagram export zips
@@ -132,6 +133,19 @@ export async function POST(
       const outDir = path.dirname(outPath);
       fs.mkdirSync(outDir, { recursive: true });
       fs.writeFileSync(outPath, entry.getData());
+    }
+
+    // Validate that the extracted export is in JSON format.
+    // Only JSON exports are supported; HTML exports are rejected with a clear message.
+    if (!keepExisting && !isJsonExport(targetPath)) {
+      fs.rmSync(targetPath, { recursive: true, force: true });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "html_format_detected",
+        },
+        { status: 400 }
+      );
     }
 
     // Files extracted successfully. The client will re-fetch /api/data to get parsed analytics.

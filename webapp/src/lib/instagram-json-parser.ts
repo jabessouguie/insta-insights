@@ -104,24 +104,40 @@ function parseKVPcts(s: string): Record<string, number> {
 
 // ─── Format detection ───────────────────────────────────────────────────────
 
-/** Check if an export folder is JSON format (has .json files instead of .html) */
+/**
+ * Returns false only if the export folder contains files that are exclusive to
+ * the old HTML format (followers_1.html, following.html, audience_insights.html).
+ * Everything else — including partial ZIPs that only contain media or activity data —
+ * is treated as JSON, because Instagram now exports in JSON by default and splits
+ * large exports into multiple ZIPs that may not all contain the same sections.
+ */
 export function isJsonExport(exportFolder: string): boolean {
-  const piFile = path.join(
-    exportFolder,
-    "personal_information",
-    "personal_information",
-    "personal_information.json"
-  );
-  if (fs.existsSync(piFile)) return true;
+  const ffDir = path.join(exportFolder, "connections", "followers_and_following");
 
-  // Also check for JSON insights
-  const insightFile = path.join(
-    exportFolder,
-    "logged_information",
-    "past_instagram_insights",
-    "audience_insights.json"
-  );
-  return fs.existsSync(insightFile);
+  // Positive HTML indicators: these files only exist in the old HTML export format
+  const htmlIndicators = [
+    path.join(ffDir, "followers_1.html"),
+    path.join(ffDir, "following.html"),
+    path.join(
+      exportFolder,
+      "logged_information",
+      "past_instagram_insights",
+      "audience_insights.html"
+    ),
+    path.join(
+      exportFolder,
+      "logged_information",
+      "past_instagram_insights",
+      "content_interactions.html"
+    ),
+  ];
+
+  for (const htmlFile of htmlIndicators) {
+    if (fs.existsSync(htmlFile)) return false;
+  }
+
+  // Not an HTML export — accept as JSON (covers full JSON exports and partial ZIPs)
+  return true;
 }
 
 // ─── Profile ────────────────────────────────────────────────────────────────

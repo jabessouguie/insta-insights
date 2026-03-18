@@ -1,8 +1,8 @@
 // InstaInsights Service Worker
 // Cache-first for static assets, network-first for API routes
 
-const CACHE_NAME = "instainsights-v1";
-const STATIC_ASSETS = ["/", "/creator/dashboard", "/manifest.json", "/icon.svg"];
+const CACHE_NAME = "instainsights-v2";
+const STATIC_ASSETS = ["/", "/creator/dashboard", "/manifest.json", "/icon.svg", "/offline.html"];
 
 // Install: pre-cache static shell
 self.addEventListener("install", (event) => {
@@ -41,7 +41,15 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first for everything else
+  // Navigation requests: network-first with offline fallback
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() => caches.match("/offline.html"))
+    );
+    return;
+  }
+
+  // Cache-first for everything else (static assets)
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;

@@ -1,26 +1,48 @@
 /**
  * Unit tests for the collab finder feature.
- * Tests JSON parsing, type validation, and email draft structure.
- * Gemini API calls are mocked so tests run without a real API key.
+ *
+ * Covers:
+ * - JSON parsing & validation of the Gemini response (CollabMatch)
+ * - New types: "hotel" and "excursion"
+ * - Email draft parsing
+ * - Language parameter forwarding
+ * - Collab filtering & sorting helpers
+ *
+ * Gemini API calls are mocked — tests run without a real API key.
  */
 
 // ─── Types (inline to avoid circular deps) ────────────────────────────────────
 
+/**
+ * Mirrors CollabMatch from /api/collabs/route.ts.
+ * Must stay in sync when new types are added.
+ */
 interface CollabMatch {
   id: string;
   name: string;
-  type: "brand" | "creator" | "event" | "media";
+  type: "brand" | "creator" | "event" | "media" | "hotel" | "excursion";
   niche: string;
   location: string;
   reason: string;
   instagramHandle?: string;
   websiteHint?: string;
   potentialRevenue?: string;
+  contactEmail?: string;
+  relevanceScore?: number;
 }
 
 interface CollabEmailDraft {
   subject: string;
   body: string;
+}
+
+/** Subset of CollabFinderRequest used in tests. */
+interface CollabFinderRequest {
+  location: string;
+  interests: string[];
+  language?: "fr" | "en";
+  excludeNames?: string[];
+  count?: number;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -37,12 +59,20 @@ function parseCollabResponse(raw: string): { summary: string; collabs: CollabMat
   return parsed;
 }
 
-/** Validate a single CollabMatch object has required fields */
+/** Validate a single CollabMatch object has required fields and a valid type */
 function validateCollabMatch(c: CollabMatch): boolean {
+  const validTypes: CollabMatch["type"][] = [
+    "brand",
+    "creator",
+    "event",
+    "media",
+    "hotel",
+    "excursion",
+  ];
   return (
     typeof c.id === "string" &&
     typeof c.name === "string" &&
-    ["brand", "creator", "event", "media"].includes(c.type) &&
+    validTypes.includes(c.type) &&
     typeof c.niche === "string" &&
     typeof c.location === "string" &&
     typeof c.reason === "string"
@@ -61,6 +91,21 @@ function parseEmailDraft(raw: string): CollabEmailDraft {
   return parsed;
 }
 
+/**
+ * Build a CollabFinderRequest body — helper used to assert language is forwarded.
+ * In production this is done by the collabs page fetch call.
+ */
+function buildCollabRequest(overrides: Partial<CollabFinderRequest> = {}): CollabFinderRequest {
+  return {
+    location: "Paris",
+    interests: ["Voyage"],
+    language: "fr",
+    excludeNames: [],
+    count: 15,
+    ...overrides,
+  };
+}
+
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
 const fakeCollabsJson = JSON.stringify({
@@ -77,6 +122,7 @@ const fakeCollabsJson = JSON.stringify({
       instagramHandle: "@paristravelcollective",
       websiteHint: "paristravelcollective.fr",
       potentialRevenue: "200-400€",
+      relevanceScore: 9,
     },
     {
       id: "2",
@@ -86,6 +132,7 @@ const fakeCollabsJson = JSON.stringify({
       location: "Paris 3e",
       reason: "Hôtel boutique cherchant à augmenter sa visibilité via des créateurs voyage.",
       potentialRevenue: "300-600€ ou nuit offerte",
+      relevanceScore: 8,
     },
     {
       id: "3",
@@ -95,6 +142,7 @@ const fakeCollabsJson = JSON.stringify({
       location: "Grand Palais, Paris",
       reason: "Festival annuel de photo — opportunité de couverture et badge presse.",
       instagramHandle: "@parisphotofestival",
+      relevanceScore: 7,
     },
     {
       id: "4",
@@ -104,6 +152,7 @@ const fakeCollabsJson = JSON.stringify({
       location: "Paris",
       reason: "Magazine lifestyle cherchant des créateurs pour des articles invités.",
       potentialRevenue: "150-300€/article",
+      relevanceScore: 6,
     },
     {
       id: "5",
@@ -113,6 +162,7 @@ const fakeCollabsJson = JSON.stringify({
       location: "Paris, France",
       reason: "Créateur food + voyage — collaboration croisée ou co-création de contenu.",
       instagramHandle: "@foodtrekparis",
+      relevanceScore: 5,
     },
     {
       id: "6",
@@ -122,6 +172,47 @@ const fakeCollabsJson = JSON.stringify({
       location: "Paris, France",
       reason: "Programme d'ambassadeurs pour mettre en avant des expériences locales uniques.",
       potentialRevenue: "Expériences gratuites + commission",
+      relevanceScore: 4,
+    },
+  ],
+});
+
+/** Fixture with hotel and excursion types */
+const fakeHotelExcursionJson = JSON.stringify({
+  summary: "3 hospitality & activity partners identified in Nice for a travel creator.",
+  collabs: [
+    {
+      id: "h1",
+      name: "Hôtel Le Negresco",
+      type: "hotel",
+      niche: "Hôtellerie de luxe",
+      location: "Nice, France",
+      reason: "Hôtel iconique de la Côte d'Azur cherchant une présence sur les réseaux sociaux.",
+      instagramHandle: "@hotel_negresco",
+      potentialRevenue: "Nuit offerte + 200€",
+      contactEmail: "presse@negresco-nice.com",
+      relevanceScore: 9,
+    },
+    {
+      id: "e1",
+      name: "Nice Kayak Excursions",
+      type: "excursion",
+      niche: "Activités nautiques",
+      location: "Nice, France",
+      reason: "Sorties kayak en mer — contenu visuellement fort pour un créateur voyage.",
+      potentialRevenue: "Activité offerte en échange de contenu",
+      contactEmail: "contact@nicekayak.fr",
+      relevanceScore: 8,
+    },
+    {
+      id: "e2",
+      name: "Arrière-pays Aventure",
+      type: "excursion",
+      niche: "Randonnée & outdoor",
+      location: "Alpes-Maritimes, France",
+      reason: "Randonnées guidées dans l'arrière-pays niçois — niche outdoor complémentaire.",
+      potentialRevenue: "Excursion offerte + code promo audience",
+      relevanceScore: 7,
     },
   ],
 });
@@ -129,6 +220,11 @@ const fakeCollabsJson = JSON.stringify({
 const fakeEmailJson = JSON.stringify({
   subject: "Collaboration Instagram — @jeanseestheworld × Paris Travel Collective",
   body: "Bonjour,\n\nJ'ai découvert votre compte via Instagram et votre contenu voyage à Paris m'a vraiment inspiré...\n\nCordialement,\nJean",
+});
+
+const fakeEmailEnJson = JSON.stringify({
+  subject: "Instagram Collaboration — @jeanseestheworld × Paris Travel Collective",
+  body: "Hi,\n\nWhile browsing Instagram, I came across your travel content and was really inspired...\n\nBest,\nJean",
 });
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -161,7 +257,7 @@ describe("parseCollabResponse", () => {
   });
 });
 
-describe("validateCollabMatch", () => {
+describe("validateCollabMatch — core types", () => {
   const validCollab: CollabMatch = {
     id: "1",
     name: "Test Brand",
@@ -175,8 +271,8 @@ describe("validateCollabMatch", () => {
     expect(validateCollabMatch(validCollab)).toBe(true);
   });
 
-  it("validates all allowed type values", () => {
-    const types: Array<CollabMatch["type"]> = ["brand", "creator", "event", "media"];
+  it("validates all original allowed type values", () => {
+    const types: CollabMatch["type"][] = ["brand", "creator", "event", "media"];
     for (const type of types) {
       expect(validateCollabMatch({ ...validCollab, type })).toBe(true);
     }
@@ -194,6 +290,8 @@ describe("validateCollabMatch", () => {
       instagramHandle: "@testbrand",
       websiteHint: "testbrand.com",
       potentialRevenue: "500€",
+      contactEmail: "contact@testbrand.com",
+      relevanceScore: 8,
     };
     expect(validateCollabMatch(withOptionals)).toBe(true);
   });
@@ -206,11 +304,66 @@ describe("validateCollabMatch", () => {
   });
 });
 
+describe("validateCollabMatch — hotel & excursion types", () => {
+  it('validates type "hotel"', () => {
+    const hotel: CollabMatch = {
+      id: "h1",
+      name: "Hôtel Le Negresco",
+      type: "hotel",
+      niche: "Hôtellerie de luxe",
+      location: "Nice, France",
+      reason: "Hôtel iconique cherchant une présence sociale.",
+      relevanceScore: 9,
+    };
+    expect(validateCollabMatch(hotel)).toBe(true);
+  });
+
+  it('validates type "excursion"', () => {
+    const excursion: CollabMatch = {
+      id: "e1",
+      name: "Nice Kayak Excursions",
+      type: "excursion",
+      niche: "Activités nautiques",
+      location: "Nice, France",
+      reason: "Sorties kayak — contenu visuellement fort.",
+    };
+    expect(validateCollabMatch(excursion)).toBe(true);
+  });
+
+  it("parses hotel & excursion fixture and validates all entries", () => {
+    const parsed = parseCollabResponse(fakeHotelExcursionJson);
+    expect(parsed.collabs).toHaveLength(3);
+    for (const collab of parsed.collabs) {
+      expect(validateCollabMatch(collab)).toBe(true);
+    }
+  });
+
+  it("can filter hotel-type collabs from a mixed list", () => {
+    const parsed = parseCollabResponse(fakeHotelExcursionJson);
+    const hotels = parsed.collabs.filter((c) => c.type === "hotel");
+    expect(hotels).toHaveLength(1);
+    expect(hotels[0].name).toBe("Hôtel Le Negresco");
+  });
+
+  it("can filter excursion-type collabs from a mixed list", () => {
+    const parsed = parseCollabResponse(fakeHotelExcursionJson);
+    const excursions = parsed.collabs.filter((c) => c.type === "excursion");
+    expect(excursions).toHaveLength(2);
+    excursions.forEach((e) => expect(e.type).toBe("excursion"));
+  });
+});
+
 describe("parseEmailDraft", () => {
-  it("parses a valid email draft JSON", () => {
+  it("parses a valid email draft JSON (French)", () => {
     const draft = parseEmailDraft(fakeEmailJson);
     expect(draft.subject).toContain("Collaboration");
     expect(draft.body.length).toBeGreaterThan(20);
+  });
+
+  it("parses a valid email draft JSON (English)", () => {
+    const draft = parseEmailDraft(fakeEmailEnJson);
+    expect(draft.subject).toContain("Collaboration");
+    expect(draft.body).toContain("Hi");
   });
 
   it("handles JSON wrapped in markdown code fences", () => {
@@ -226,6 +379,36 @@ describe("parseEmailDraft", () => {
 
   it("throws when body is missing", () => {
     expect(() => parseEmailDraft(JSON.stringify({ subject: "Hello" }))).toThrow();
+  });
+});
+
+describe("language parameter", () => {
+  it("defaults language to 'fr' when not provided", () => {
+    const req = buildCollabRequest();
+    expect(req.language).toBe("fr");
+  });
+
+  it("accepts 'en' as a valid language", () => {
+    const req = buildCollabRequest({ language: "en" });
+    expect(req.language).toBe("en");
+  });
+
+  it("language field is present in request body", () => {
+    const req = buildCollabRequest({ language: "en", location: "London", interests: ["Travel"] });
+    expect(Object.keys(req)).toContain("language");
+    expect(req.language).toBe("en");
+  });
+
+  it("English email fixture body is in English", () => {
+    const draft = parseEmailDraft(fakeEmailEnJson);
+    // Basic heuristic: English emails start with "Hi" or "Hello", not "Bonjour"
+    expect(draft.body).not.toMatch(/^Bonjour/);
+    expect(draft.body).toMatch(/Hi|Hello/);
+  });
+
+  it("French email fixture body is in French", () => {
+    const draft = parseEmailDraft(fakeEmailJson);
+    expect(draft.body).toMatch(/Bonjour|Cordialement/);
   });
 });
 
@@ -250,5 +433,13 @@ describe("collab filtering & sorting", () => {
     );
     // First item should have potentialRevenue
     expect(sorted[0].potentialRevenue).toBeTruthy();
+  });
+
+  it("sorts mixed hotel/excursion/brand list by relevanceScore descending", () => {
+    const parsed = parseCollabResponse(fakeHotelExcursionJson);
+    const scores = parsed.collabs.map((c) => c.relevanceScore ?? 0);
+    for (let i = 0; i < scores.length - 1; i++) {
+      expect(scores[i]).toBeGreaterThanOrEqual(scores[i + 1]);
+    }
   });
 });

@@ -1,40 +1,24 @@
 /**
  * Interaction Analysis Module
- * Analyses Instagram export data to identify:
+ * Analyses Instagram JSON export data to identify:
  * - Followers who have never interacted with your posts
  * - Accounts to DM (you follow, they don't follow back, never interacted)
  * - Accounts to unfollow (you follow, they don't follow back, DM sent > 1 month ago)
  *
- * Supports both HTML and JSON Instagram export formats.
+ * Only the JSON export format is supported.
  */
 
 import fs from "fs";
 import path from "path";
-import * as cheerio from "cheerio";
-import type { AnyNode } from "domhandler";
-import type {
-  InteractionAnalysis,
-  UnfollowCandidate,
-  DMSuggestion,
-  InstagramFollower,
-} from "@/types/instagram";
+import type { InteractionAnalysis, UnfollowCandidate, DMSuggestion } from "@/types/instagram";
+import { isJsonExport } from "@/lib/instagram-json-parser";
 
 // ─── Path helpers ─────────────────────────────────────────────────────────────
 
-/**
- * Retrieves the root directory for Instagram data.
- * Defaults to '../data' relative to the process current working directory.
- * @returns {string} The absolute path to the data root.
- */
 function getDataRoot(): string {
   return process.env.INSTAGRAM_DATA_PATH ?? path.join(process.cwd(), "..", "data");
 }
 
-/**
- * Locates the first Instagram export folder within the data root.
- * Export folders are expected to start with 'instagram-'.
- * @returns {string | null} The absolute path to the export folder or null if not found.
- */
 function findExportFolder(): string | null {
   const root = getDataRoot();
   if (!fs.existsSync(root)) return null;
@@ -44,41 +28,6 @@ function findExportFolder(): string | null {
     return fs.statSync(full).isDirectory() && e.startsWith("instagram-");
   });
   return folder ? path.join(root, folder) : null;
-}
-
-/**
- * Loads and parses an HTML file using Cheerio.
- * @param {string} filePath Path to the HTML file.
- * @returns {cheerio.CheerioAPI | null} Cheerio instance or null if file doesn't exist.
- */
-function loadHtml(filePath: string): cheerio.CheerioAPI | null {
-  if (!fs.existsSync(filePath)) return null;
-  const html = fs.readFileSync(filePath, "utf-8");
-  return cheerio.load(html);
-}
-
-// ─── Format detection ─────────────────────────────────────────────────────────
-
-/**
- * Detects if the export folder uses the JSON format instead of HTML.
- * Checks for specific files like 'followers_1.json'.
- * @param {string} exportFolder Path to the export folder.
- * @returns {boolean} True if it is a JSON export.
- */
-function checkIsJsonExport(exportFolder: string): boolean {
-  return (
-    fs.existsSync(
-      path.join(exportFolder, "connections", "followers_and_following", "followers_1.json")
-    ) ||
-    fs.existsSync(
-      path.join(
-        exportFolder,
-        "personal_information",
-        "personal_information",
-        "personal_information.json"
-      )
-    )
-  );
 }
 
 // ─── JSON helpers ─────────────────────────────────────────────────────────────
@@ -103,12 +52,6 @@ interface JsonMessageFile {
 
 // ─── JSON-format parsers ──────────────────────────────────────────────────────
 
-/**
- * Parses followers from JSON files.
- * Maps lowercased usernames to their follow date.
- * @param {string} exportFolder Path to the export folder.
- * @returns {Map<string, Date>} Map of usernames to follow dates.
- */
 function parseFollowersJsonAnalyser(exportFolder: string): Map<string, Date> {
   const dir = path.join(exportFolder, "connections", "followers_and_following");
   const result = new Map<string, Date>();
@@ -117,15 +60,16 @@ function parseFollowersJsonAnalyser(exportFolder: string): Map<string, Date> {
   const files = fs.readdirSync(dir).filter((f) => f.startsWith("followers") && f.endsWith(".json"));
 
   for (const file of files) {
-    const data = readJsonFile<any>(path.join(dir, file));
+    const data = readJsonFile<unknown>(path.join(dir, file));
     if (!data) continue;
 
-    // Handle both { relationships_followers: [...] } and top-level [...]
-    const entries = Array.isArray(data) ? data : data.relationships_followers || [];
+    const entries = Array.isArray(data)
+      ? data
+      : ((data as Record<string, unknown>).relationships_followers as unknown[]) || [];
 
     for (const entry of entries) {
-      const items = entry?.string_list_data ?? [];
-      for (const item of items) {
+      const items = (entry as Record<string, unknown>)?.string_list_data ?? [];
+      for (const item of items as Array<{ value?: string; timestamp?: number }>) {
         if (!item.value) continue;
         result.set(
           item.value.toLowerCase(),
@@ -142,34 +86,32 @@ function parseFollowingJsonAnalyser(exportFolder: string): Map<string, Date> {
   const result = new Map<string, Date>();
   if (!fs.existsSync(dir)) return result;
 
-  const file = path.join(dir, "following.json");
-  const data = readJsonFile<any>(file);
+  const data = readJsonFile<unknown>(path.join(dir, "following.json"));
   if (!data) return result;
 
-  // Following JSON usually contains a "relationships_following" key which is an array
-  const arr = data.relationships_following || (Array.isArray(data) ? data : []);
+  const arr =
+    (data as Record<string, unknown>).relationships_following ?? (Array.isArray(data) ? data : []);
 
-  for (const entry of arr) {
-    // In following.json, username is usually in "title"
-    const username = entry?.title?.toLowerCase();
-    const items = entry?.string_list_data ?? [];
+  for (const entry of arr as Array<Record<string, unknown>>) {
+    const username = (entry?.title as string | undefined)?.toLowerCase();
+    const items = (entry?.string_list_data as Array<{ value?: string; timestamp?: number }>) ?? [];
 
     for (const item of items) {
       const finalUsername = item.value?.toLowerCase() || username;
       if (!finalUsername) continue;
-
       result.set(finalUsername, item.timestamp ? new Date(item.timestamp * 1000) : new Date(0));
     }
   }
   return result;
 }
 
-/**
- * Parse DM conversations from JSON export inbox.
- * Returns a Map<username, { username, lastSentAt }> where lastSentAt is the
- * most recent message timestamp in the conversation (regardless of direction).
- * Inbox conversations = ones we're part of (bidirectional or initiated by us).
- */
+// ─── DM record type & JSON DM parser ─────────────────────────────────────────
+
+interface DMRecord {
+  username: string;
+  lastSentAt: Date;
+}
+
 function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
   const dms = new Map<string, DMRecord>();
   const inboxDir = path.join(exportFolder, "your_instagram_activity", "messages", "inbox");
@@ -179,19 +121,13 @@ function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
     const fullPath = path.join(inboxDir, convDir);
     if (!fs.statSync(fullPath).isDirectory()) continue;
 
-    // Extract username from folder name: {username}_{numeric_id} or just numeric_id
     const match = convDir.match(/^(.+)_\d+$/);
     const username = match ? match[1].toLowerCase() : null;
+    if (!username) continue;
 
-    // Read the most recent message file
     const msgFile = path.join(fullPath, "message_1.json");
     const data = readJsonFile<JsonMessageFile>(msgFile);
     if (!data?.messages?.length) continue;
-
-    // If folder name didn't give us a username, we could theoretically try to find it in participants,
-    // but without knowing the owner's name reliably in all exports, it's hard.
-    // However, the folder name pattern usually covers direct DMs.
-    if (!username) continue;
 
     const latestTs = Math.max(...data.messages.map((m) => m.timestamp_ms));
     const lastDate = new Date(latestTs);
@@ -205,267 +141,42 @@ function parseSentDmsJson(exportFolder: string): Map<string, DMRecord> {
   return dms;
 }
 
-// ─── HTML-format parsers ──────────────────────────────────────────────────────
-
-function parseCommenters(exportFolder: string): Set<string> {
-  const commenters = new Set<string>();
-
-  const dirs = [
-    path.join(exportFolder, "your_instagram_activity", "comments"),
-    path.join(exportFolder, "your_instagram_activity", "media"),
-  ];
-
-  for (const dir of dirs) {
-    if (!fs.existsSync(dir)) continue;
-    const files = fs.readdirSync(dir).filter((f) => f.endsWith(".html") && f.includes("comment"));
-    for (const file of files) {
-      const $ = loadHtml(path.join(dir, file));
-      if (!$) continue;
-      $("div._a706, table tr td a").each((_: number, el: AnyNode) => {
-        const text = $(el).text().trim();
-        if (text && text.length > 1 && !text.includes(" ")) {
-          commenters.add(text.toLowerCase());
-        }
-      });
-    }
-  }
-
-  return commenters;
-}
-
-function parseLikers(exportFolder: string): Set<string> {
-  const likers = new Set<string>();
-  const likesDir = path.join(exportFolder, "your_instagram_activity", "likes");
-  if (!fs.existsSync(likesDir)) return likers;
-
-  const files = fs.readdirSync(likesDir).filter((f) => f.endsWith(".html"));
-  for (const file of files) {
-    const $ = loadHtml(path.join(likesDir, file));
-    if (!$) continue;
-    $("a[href*='instagram.com']").each((_: number, el: AnyNode) => {
-      const href = $(el).attr("href") ?? "";
-      const match =
-        href.match(/instagram\.com\/_u\/([^/?#]+)/) ?? href.match(/instagram\.com\/([^/?#]+)/);
-      if (match) likers.add(match[1].toLowerCase());
-    });
-  }
-
-  return likers;
-}
-
-// ─── DM record type & HTML DM parser ──────────────────────────────────────────
-
-interface DMRecord {
-  username: string;
-  lastSentAt: Date;
-}
-
-function parseSentDMs(exportFolder: string): Map<string, DMRecord> {
-  const dms = new Map<string, DMRecord>();
-  const dmDirs = [
-    path.join(exportFolder, "your_instagram_activity", "direct"),
-    path.join(exportFolder, "your_instagram_activity", "messages"),
-  ];
-
-  for (const dmDir of dmDirs) {
-    if (!fs.existsSync(dmDir)) continue;
-    const files = fs.readdirSync(dmDir).filter((f) => f.endsWith(".html"));
-
-    for (const file of files) {
-      const $ = loadHtml(path.join(dmDir, file));
-      if (!$) continue;
-
-      const title = $("title").text().trim().toLowerCase().replace(/\s+/g, "_");
-      if (!title || title.includes("group")) continue;
-
-      let lastDate: Date | null = null;
-      $("div._a706, table tr").each((_: number, el: AnyNode) => {
-        const text = $(el).text().trim();
-        const dateMatch = text.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
-        if (dateMatch) {
-          const d = new Date(dateMatch[0]);
-          if (!lastDate || d > lastDate) lastDate = d;
-        }
-      });
-
-      if (lastDate) {
-        const username = title.split("_")[0];
-        if (!dms.has(username)) {
-          dms.set(username, { username, lastSentAt: lastDate });
-        } else {
-          const existing = dms.get(username)!;
-          if (existing.lastSentAt.getTime() < (lastDate as Date).getTime()) {
-            dms.set(username, { username, lastSentAt: lastDate });
-          }
-        }
-      }
-    }
-  }
-
-  return dms;
-}
-
-// ─── French date parser ────────────────────────────────────────────────────────
-
-const FR_MONTHS: Record<string, number> = {
-  janv: 0,
-  jan: 0,
-  janvier: 0,
-  févr: 1,
-  fév: 1,
-  feb: 1,
-  février: 1,
-  mars: 2,
-  mar: 2,
-  avr: 3,
-  avril: 3,
-  mai: 4,
-  juin: 5,
-  juil: 6,
-  juillet: 6,
-  août: 7,
-  aout: 7,
-  sept: 8,
-  sep: 8,
-  septembre: 8,
-  oct: 9,
-  octobre: 9,
-  nov: 10,
-  novembre: 10,
-  déc: 11,
-  dec: 11,
-  décembre: 11,
-};
-
-/**
- * Parses a French date string from the Instagram export.
- * Handles variations in month abbreviations.
- * @param {string} text The date string.
- * @returns {Date | null} Parsed date or null if parsing failed.
- */
-function parseFrDate(text: string): Date | null {
-  if (!text) return null;
-  const m = text
-    .trim()
-    .match(/^([a-zéûôàèùâêîäëïöü]+)\.?\s+(\d{1,2}),\s+(\d{4})\s+(\d{1,2}):(\d{2})\s*(am|pm)/i);
-  if (!m) return null;
-  const month = FR_MONTHS[m[1].toLowerCase()];
-  if (month === undefined) return null;
-  let hour = parseInt(m[4]);
-  const min = parseInt(m[5]);
-  const ampm = m[6].toLowerCase();
-  if (ampm === "pm" && hour < 12) hour += 12;
-  if (ampm === "am" && hour === 12) hour = 0;
-  return new Date(parseInt(m[3]), month, parseInt(m[2]), hour, min);
-}
-
-// ─── HTML follower file parser ────────────────────────────────────────────────
-
-function parseFollowerFile(filePath: string): InstagramFollower[] {
-  const $ = loadHtml(filePath);
-  if (!$) return [];
-  const result: InstagramFollower[] = [];
-
-  $("a[href*='instagram.com']").each((_: number, el: AnyNode) => {
-    const href = $(el).attr("href") ?? "";
-    const match =
-      href.match(/instagram\.com\/_u\/([^/?#]+)/) ?? href.match(/instagram\.com\/([^/?#]+)/);
-    if (!match) return;
-    const username = match[1].toLowerCase();
-    if (!username || username.length < 2) return;
-
-    const dateText =
-      $(el).parent().next("div").text().trim() ||
-      $(el).closest("li, tr").find("div[class*='_a72_']").text().trim();
-
-    result.push({
-      username,
-      followedAt: parseFrDate(dateText) ?? new Date(0),
-      isFollowingBack: false,
-      isActive: false,
-    });
-  });
-  return result;
-}
-
 // ─── Main analysis function ───────────────────────────────────────────────────
 
 /**
- * Analyses Instagram interactions from a local export.
- * Identifies never-interacted followers, DM suggestions, and unfollow candidates based on follow-back status and interaction history.
- * @returns {Promise<InteractionAnalysis | null>} Analysis results or null if no export found.
+ * Analyses Instagram interactions from a local JSON export.
+ * Only the JSON export format is supported.
+ * @returns {Promise<InteractionAnalysis | null>} Analysis results or null if no valid export found.
  */
 export async function analyseInteractions(): Promise<InteractionAnalysis | null> {
   const exportFolder = findExportFolder();
   if (!exportFolder) return null;
 
+  if (!isJsonExport(exportFolder)) {
+    console.warn("[interaction-analyser] HTML export detected — only JSON format is supported.");
+    return null;
+  }
+
   const ffDir = path.join(exportFolder, "connections", "followers_and_following");
   if (!fs.existsSync(ffDir)) return null;
 
-  const isJson = checkIsJsonExport(exportFolder);
+  const followerMap = parseFollowersJsonAnalyser(exportFolder);
+  const followingMap = parseFollowingJsonAnalyser(exportFolder);
 
-  let followerSet: Set<string>;
-  let followerDates: Map<string, Date>;
-  let followingSet: Set<string>;
-  let followingDates: Map<string, Date>;
-  let interactors: Set<string>;
-  let sentDMs: Map<string, DMRecord>;
+  const followerSet = new Set(followerMap.keys());
+  const followingSet = new Set(followingMap.keys());
+  const followingDates = followingMap;
 
-  if (isJson) {
-    // ── JSON export ───────────────────────────────────────────────────────────
-    const followerMap = parseFollowersJsonAnalyser(exportFolder);
-    const followingMap = parseFollowingJsonAnalyser(exportFolder);
-
-    followerSet = new Set(followerMap.keys());
-    followerDates = followerMap;
-    followingSet = new Set(followingMap.keys());
-    followingDates = followingMap;
-
-    // In JSON exports, use inbox conversations as a proxy for "has interacted".
-    // Anyone with a DM thread is treated as having been in contact.
-    sentDMs = parseSentDmsJson(exportFolder);
-    interactors = new Set(sentDMs.keys());
-  } else {
-    // ── HTML export ───────────────────────────────────────────────────────────
-    const followerFiles = fs
-      .readdirSync(ffDir)
-      .filter((f) => f.startsWith("followers") && f.endsWith(".html"));
-
-    followerSet = new Set<string>();
-    followerDates = new Map<string, Date>();
-    for (const file of followerFiles) {
-      for (const f of parseFollowerFile(path.join(ffDir, file))) {
-        followerSet.add(f.username);
-        followerDates.set(f.username, f.followedAt);
-      }
-    }
-
-    followingSet = new Set<string>();
-    followingDates = new Map<string, Date>();
-    const followingHtml = path.join(ffDir, "following.html");
-    if (fs.existsSync(followingHtml)) {
-      for (const f of parseFollowerFile(followingHtml)) {
-        followingSet.add(f.username);
-        followingDates.set(f.username, f.followedAt);
-      }
-    }
-
-    const commenters = parseCommenters(exportFolder);
-    const likers = parseLikers(exportFolder);
-    interactors = new Set([...commenters, ...likers]);
-    sentDMs = parseSentDMs(exportFolder);
-  }
+  // DM inbox = proxy for "has interacted"
+  const sentDMs = parseSentDmsJson(exportFolder);
+  const interactors = new Set(sentDMs.keys());
 
   const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
   const now = Date.now();
 
-  // Tab 1: mutual follows who never interacted (liked/commented)
   const neverInteracted: UnfollowCandidate[] = [];
-  // Tab 2: you follow, they don't follow back, never DM'd → suggest DM
   const dmSuggestionsNoFollowBack: DMSuggestion[] = [];
-  // Tab 3: mutual follow, never DM'd → suggest DM
   const dmSuggestionsMutual: DMSuggestion[] = [];
-  // Tab 4: you follow, they don't follow back, DM sent > 1 month ago → unfollow
   const unfollowCandidates: UnfollowCandidate[] = [];
 
   for (const username of followingSet) {
@@ -478,11 +189,9 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
 
     if (theyFollowBack) {
       if (neverInteractedWith) {
-        // Tab 1: mutual follow, never interacted
         neverInteracted.push({ username, followedSince, profileUrl });
       }
       if (!hasDmRecord) {
-        // Tab 3: mutual follow, never DM'd
         dmSuggestionsMutual.push({
           username,
           followedSince,
@@ -492,7 +201,6 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
       }
     } else {
       if (!hasDmRecord) {
-        // Tab 2: you follow, they don't follow back, never DM'd
         dmSuggestionsNoFollowBack.push({
           username,
           followedSince,
@@ -500,7 +208,6 @@ export async function analyseInteractions(): Promise<InteractionAnalysis | null>
           reason: "Vous les suivez mais ils ne vous suivent pas encore — un DM pourrait changer ça",
         });
       } else if (dmRecord && now - dmRecord.lastSentAt.getTime() > ONE_MONTH_MS) {
-        // Tab 4: DM sent > 1 month ago, still no follow-back
         unfollowCandidates.push({
           username,
           followedSince,

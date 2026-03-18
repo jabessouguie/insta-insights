@@ -280,12 +280,35 @@ export interface CarouselAudience {
   mode?: "custom" | "my_audience" | "optimized";
 }
 
+/** Background style applied behind the title text block on a carousel slide. */
+export type TextBgStyle = "none" | "highlight" | "pill" | "glass";
+
+/** Per-slide visual styling for the title text block. */
+export interface CarouselTextStyle {
+  /** Background style behind the title. Default "none". */
+  bg?: TextBgStyle;
+  /** Hex color for highlight/pill backgrounds. Falls back to accentColor when absent. */
+  bgColor?: string;
+  /** Opacity of the background, 0–1. Default 0.85. */
+  bgOpacity?: number;
+  /** Drop shadow behind text for readability. */
+  shadow?: boolean;
+  /** Colored glow effect using accentColor — dramatic, use sparingly. */
+  glow?: boolean;
+  /** Subtle organic rotation in degrees (–5 to +5). 0 = no rotation. */
+  rotation?: number;
+  /** Shrink the font size automatically until the title fits in maxWidth. */
+  autoScale?: boolean;
+}
+
 export interface CarouselSlideContent {
   title: string;
   subtitle: string;
   body: string;
   /** Index into the uploaded photos array (0-based). -1 = gradient background */
   photoIndex: number;
+  /** Optional per-slide text style for the title block. */
+  textStyle?: CarouselTextStyle;
 }
 
 export interface CarouselGenerateRequest {
@@ -618,4 +641,34 @@ export interface InboxReplyResponse {
   success: boolean;
   id?: string;
   error?: string;
+}
+
+// ============================================================
+// Guide Generator Types
+// ============================================================
+
+export type GuideType = "travel" | "tutorial" | "recipe" | "tips" | "general";
+
+export interface GuideSection {
+  /** Section heading */
+  title: string;
+  /** Paragraph content for this section */
+  content: string;
+  /** Index into the uploaded photos array — -1 or undefined = no photo */
+  photoIndex?: number;
+}
+
+export interface GuideConfig {
+  /** Full guide title */
+  title: string;
+  /** Optional subtitle or tagline */
+  subtitle?: string;
+  type: GuideType;
+  /** Author name shown in footer */
+  authorName?: string;
+  /** Primary brand colour (hex, e.g. "#E040FB") */
+  accentColor?: string;
+  sections: GuideSection[];
+  /** Base64 data URLs for uploaded photos */
+  photos?: string[];
 }

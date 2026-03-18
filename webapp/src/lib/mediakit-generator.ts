@@ -381,33 +381,39 @@ export function generateMediaKitHTML(
       .hero-inner { grid-template-columns: 1fr; text-align: center; }
     }
     @media print {
-      @page { size: A4 portrait; margin: 0; }
+      @page { size: A4 portrait; margin: 8mm 10mm; }
       html {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         font-size: 11px;
       }
-      body { zoom: 0.55; margin: 0; }
+      body { zoom: 0.58; margin: 0; }
+      /* Prevent sections from splitting across pages */
+      .hero, .stats-section, .card, .stat-card, .cta-section, .two-col > div {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .section-head { break-after: avoid; page-break-after: avoid; }
       .hero::after { display: none; }
-      .hero-inner { padding: 28px 28px; gap: 20px; }
-      .avatar { width: 90px; height: 90px; font-size: 32px; }
-      .hero-info h1 { font-size: 1.8rem; }
-      .hero-tagline { margin-top: 6px; }
-      .hero-badges { margin-top: 8px; }
-      .stats-section { padding: 0 28px; gap: 10px; margin-top: -20px; }
-      .stat-card { padding: 14px 10px; box-shadow: none; border-radius: 12px; }
-      .stat-value { font-size: 1.4rem; }
-      .main { padding: 20px 28px 20px; }
-      .section-head { margin-top: 18px; margin-bottom: 12px; }
-      .card { padding: 14px; border-radius: 14px; }
-      .two-col { gap: 12px; }
-      .cta-section { padding: 28px 24px; margin-top: 20px; border-radius: 16px; }
-      .cta-section h2 { font-size: 1.3rem; }
-      .footer { margin-top: 20px; padding-bottom: 16px; }
-      .services-grid { gap: 6px; }
-      .service-item { padding: 8px 12px; }
-      .partners-grid { gap: 6px; }
-      .partner-item { padding: 6px 14px; }
+      .hero-inner { padding: 24px; gap: 18px; }
+      .avatar { width: 88px; height: 88px; font-size: 30px; }
+      .hero-info h1 { font-size: 1.75rem; }
+      .hero-tagline { margin-top: 5px; }
+      .hero-badges { margin-top: 7px; }
+      .stats-section { padding: 0 24px; gap: 8px; margin-top: -18px; }
+      .stat-card { padding: 12px 8px; box-shadow: none; border-radius: 10px; }
+      .stat-value { font-size: 1.3rem; }
+      .main { padding: 18px 24px; }
+      .section-head { margin-top: 16px; margin-bottom: 10px; }
+      .card { padding: 12px; border-radius: 12px; }
+      .two-col { gap: 10px; }
+      .cta-section { padding: 24px 20px; margin-top: 18px; border-radius: 14px; }
+      .cta-section h2 { font-size: 1.2rem; }
+      .footer { margin-top: 18px; padding-bottom: 14px; }
+      .services-grid { gap: 5px; }
+      .service-item { padding: 7px 10px; }
+      .partners-grid { gap: 5px; }
+      .partner-item { padding: 5px 12px; }
     }
     .stat-card {
       background: #ffffff;
