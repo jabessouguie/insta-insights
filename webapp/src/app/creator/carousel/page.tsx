@@ -511,7 +511,7 @@ export default function CarouselPage() {
   const handlePhotoUpload = useCallback((files: FileList | null) => {
     if (!files) return;
     const readers = Array.from(files)
-      .slice(0, 10)
+      .slice(0, 20)
       .map(
         (file) =>
           new Promise<{ data: string; name: string }>((resolve) => {
@@ -521,8 +521,8 @@ export default function CarouselPage() {
           })
       );
     Promise.all(readers).then((results) => {
-      setPhotos((prev) => [...prev, ...results.map((r) => r.data)].slice(0, 10));
-      setPhotoNames((prev) => [...prev, ...results.map((r) => r.name)].slice(0, 10));
+      setPhotos((prev) => [...prev, ...results.map((r) => r.data)].slice(0, 20));
+      setPhotoNames((prev) => [...prev, ...results.map((r) => r.name)].slice(0, 20));
     });
   }, []);
 
