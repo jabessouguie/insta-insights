@@ -156,3 +156,23 @@ describe("FreeDMGenerator prompt mode selection", () => {
     expect(pickPromptMode({})).toBe("generic");
   });
 });
+
+// ─── dm-suggest: language instruction builder ─────────────────────────────────
+
+describe("dm-suggest language instruction", () => {
+  function langInstruction(language?: "fr" | "en"): string {
+    return language === "fr" ? "Write the message in French." : "Write the message in English.";
+  }
+
+  it("returns French instruction for fr", () => {
+    expect(langInstruction("fr")).toBe("Write the message in French.");
+  });
+
+  it("returns English instruction for en", () => {
+    expect(langInstruction("en")).toBe("Write the message in English.");
+  });
+
+  it("defaults to English when language is undefined", () => {
+    expect(langInstruction(undefined)).toBe("Write the message in English.");
+  });
+});
