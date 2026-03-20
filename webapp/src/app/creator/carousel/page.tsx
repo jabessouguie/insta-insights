@@ -112,7 +112,7 @@ async function renderSlideToBlob(
 
   const textX = 90;
   const maxTextWidth = SLIDE_SIZE - textX - 60;
-  const titleStyle = slide.textStyle ?? { shadow: true };
+  const titleStyle = { shadow: true };
   let textY = SLIDE_SIZE * 0.6;
 
   // ── Title ────────────────────────────────────────────────────────────────
@@ -229,7 +229,7 @@ async function renderStoryToBlob(
 
   const textX = STORY_WIDTH / 2;
   const maxTextWidth = STORY_WIDTH - 160;
-  const titleStyle = slide.textStyle ?? { shadow: true };
+  const titleStyle = { shadow: true };
   let textY = STORY_HEIGHT * 0.62;
 
   // ── Title ────────────────────────────────────────────────────────────────
