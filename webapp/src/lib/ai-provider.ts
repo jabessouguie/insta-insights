@@ -155,9 +155,24 @@ export async function callGeminiVision(
   if (!key) throw new Error("GEMINI_API_KEY is not configured for vision tasks");
   const model = options.model ?? GEMINI_FLASH;
   const genAI = new GoogleGenerativeAI(key);
-  const m = genAI.getGenerativeModel({ model });
-  const result = await m.generateContent(parts);
-  return result.response.text().trim();
+  try {
+    const m = genAI.getGenerativeModel({ model });
+    const result = await m.generateContent(parts);
+    return result.response.text().trim();
+  } catch (e) {
+    const msg = String(e);
+    // Preview model names may be rejected (404) — fall back to stable Flash
+    if (msg.includes("404") || msg.includes("not found") || msg.includes("preview")) {
+      console.error(
+        `[ai-provider] vision model "${model}" rejected, falling back to gemini-2.5-flash:`,
+        msg
+      );
+      const fallback = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await fallback.generateContent(parts);
+      return result.response.text().trim();
+    }
+    throw e;
+  }
 }
 
 /**
