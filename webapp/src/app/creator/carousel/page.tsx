@@ -631,10 +631,29 @@ export default function CarouselPage() {
     a.click();
   };
 
-  const downloadAll = () => {
-    previewBlobs.forEach((_, i) => {
-      setTimeout(() => downloadSlide(i), i * 300);
-    });
+  const downloadAll = async () => {
+    if (previewBlobs.length === 0) return;
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    const slug =
+      subject
+        .trim()
+        .slice(0, 40)
+        .replace(/[^a-z0-9]+/gi, "-")
+        .toLowerCase() || "carousel";
+    const ts = new Date().toISOString().replace(/[-T:]/g, "").slice(0, 14);
+    await Promise.all(
+      previewBlobs.map(async (url, i) => {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        zip.file(`${slug}-slide-${i + 1}.png`, blob);
+      })
+    );
+    const content = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(content);
+    a.download = `${slug}-${ts}.zip`;
+    a.click();
   };
 
   // ── Refine (feedback loop) ────────────────────────────────────────────────
@@ -776,10 +795,29 @@ export default function CarouselPage() {
     a.click();
   };
 
-  const downloadAllStories = () => {
-    storyPreviewBlobs.forEach((_, i) => {
-      setTimeout(() => downloadStorySlide(i), i * 300);
-    });
+  const downloadAllStories = async () => {
+    if (storyPreviewBlobs.length === 0) return;
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+    const slug =
+      subject
+        .trim()
+        .slice(0, 40)
+        .replace(/[^a-z0-9]+/gi, "-")
+        .toLowerCase() || "stories";
+    const ts = new Date().toISOString().replace(/[-T:]/g, "").slice(0, 14);
+    await Promise.all(
+      storyPreviewBlobs.map(async (url, i) => {
+        const res = await fetch(url);
+        const blob = await res.blob();
+        zip.file(`${slug}-story-${i + 1}.png`, blob);
+      })
+    );
+    const content = await zip.generateAsync({ type: "blob" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(content);
+    a.download = `${slug}-stories-${ts}.zip`;
+    a.click();
   };
 
   const copyStoryDescription = () => {
