@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Loader2,
   Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useInstagramData, getIgHeaders } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { InteractionAnalysis, UnfollowCandidate, DMSuggestion } from "@/types/instagram";
 
 const fetcher = (url: string) => fetch(url, { headers: getIgHeaders() }).then((r) => r.json());
@@ -76,30 +78,192 @@ function CandidateRow({ candidate }: { candidate: UnfollowCandidate }) {
   );
 }
 
-// ─── DM card (dm-suggest tabs) ────────────────────────────────────────────────
+// ─── Free DM generator (any bio, not tied to listed accounts) ─────────────────
 
-function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
-  const [bio, setBio] = useState<string>(suggestion.bio ?? "");
+function FreeDMGenerator() {
+  const { lang } = useLanguage();
+  const [bio, setBio] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
 
-  const generate = async () => {
+  const generate = async (opts?: { feedback?: string; previousDm?: string }) => {
+    if (!bio.trim()) return;
     setGenerating(true);
-    setMessage(null);
     try {
       const res = await fetch("/api/interactions/dm-suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: suggestion.username, bio: bio.trim() || null }),
+        body: JSON.stringify({
+          username: "unknown",
+          bio: bio.trim(),
+          feedback: opts?.feedback ?? null,
+          previousDm: opts?.previousDm ?? null,
+          language: lang,
+        }),
       });
       const json: { success: boolean; message?: string } = await res.json();
-      if (json.success && json.message) setMessage(json.message);
+      if (json.success && json.message) {
+        setMessage(json.message);
+        setFeedback("");
+        setShowFeedback(false);
+      }
+    } catch {
+      // silent
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (!feedback.trim() || !message) return;
+    generate({ feedback: feedback.trim(), previousDm: message });
+  };
+
+  const copyMsg = () => {
+    if (!message) return;
+    navigator.clipboard.writeText(message);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Card className="mb-6">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          <MessageCircle className="h-4 w-4 text-violet-400" />
+          Générer un DM à partir d'une bio
+        </CardTitle>
+        <CardDescription>
+          Collez n'importe quelle bio Instagram pour générer un message personnalisé, même hors de
+          vos listes.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="Collez ici la bio Instagram du compte que vous souhaitez contacter…"
+          rows={3}
+          className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            onClick={() => generate()}
+            disabled={generating || !bio.trim()}
+            className="gap-1.5 text-xs"
+          >
+            {generating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Sparkles className="h-3 w-3" />
+            )}
+            Générer DM
+          </Button>
+          {message && (
+            <>
+              <button
+                onClick={copyMsg}
+                className="rounded p-1 text-muted-foreground hover:text-foreground"
+              >
+                {copied ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-500" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+              </button>
+              <button
+                onClick={() => setShowFeedback((v) => !v)}
+                title="Affiner le DM"
+                className="rounded p-1 text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
+
+        {message && (
+          <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm leading-relaxed text-foreground">
+            {message}
+          </p>
+        )}
+
+        {showFeedback && message && (
+          <div className="space-y-2 border-t border-border/40 pt-3">
+            <textarea
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Ex : plus court, ajoute de l'humour, commence par une question…"
+              rows={2}
+              className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRegenerate}
+              disabled={generating || !feedback.trim()}
+              className="gap-1.5 text-xs"
+            >
+              {generating ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3 w-3" />
+              )}
+              Régénérer
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── DM card (dm-suggest tabs) ────────────────────────────────────────────────
+
+function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
+  const { lang } = useLanguage();
+  const [bio, setBio] = useState<string>(suggestion.bio ?? "");
+  const [message, setMessage] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const generate = async (opts?: { feedback?: string; previousDm?: string }) => {
+    setGenerating(true);
+    try {
+      const res = await fetch("/api/interactions/dm-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: suggestion.username,
+          bio: bio.trim() || null,
+          feedback: opts?.feedback ?? null,
+          previousDm: opts?.previousDm ?? null,
+          language: lang,
+        }),
+      });
+      const json: { success: boolean; message?: string } = await res.json();
+      if (json.success && json.message) {
+        setMessage(json.message);
+        setFeedback("");
+        setShowFeedback(false);
+      }
     } catch {
       // network error — silent
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleRegenerate = () => {
+    if (!feedback.trim() || !message) return;
+    generate({ feedback: feedback.trim(), previousDm: message });
   };
 
   const copyMsg = () => {
@@ -138,7 +302,7 @@ function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
         <Button
           size="sm"
           variant="outline"
-          onClick={generate}
+          onClick={() => generate()}
           disabled={generating}
           className="gap-1.5 text-xs"
         >
@@ -150,16 +314,25 @@ function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
           Générer DM
         </Button>
         {message && (
-          <button
-            onClick={copyMsg}
-            className="rounded p-1 text-muted-foreground hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+          <>
+            <button
+              onClick={copyMsg}
+              className="rounded p-1 text-muted-foreground hover:text-foreground"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <button
+              onClick={() => setShowFeedback((v) => !v)}
+              title="Affiner le DM"
+              className="rounded p-1 text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          </>
         )}
       </div>
 
@@ -167,6 +340,32 @@ function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
         <p className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs leading-relaxed text-foreground">
           {message}
         </p>
+      )}
+
+      {showFeedback && message && (
+        <div className="space-y-2 border-t border-border/40 pt-3">
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Ex : plus court, ajoute de l'humour, commence par une question…"
+            rows={2}
+            className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRegenerate}
+            disabled={generating || !feedback.trim()}
+            className="gap-1.5 text-xs"
+          >
+            {generating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            Régénérer
+          </Button>
+        </div>
       )}
     </div>
   );
@@ -235,6 +434,8 @@ export default function InteractionsPage() {
             </Badge>
           </div>
         )}
+
+        <FreeDMGenerator />
 
         <Tabs defaultValue="dm-nofollowback" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
