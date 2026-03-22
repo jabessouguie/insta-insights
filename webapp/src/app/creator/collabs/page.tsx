@@ -38,6 +38,8 @@ import {
   saveTracking,
   needsFollowUp,
   getAllTrackedNames,
+  updateSentEmail,
+  updateProspectReply,
   FOLLOWUP_DAYS,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -510,6 +512,12 @@ function EmailPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [mediaKitUrl, setMediaKitUrl] = useState<string | null>(null);
+  // Prospect reply & follow-up suggestion
+  const [prospectReplyText, setProspectReplyText] = useState(tracking.prospectReply ?? "");
+  const [showReplySection, setShowReplySection] = useState(!!tracking.prospectReply);
+  const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
+  const [isGeneratingReply, setIsGeneratingReply] = useState(false);
+  const [copiedReplyIndex, setCopiedReplyIndex] = useState<number | null>(null);
   const [isGeneratingKit, setIsGeneratingKit] = useState(false);
 
   const genStatuses = [
@@ -621,14 +629,49 @@ function EmailPanel({
     if (mailtoUrl) {
       window.open(mailtoUrl, "_blank");
     }
-    // Mark as email sent
+    // Mark as email sent and save the email body for future reply context
     const updated: CollabTracking = {
       ...tracking,
       status: "email_sent",
       sentAt: new Date().toISOString(),
+      sentEmailBody: emailData?.body ?? tracking.sentEmailBody,
     };
     saveTracking(updated);
     onTrackingUpdate(updated);
+    setShowReplySection(true);
+  };
+
+  const handleGenerateReply = async () => {
+    const sentBody = emailData?.body ?? tracking.sentEmailBody ?? "";
+    if (!prospectReplyText.trim() || !sentBody.trim()) return;
+    setIsGeneratingReply(true);
+    setSuggestedReplies([]);
+    // Persist prospect reply
+    updateProspectReply(tracking.collabId, prospectReplyText.trim());
+    try {
+      const res = await fetch("/api/collabs/reply-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          collabName: collab.name,
+          sentEmailBody: sentBody,
+          prospectReply: prospectReplyText.trim(),
+          language,
+        }),
+      });
+      const data = (await res.json()) as { success: boolean; replies?: string[]; error?: string };
+      if (data.success && data.replies) {
+        setSuggestedReplies(data.replies);
+        // Also update email body in store if not already saved
+        if (!tracking.sentEmailBody && sentBody) {
+          updateSentEmail(tracking.collabId, sentBody);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsGeneratingReply(false);
+    }
   };
 
   const kitFileName = `mediakit-${collab.name.replace(/\s+/g, "-").toLowerCase()}.html`;
@@ -747,6 +790,85 @@ function EmailPanel({
             isGenerating={isGenerating}
             placeholder={t("collabs.email.feedbackPlaceholder")}
           />
+        </div>
+      )}
+
+      {/* ── Prospect reply & AI follow-up suggestion ── */}
+      {(showReplySection ||
+        tracking.status === "email_sent" ||
+        tracking.status === "replied_positive" ||
+        tracking.status === "replied_negative") && (
+        <div className="space-y-2.5 rounded-lg border border-violet-500/20 bg-violet-500/5 p-3">
+          <button
+            onClick={() => setShowReplySection((p) => !p)}
+            className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-violet-400"
+          >
+            <span className="flex items-center gap-1.5">
+              <MessageCircle className="h-3 w-3" />
+              Réponse du prospect
+            </span>
+            {showReplySection ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
+          </button>
+
+          {showReplySection && (
+            <div className="space-y-2">
+              <textarea
+                value={prospectReplyText}
+                onChange={(e) => setProspectReplyText(e.target.value)}
+                placeholder="Colle ici la réponse reçue du prospect..."
+                rows={3}
+                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5 text-xs"
+                onClick={() => void handleGenerateReply()}
+                disabled={isGeneratingReply || !prospectReplyText.trim()}
+              >
+                {isGeneratingReply ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3 text-violet-400" />
+                )}
+                {isGeneratingReply ? "Génération..." : "Suggérer une réponse"}
+              </Button>
+
+              {suggestedReplies.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    3 propositions de réponse
+                  </p>
+                  {suggestedReplies.map((reply, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 rounded-md border bg-background/60 p-2.5"
+                    >
+                      <p className="flex-1 text-xs leading-relaxed">{reply}</p>
+                      <button
+                        onClick={() => {
+                          void navigator.clipboard.writeText(reply);
+                          setCopiedReplyIndex(i);
+                          setTimeout(() => setCopiedReplyIndex(null), 2000);
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        {copiedReplyIndex === i ? (
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

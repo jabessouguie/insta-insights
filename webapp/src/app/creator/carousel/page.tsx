@@ -851,7 +851,7 @@ export default function CarouselPage() {
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     const slug =
-      subject
+      storySubject
         .trim()
         .slice(0, 40)
         .replace(/[^a-z0-9]+/gi, "-")
@@ -1562,6 +1562,10 @@ export default function CarouselPage() {
                           alt={`Slide ${previewIndex + 1}`}
                           className="h-full w-full object-cover"
                         />
+                        {/* Posting order badge */}
+                        <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white ring-1 ring-white/30">
+                          {previewIndex + 1}
+                        </div>
                         {/* Navigation arrows */}
                         {previewBlobs.length > 1 && (
                           <>
@@ -1606,21 +1610,33 @@ export default function CarouselPage() {
 
                   {/* Download buttons */}
                   {previewBlobs.length > 0 && (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 gap-1.5 text-xs"
-                        onClick={() => downloadSlide(previewIndex)}
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        {t("carousel.download.slide")} {previewIndex + 1}
-                      </Button>
-                      <Button size="sm" className="flex-1 gap-1.5 text-xs" onClick={downloadAll}>
-                        <Download className="h-3.5 w-3.5" />
-                        {t("carousel.download.all")}
-                      </Button>
-                    </div>
+                    <>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 gap-1.5 text-xs"
+                          onClick={() => downloadSlide(previewIndex)}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {t("carousel.download.slide")} {previewIndex + 1}
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 gap-1.5 text-xs"
+                          onClick={() => void downloadAll()}
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          {t("carousel.download.all")}
+                        </Button>
+                      </div>
+                      {/* Posting order hint */}
+                      {previewBlobs.length > 1 && (
+                        <p className="text-center text-[11px] text-muted-foreground">
+                          {t("carousel.posting.order")}
+                        </p>
+                      )}
+                    </>
                   )}
 
                   {/* Instagram description */}

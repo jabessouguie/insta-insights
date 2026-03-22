@@ -27,6 +27,10 @@ export interface CollabTracking {
   /** ISO date of last follow-up email */
   followUpSentAt?: string;
   notes?: string;
+  /** Body of the email that was sent (saved for context in reply suggestions) */
+  sentEmailBody?: string;
+  /** Prospect's reply text entered by the user */
+  prospectReply?: string;
 }
 
 const KEY = "insta_collab_trackings";
@@ -84,6 +88,20 @@ export function getExcludedIds(): string[] {
 /** Returns names of ALL tracked collabs to exclude from new finder searches */
 export function getAllTrackedNames(): string[] {
   return loadTrackings().map((t) => t.collabName);
+}
+
+/** Saves the body of the email that was sent to a collab */
+export function updateSentEmail(collabId: string, sentEmailBody: string): void {
+  const existing = getTracking(collabId);
+  if (!existing) return;
+  saveTracking({ ...existing, sentEmailBody });
+}
+
+/** Saves the prospect's reply text */
+export function updateProspectReply(collabId: string, prospectReply: string): void {
+  const existing = getTracking(collabId);
+  if (!existing) return;
+  saveTracking({ ...existing, prospectReply });
 }
 
 export const STATUS_LABELS: Record<CollabStatus, string> = {
