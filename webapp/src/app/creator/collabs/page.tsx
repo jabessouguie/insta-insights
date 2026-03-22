@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Search,
   Mail,
@@ -59,6 +59,8 @@ import { loadMediaKitConfig } from "@/lib/mediakit-config-store";
 import type { InstagramAnalytics } from "@/types/instagram";
 import type { BrandPitchResponse } from "@/app/api/collabs/brand-pitch/route";
 import { captureEvent } from "@/lib/posthog";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
 
 // ─── Type badge colors ─────────────────────────────────────────────────────────
 
@@ -1621,10 +1623,16 @@ const INTEREST_SUGGESTIONS = [
   "Excursions & Activités",
 ];
 
+const collabSwrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r): CollabTracking[] => r.items ?? []);
+
 export default function CollabsPage() {
   const t = useT();
   const { lang } = useLanguage();
   const { data } = useInstagramData();
+  const { data: session } = useSession();
   const [pageTab, setPageTab] = useState<"finder" | "tracker">("finder");
   const [location, setLocation] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -1638,6 +1646,13 @@ export default function CollabsPage() {
 
   // Tracking state
   const [trackings, setTrackings] = useState<Record<string, CollabTracking>>({});
+  const sessionUserId = useRef<string | undefined>(undefined);
+  sessionUserId.current = session?.user?.id;
+
+  const { data: remoteTrackings } = useSWR<CollabTracking[]>(
+    session?.user?.id ? "/api/user/collabs" : null,
+    collabSwrFetcher
+  );
 
   // Filter state
   const [filterAccountTypes, setFilterAccountTypes] = useState<string[]>([]);
@@ -1652,13 +1667,14 @@ export default function CollabsPage() {
   >({});
   const [isValidating, setIsValidating] = useState(false);
 
-  // Load trackings on mount
+  // Load trackings: prefer Supabase when authenticated, fall back to localStorage
   useEffect(() => {
-    const all = loadTrackings();
+    const source = remoteTrackings ?? (session?.user?.id ? null : loadTrackings());
+    if (!source) return;
     const map: Record<string, CollabTracking> = {};
-    for (const t of all) map[t.collabId] = t;
+    for (const t of source) map[t.collabId] = t;
     setTrackings(map);
-  }, []);
+  }, [remoteTrackings, session]);
 
   const searchStatuses = [
     t("collabs.search.status.analyzeProfile"),
@@ -1682,6 +1698,13 @@ export default function CollabsPage() {
 
   const handleTrackingUpdate = (updated: CollabTracking) => {
     setTrackings((prev) => ({ ...prev, [updated.collabId]: updated }));
+    if (sessionUserId.current) {
+      fetch("/api/user/collabs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+    }
   };
 
   const getOrCreateTracking = (collab: CollabMatch): CollabTracking => {

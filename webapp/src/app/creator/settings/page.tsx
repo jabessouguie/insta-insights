@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import {
   Palette,
   Type,
@@ -177,9 +179,15 @@ function TextInput({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const profileSwrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r) => r.profile);
+
 export default function SettingsPage() {
   const t = useT();
   const { data: instagramData } = useInstagramData();
+  const { data: session } = useSession();
   const [settings, setSettings] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const [saved, setSaved] = useState(false);
@@ -197,12 +205,18 @@ export default function SettingsPage() {
     doneAt: "",
   });
 
-  // Load from localStorage on mount
+  const { data: remoteProfile } = useSWR<UserProfile | null>(
+    session?.user?.id ? "/api/user/profile" : null,
+    profileSwrFetcher
+  );
+
+  // Load from localStorage on mount; prefer remote profile when authenticated
   useEffect(() => {
     setSettings(loadBrandSettings());
-    setProfile(loadUserProfile());
     setPastCollabs(loadPastCollabs());
-  }, []);
+    if (remoteProfile) setProfile({ ...DEFAULT_USER_PROFILE, ...remoteProfile });
+    else setProfile(loadUserProfile());
+  }, [remoteProfile]);
 
   const handleAddCollab = () => {
     if (!newCollab.brand.trim() || !newCollab.deliverables.trim() || !newCollab.obtained.trim())
@@ -240,6 +254,13 @@ export default function SettingsPage() {
 
   const handleSaveProfile = () => {
     saveUserProfile(profile);
+    if (session?.user?.id) {
+      fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+    }
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
   };

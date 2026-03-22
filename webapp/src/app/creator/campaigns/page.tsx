@@ -6,6 +6,8 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import { useT } from "@/lib/i18n";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
 import {
   loadCampaigns,
   saveCampaign,
@@ -48,18 +50,30 @@ function formatCurrency(n: number): string {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const swrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r) => r.items ?? []);
+
 export default function CampaignsPage() {
   const { data } = useInstagramData();
   const t = useT();
+  const { data: session } = useSession();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editId, setEditId] = useState<string | null>(null);
 
+  const { data: remoteCampaigns } = useSWR<Campaign[]>(
+    session?.user?.id ? "/api/user/campaigns" : null,
+    swrFetcher
+  );
+
   useEffect(() => {
-    setCampaigns(loadCampaigns());
-  }, []);
+    if (remoteCampaigns) setCampaigns(remoteCampaigns);
+    else if (!session?.user?.id) setCampaigns(loadCampaigns());
+  }, [remoteCampaigns, session]);
 
   function openNew() {
     setForm(EMPTY_FORM);
@@ -80,10 +94,20 @@ export default function CampaignsPage() {
     setShowForm(true);
   }
 
+  function syncToSupabase(campaign: Campaign) {
+    if (!session?.user?.id) return;
+    fetch("/api/user/campaigns", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(campaign),
+    });
+  }
+
   function handleSave() {
     if (!form.brand.trim()) return;
+    let saved: Campaign;
     if (editId) {
-      const updated: Campaign = {
+      saved = {
         id: editId,
         brand: form.brand.trim(),
         date: campaigns.find((c) => c.id === editId)?.date ?? new Date().toISOString().slice(0, 10),
@@ -93,9 +117,9 @@ export default function CampaignsPage() {
         engagements: parseNum(form.engagements),
         notes: form.notes.trim(),
       };
-      saveCampaign(updated);
+      saveCampaign(saved);
     } else {
-      const newCampaign = createCampaign({
+      saved = createCampaign({
         brand: form.brand.trim(),
         revenue: parseNum(form.revenue),
         cost: parseNum(form.cost),
@@ -103,8 +127,9 @@ export default function CampaignsPage() {
         engagements: parseNum(form.engagements),
         notes: form.notes.trim(),
       });
-      saveCampaign(newCampaign);
+      saveCampaign(saved);
     }
+    syncToSupabase(saved);
     setCampaigns(loadCampaigns());
     setShowForm(false);
     setForm(EMPTY_FORM);
@@ -113,6 +138,9 @@ export default function CampaignsPage() {
 
   function handleDelete(id: string) {
     deleteCampaign(id);
+    if (session?.user?.id) {
+      fetch(`/api/user/campaigns?id=${id}`, { method: "DELETE" });
+    }
     setCampaigns(loadCampaigns());
     if (editId === id) setShowForm(false);
   }
