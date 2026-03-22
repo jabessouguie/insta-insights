@@ -14,13 +14,24 @@ import {
   Video,
   TrendingUp,
   ArrowRight,
+  Copy,
+  Check,
+  CalendarClock,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { useInstagramData } from "@/hooks/useInstagramData";
 import type { ExecutiveReport, ReportGenerateResponse } from "@/types/instagram";
 import { useT } from "@/lib/i18n";
-import { loadReports, saveReport, deleteReport, type SavedReport } from "@/lib/report-store";
+import {
+  loadReports,
+  saveReport,
+  deleteReport,
+  type SavedReport,
+  type ReportPeriodType,
+} from "@/lib/report-store";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
 // ─── NLP Query ────────────────────────────────────────────────────────────────
 
@@ -110,6 +121,14 @@ function QuerySection({ t }: { t: ReturnType<typeof useT> }) {
 // ─── Executive Report ─────────────────────────────────────────────────────────
 
 function ReportCard({ report, t }: { report: ExecutiveReport; t: ReturnType<typeof useT> }) {
+  const [copied, setCopied] = React.useState<number | null>(null);
+
+  const handleCopy = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(idx);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
   return (
     <div className="space-y-4">
       {/* Summary */}
@@ -186,6 +205,60 @@ function ReportCard({ report, t }: { report: ExecutiveReport; t: ReturnType<type
           ))}
         </ul>
       </div>
+
+      {/* Caption templates */}
+      {report.postPromptTemplates && report.postPromptTemplates.length > 0 && (
+        <div className="rounded-xl border border-border bg-card/60 p-4">
+          <div className="mb-2 flex items-center gap-1.5">
+            <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Templates de captions
+            </p>
+          </div>
+          <div className="space-y-2">
+            {report.postPromptTemplates.map((tpl, i) => (
+              <div key={i} className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2">
+                <p className="flex-1 text-xs leading-relaxed text-foreground/80">{tpl}</p>
+                <button
+                  onClick={() => handleCopy(tpl, i)}
+                  className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                >
+                  {copied === i ? (
+                    <Check className="h-3 w-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="h-3 w-3" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Calendar suggestions */}
+      {report.calendarSuggestions && report.calendarSuggestions.length > 0 && (
+        <div className="rounded-xl border border-border bg-card/60 p-4">
+          <div className="mb-2 flex items-center gap-1.5">
+            <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Créneaux recommandés
+            </p>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {report.calendarSuggestions.map((s, i) => (
+              <div key={i} className="rounded-lg border border-border px-3 py-2">
+                <p className="text-xs font-semibold">
+                  {s.day} · {s.time}
+                </p>
+                <p className="text-[10px] font-medium text-primary">{s.contentType}</p>
+                <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                  {s.rationale}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -232,6 +305,11 @@ export default function ReportsPage() {
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [periodType, setPeriodType] = useState<ReportPeriodType>("monthly");
+  const [reportModel, setReportModel] = useState(DEFAULT_MODEL);
+  useEffect(() => {
+    setReportModel(getModelPref("report"));
+  }, []);
   const reportRef = useRef<HTMLDivElement>(null);
 
   // Load persisted reports on mount
@@ -247,13 +325,13 @@ export default function ReportsPage() {
       const res = await fetch("/api/report/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ data, periodType, model: reportModel }),
       });
       const json: ReportGenerateResponse = await res.json();
       if (json.success && json.report) {
         setReport(json.report);
-        const saved = saveReport(json.report);
-        setSavedReports((prev) => [saved, ...prev].slice(0, 10));
+        const saved = saveReport(json.report, periodType);
+        setSavedReports((prev) => [saved, ...prev].slice(0, 20));
       } else {
         setError(json.error ?? "Erreur");
       }
@@ -311,12 +389,37 @@ export default function ReportsPage() {
 
         {/* Executive Report */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold">{t("reports.exec.title")}</h2>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Period type toggle */}
+              <div className="flex rounded-lg border border-border bg-background text-xs">
+                {(["monthly", "weekly"] as ReportPeriodType[]).map((pt) => (
+                  <button
+                    key={pt}
+                    onClick={() => setPeriodType(pt)}
+                    className={`px-3 py-1.5 font-medium transition-colors first:rounded-l-lg last:rounded-r-lg ${
+                      periodType === pt
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {pt === "monthly" ? "Mensuel" : "Hebdo"}
+                  </button>
+                ))}
+              </div>
+              <ModelSelector
+                feature="report"
+                value={reportModel}
+                onChange={(m) => {
+                  setReportModel(m);
+                  saveModelPref("report", m);
+                }}
+                className="w-44"
+              />
               {report && (
                 <Button variant="outline" size="sm" onClick={handleExportPdf} className="gap-2">
                   <Download className="h-3.5 w-3.5" />
@@ -378,7 +481,14 @@ export default function ReportsPage() {
                   className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-medium">{sr.report.period}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{sr.report.period}</p>
+                      {sr.periodType === "weekly" && (
+                        <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-medium text-violet-400">
+                          hebdo
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       {new Date(sr.savedAt).toLocaleDateString("fr-FR", {
                         day: "numeric",

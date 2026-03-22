@@ -124,10 +124,12 @@ export async function generateText(
       const key = process.env.OPENAI_API_KEY ?? "ollama";
       const baseURL = process.env.OPENAI_BASE_URL;
       const client = new OpenAI({ apiKey: key, ...(baseURL ? { baseURL } : {}) });
+      // o-series reasoning models (o1, o3, o4-mini, etc.) require max_completion_tokens
+      const isReasoningModel = /^o\d/.test(model);
       const completion = await client.chat.completions.create({
         model,
         messages: [{ role: "user", content: prompt }],
-        max_tokens: maxTokens,
+        ...(isReasoningModel ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
       });
       return (completion.choices[0]?.message?.content ?? "").trim();
     }

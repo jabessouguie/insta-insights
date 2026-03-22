@@ -4,19 +4,33 @@ import type { ReportGenerateResponse, InstagramAnalytics } from "@/types/instagr
 
 export const dynamic = "force-dynamic";
 
-function buildReportPrompt(data: InstagramAnalytics): string {
+interface ReportGenerateRequest {
+  data: InstagramAnalytics;
+  periodType?: "weekly" | "monthly";
+  model?: string;
+}
+
+function buildReportPrompt(
+  data: InstagramAnalytics,
+  periodType: "weekly" | "monthly" = "monthly"
+): string {
   const { profile, metrics, audienceInsights, contentInteractions, reachInsights, posts } = data;
+
+  const isWeekly = periodType === "weekly";
+  const periodLabel = isWeekly ? "hebdomadaire" : "mensuel";
+  const nextKey = isWeekly ? "nextWeekRecommendations" : "nextMonthRecommendations";
+  const periodExample = isWeekly ? "ex: Semaine du 10 mars 2026" : "ex: Février 2026";
 
   const topCaptions = posts
     .filter((p) => p.caption.trim().length > 0)
-    .slice(0, 10)
+    .slice(0, isWeekly ? 5 : 10)
     .map(
       (p, i) =>
         `${i + 1}. [${p.mediaType}] "${p.caption.substring(0, 120)}" — ${p.likes} likes, ${p.comments} comments`
     )
     .join("\n");
 
-  return `Tu es un analyste senior en marketing des réseaux sociaux. Génère un rapport exécutif mensuel professionnel basé sur les données Instagram suivantes.
+  return `Tu es un analyste senior en marketing des réseaux sociaux. Génère un rapport exécutif ${periodLabel} professionnel basé sur les données Instagram suivantes.
 
 ## Données du compte
 - Utilisateur : @${profile.username}
@@ -76,25 +90,43 @@ ${topCaptions}
 
 ## Tâche
 
-Génère un rapport exécutif concis et actionnable. Adopte un ton professionnel et direct. Utilise des données réelles tirées des métriques ci-dessus.
+Génère un rapport exécutif ${periodLabel} concis et actionnable. Adopte un ton professionnel et direct. Utilise des données réelles tirées des métriques ci-dessus.${isWeekly ? "\nPour un rapport hebdomadaire, concentre-toi sur les tendances immédiates, les contenus de la semaine et les actions à prendre dès maintenant." : ""}
 
 ## Format JSON STRICT (aucun markdown)
 
 {
-  "period": "string (ex: Février 2026)",
-  "executiveSummary": "string (2-3 phrases synthétisant le mois)",
+  "period": "string (${periodExample})",
+  "executiveSummary": "string (2-3 phrases synthétisant la période)",
   "keyWins": ["string", "string", "string"],
   "keyAlerts": ["string", "string"],
   "contentPerformance": "string (1 paragraphe sur les formats et contenus qui ont performé)",
   "audienceTrends": "string (1 paragraphe sur l'évolution de l'audience)",
-  "nextMonthRecommendations": ["string", "string", "string"],
+  "${nextKey}": ["string", "string", "string"],
+  "postPromptTemplates": [
+    "Template caption 1 (max 60 mots, avec [SUJET] comme placeholder, basé sur le meilleur format)",
+    "Template caption 2 — format différent (liste, question ou anecdote)",
+    "Template caption 3 — adapté au deuxième meilleur format de contenu"
+  ],
+  "calendarSuggestions": [
+    { "day": "Lundi", "time": "18h", "contentType": "Reel", "rationale": "Audience la plus active d'après les métriques" },
+    { "day": "Jeudi", "time": "12h", "contentType": "Carrousel", "rationale": "Fort engagement historique les jeudis" },
+    { "day": "Samedi", "time": "10h", "contentType": "Image", "rationale": "Audience disponible en début de week-end" }
+  ],
   "generatedAt": "string (date ISO)"
 }`;
 }
 
 export async function POST(request: Request): Promise<NextResponse<ReportGenerateResponse>> {
   try {
-    const data: InstagramAnalytics = await request.json();
+    const body: ReportGenerateRequest | InstagramAnalytics = await request.json();
+
+    // Support both legacy format (raw InstagramAnalytics) and new {data, periodType, model}
+    const isWrapped = "data" in body && body.data !== undefined;
+    const data = isWrapped ? (body as ReportGenerateRequest).data : (body as InstagramAnalytics);
+    const periodType = isWrapped
+      ? ((body as ReportGenerateRequest).periodType ?? "monthly")
+      : "monthly";
+    const model = isWrapped ? (body as ReportGenerateRequest).model : undefined;
 
     if (!isAIConfigured()) {
       return NextResponse.json(
@@ -103,10 +135,18 @@ export async function POST(request: Request): Promise<NextResponse<ReportGenerat
       );
     }
 
-    const prompt = buildReportPrompt(data);
-    const raw = await generateText(prompt);
+    const prompt = buildReportPrompt(data, periodType);
+    const raw = await generateText(prompt, { model });
     const report = JSON.parse(stripJsonFences(raw));
     report.generatedAt = report.generatedAt ?? new Date().toISOString();
+    // Normalise: weekly reports use nextWeekRecommendations, store as nextMonthRecommendations
+    if (
+      periodType === "weekly" &&
+      report.nextWeekRecommendations &&
+      !report.nextMonthRecommendations
+    ) {
+      report.nextMonthRecommendations = report.nextWeekRecommendations;
+    }
 
     return NextResponse.json({ success: true, report });
   } catch (error) {

@@ -39,6 +39,8 @@ import { loadBrandSettings } from "@/lib/brand-settings-store";
 import { saveCarouselContext, saveStoriesContext } from "@/lib/content-prompt-context-store";
 import { OptimalSlotsWidget } from "@/components/creator/OptimalSlotsWidget";
 import { drawStyledTextBlock, wrapText } from "@/lib/canvas-text-renderer";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
 // ─── Canvas renderer ─────────────────────────────────────────────────────────
 
@@ -100,104 +102,264 @@ async function renderSlideToBlob(
   canvas.width = SLIDE_SIZE;
   canvas.height = SLIDE_SIZE;
   const ctx = canvas.getContext("2d")!;
+  const S = SLIDE_SIZE;
 
-  // ── Background ───────────────────────────────────────────────────────────
+  // ── Background (common to all layouts) ──────────────────────────────────
   const photo = photos[slide.photoIndex] ?? photos[0] ?? null;
   if (photo) {
     await new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
-        // Cover fit
-        const scale = Math.max(SLIDE_SIZE / img.width, SLIDE_SIZE / img.height);
+        const scale = Math.max(S / img.width, S / img.height);
         const w = img.width * scale;
         const h = img.height * scale;
-        ctx.drawImage(img, (SLIDE_SIZE - w) / 2, (SLIDE_SIZE - h) / 2, w, h);
+        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
         resolve();
       };
       img.onerror = () => resolve();
       img.src = photo;
     });
   } else {
-    // Gradient background using brand colors
-    const grad = ctx.createLinearGradient(0, 0, SLIDE_SIZE, SLIDE_SIZE);
+    const grad = ctx.createLinearGradient(0, 0, S, S);
     grad.addColorStop(0, primaryColor);
     grad.addColorStop(1, accentColor);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SLIDE_SIZE, SLIDE_SIZE);
+    ctx.fillRect(0, 0, S, S);
   }
 
-  // ── Dark overlay (bottom 60%) ────────────────────────────────────────────
-  const overlayGrad = ctx.createLinearGradient(0, SLIDE_SIZE * 0.3, 0, SLIDE_SIZE);
-  overlayGrad.addColorStop(0, "rgba(0,0,0,0)");
-  overlayGrad.addColorStop(0.4, "rgba(0,0,0,0.55)");
-  overlayGrad.addColorStop(1, "rgba(0,0,0,0.88)");
-  ctx.fillStyle = overlayGrad;
-  ctx.fillRect(0, 0, SLIDE_SIZE, SLIDE_SIZE);
+  const layout = slide.layout ?? "classic";
 
-  // ── Accent bar (left side) ───────────────────────────────────────────────
-  ctx.fillStyle = accentColor;
-  ctx.fillRect(60, SLIDE_SIZE * 0.55, 6, SLIDE_SIZE * 0.38);
+  if (layout === "center") {
+    // ── Full screen dim ────────────────────────────────────────────────────
+    ctx.fillStyle = "rgba(0,0,0,0.58)";
+    ctx.fillRect(0, 0, S, S);
+    // ── Horizontal accent line above title ─────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(S * 0.28, S * 0.4, S * 0.44, 5);
+    // ── Centered text ──────────────────────────────────────────────────────
+    ctx.textAlign = "center";
+    let y = S * 0.47;
+    ctx.font = `bold 90px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapText(ctx, slide.title, S - 160, 3)) {
+      ctx.fillText(line, S / 2, y);
+      y += 108;
+    }
+    if (slide.subtitle) {
+      y += 12;
+      ctx.font = `500 46px "${fonts.subtitle}"`;
+      ctx.fillStyle = accentColor;
+      for (const line of wrapText(ctx, slide.subtitle, S - 200, 2)) {
+        ctx.fillText(line, S / 2, y);
+        y += 58;
+      }
+    }
+    if (slide.body) {
+      y += 16;
+      ctx.font = `400 36px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      for (const line of wrapText(ctx, slide.body, S - 200, 3)) {
+        if (y < S - 60) {
+          ctx.fillText(line, S / 2, y);
+          y += 46;
+        }
+      }
+    }
+  } else if (layout === "top") {
+    // ── Dark gradient from top down ────────────────────────────────────────
+    const topGrad = ctx.createLinearGradient(0, 0, 0, S * 0.6);
+    topGrad.addColorStop(0, "rgba(0,0,0,0.88)");
+    topGrad.addColorStop(0.6, "rgba(0,0,0,0.55)");
+    topGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, S, S * 0.6);
+    // ── Left accent bar at top ─────────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(60, S * 0.07, 6, S * 0.33);
+    // ── Text at top ───────────────────────────────────────────────────────
+    ctx.textAlign = "left";
+    let y = S * 0.115;
+    ctx.font = `bold 72px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapText(ctx, slide.title, S - 150, 3)) {
+      ctx.fillText(line, 90, y);
+      y += 84;
+    }
+    if (slide.subtitle) {
+      y += 10;
+      ctx.font = `500 44px "${fonts.subtitle}"`;
+      ctx.fillStyle = accentColor;
+      for (const line of wrapText(ctx, slide.subtitle, S - 150, 2)) {
+        ctx.fillText(line, 90, y);
+        y += 54;
+      }
+    }
+    if (slide.body) {
+      y += 14;
+      ctx.font = `400 36px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (const line of wrapText(ctx, slide.body, S - 150, 3)) {
+        if (y < S * 0.5) {
+          ctx.fillText(line, 90, y);
+          y += 46;
+        }
+      }
+    }
+  } else if (layout === "card") {
+    // ── Subtle vignette over photo ─────────────────────────────────────────
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.fillRect(0, 0, S, S);
+    // ── Frosted glass card ─────────────────────────────────────────────────
+    const cardX = 50;
+    const cardY = Math.round(S * 0.51);
+    const cardW = S - 100;
+    const cardH = Math.round(S * 0.44);
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 24);
+    ctx.fillStyle = "rgba(8,8,8,0.84)";
+    ctx.fill();
+    // ── Accent left border on card ─────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(cardX, cardY + 26, 5, cardH - 52);
+    // ── Text inside card ──────────────────────────────────────────────────
+    ctx.textAlign = "left";
+    let y = cardY + 72;
+    ctx.font = `bold 66px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapText(ctx, slide.title, cardW - 100, 3)) {
+      ctx.fillText(line, cardX + 44, y);
+      y += 80;
+    }
+    if (slide.subtitle) {
+      y += 8;
+      ctx.font = `500 40px "${fonts.subtitle}"`;
+      ctx.fillStyle = accentColor;
+      for (const line of wrapText(ctx, slide.subtitle, cardW - 100, 2)) {
+        ctx.fillText(line, cardX + 44, y);
+        y += 52;
+      }
+    }
+    if (slide.body) {
+      y += 12;
+      ctx.font = `400 33px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      for (const line of wrapText(ctx, slide.body, cardW - 100, 3)) {
+        if (y < cardY + cardH - 30) {
+          ctx.fillText(line, cardX + 44, y);
+          y += 44;
+        }
+      }
+    }
+  } else if (layout === "split") {
+    // ── Solid brand color band on bottom 42% ──────────────────────────────
+    const splitY = Math.round(S * 0.58);
+    ctx.fillStyle = primaryColor;
+    ctx.fillRect(0, splitY, S, S - splitY);
+    // Dark overlay on band for text readability
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
+    ctx.fillRect(0, splitY, S, S - splitY);
+    // ── Accent divider line ────────────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(0, splitY - 5, S, 8);
+    // ── Text on solid band ────────────────────────────────────────────────
+    ctx.textAlign = "left";
+    let y = splitY + 72;
+    ctx.font = `bold 72px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapText(ctx, slide.title, S - 130, 3)) {
+      if (y < S - 40) {
+        ctx.fillText(line, 72, y);
+        y += 84;
+      }
+    }
+    if (slide.subtitle) {
+      y += 8;
+      ctx.font = `500 44px "${fonts.subtitle}"`;
+      ctx.fillStyle = accentColor;
+      for (const line of wrapText(ctx, slide.subtitle, S - 130, 2)) {
+        if (y < S - 40) {
+          ctx.fillText(line, 72, y);
+          y += 54;
+        }
+      }
+    }
+    if (slide.body) {
+      y += 12;
+      ctx.font = `400 34px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (const line of wrapText(ctx, slide.body, S - 130, 3)) {
+        if (y < S - 40) {
+          ctx.fillText(line, 72, y);
+          y += 44;
+        }
+      }
+    }
+  } else {
+    // ── "classic" (default) — adaptive font scaling ───────────────────────
+    // ── Accent bar (left side)
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(60, SLIDE_SIZE * 0.55, 6, SLIDE_SIZE * 0.38);
 
-  const textX = 90;
-  const maxTextWidth = SLIDE_SIZE - textX - 60;
-  const titleStyle = { shadow: true };
-  let textY = SLIDE_SIZE * 0.6;
+    const textX = 90;
+    const maxTextWidth = SLIDE_SIZE - textX - 60;
+    const titleStyle = { shadow: true };
+    let textY = SLIDE_SIZE * 0.6;
 
-  // ── Adaptive font scaling (prevents body from being cut off) ─────────────
-  const available = SLIDE_SIZE * 0.4 - 60; // = 372px
-  const scale = computeLayoutScale(ctx, slide, fonts, maxTextWidth, 72, 44, 36, available);
-  const titleSize = Math.round(72 * scale);
-  const subtitleSize = Math.round(44 * scale);
-  const bodySize = Math.round(36 * scale);
+    // ── Adaptive font scaling (prevents body from being cut off)
+    const available = SLIDE_SIZE * 0.4 - 60; // = 372px
+    const scale = computeLayoutScale(ctx, slide, fonts, maxTextWidth, 72, 44, 36, available);
+    const titleSize = Math.round(72 * scale);
+    const subtitleSize = Math.round(44 * scale);
+    const bodySize = Math.round(36 * scale);
 
-  // ── Title ────────────────────────────────────────────────────────────────
-  textY = drawStyledTextBlock(ctx, {
-    text: slide.title,
-    x: textX,
-    y: textY,
-    maxWidth: maxTextWidth,
-    font: `bold ${titleSize}px "${fonts.title}"`,
-    fontSize: titleSize,
-    color: "#ffffff",
-    align: "left",
-    maxLines: 3,
-    style: titleStyle,
-    accentColor,
-    bgPadding: 12,
-  });
-
-  // ── Subtitle ─────────────────────────────────────────────────────────────
-  textY += 12;
-  textY = drawStyledTextBlock(ctx, {
-    text: slide.subtitle,
-    x: textX,
-    y: textY,
-    maxWidth: maxTextWidth,
-    font: `500 ${subtitleSize}px "${fonts.subtitle}"`,
-    fontSize: subtitleSize,
-    color: accentColor,
-    align: "left",
-    maxLines: 2,
-    style: { shadow: titleStyle.shadow ?? true },
-    accentColor,
-  });
-
-  // ── Body ─────────────────────────────────────────────────────────────────
-  if (slide.body) {
-    textY += 16;
-    drawStyledTextBlock(ctx, {
-      text: slide.body,
+    // ── Title
+    textY = drawStyledTextBlock(ctx, {
+      text: slide.title,
       x: textX,
       y: textY,
       maxWidth: maxTextWidth,
-      font: `400 ${bodySize}px "${fonts.body}"`,
-      fontSize: bodySize,
-      color: "rgba(255,255,255,0.85)",
+      font: `bold ${titleSize}px "${fonts.title}"`,
+      fontSize: titleSize,
+      color: "#ffffff",
       align: "left",
       maxLines: 3,
-      style: { shadow: true },
+      style: titleStyle,
+      accentColor,
+      bgPadding: 12,
+    });
+
+    // ── Subtitle
+    textY += 12;
+    textY = drawStyledTextBlock(ctx, {
+      text: slide.subtitle,
+      x: textX,
+      y: textY,
+      maxWidth: maxTextWidth,
+      font: `500 ${subtitleSize}px "${fonts.subtitle}"`,
+      fontSize: subtitleSize,
+      color: accentColor,
+      align: "left",
+      maxLines: 2,
+      style: { shadow: titleStyle.shadow ?? true },
       accentColor,
     });
+
+    // ── Body
+    if (slide.body) {
+      textY += 16;
+      drawStyledTextBlock(ctx, {
+        text: slide.body,
+        x: textX,
+        y: textY,
+        maxWidth: maxTextWidth,
+        font: `400 ${bodySize}px "${fonts.body}"`,
+        fontSize: bodySize,
+        color: "rgba(255,255,255,0.85)",
+        align: "left",
+        maxLines: 3,
+        style: { shadow: true },
+        accentColor,
+      });
+    }
   }
 
   return new Promise<Blob>((resolve, reject) =>
@@ -206,6 +368,39 @@ async function renderSlideToBlob(
       "image/png"
     )
   );
+}
+
+/** Draw rounded rect path for card layout (does not fill/stroke — caller must). */
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number
+): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+/** Wrap text for story layout templates — auto-computes maxLines from fontSize. */
+function wrapTextCentered(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  fontSize: number
+): string[] {
+  const maxLines = Math.max(2, Math.floor((STORY_HEIGHT * 0.2) / (fontSize * 1.2)));
+  return wrapText(ctx, text, maxWidth, maxLines);
 }
 
 // ─── Story canvas renderer (1080 × 1920, vertical 9:16) ──────────────────────
@@ -226,85 +421,214 @@ async function renderStoryToBlob(
   canvas.width = STORY_WIDTH;
   canvas.height = STORY_HEIGHT;
   const ctx = canvas.getContext("2d")!;
+  const W = STORY_WIDTH;
+  const H = STORY_HEIGHT;
 
-  // ── Background ───────────────────────────────────────────────────────────
+  // ── Background (common to all layouts) ──────────────────────────────────
   const photo = photos[slide.photoIndex] ?? photos[0] ?? null;
   if (photo) {
     await new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const scale = Math.max(STORY_WIDTH / img.width, STORY_HEIGHT / img.height);
+        const scale = Math.max(W / img.width, H / img.height);
         const w = img.width * scale;
         const h = img.height * scale;
-        ctx.drawImage(img, (STORY_WIDTH - w) / 2, (STORY_HEIGHT - h) / 2, w, h);
+        ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
         resolve();
       };
       img.onerror = () => resolve();
       img.src = photo;
     });
   } else {
-    const grad = ctx.createLinearGradient(0, 0, STORY_WIDTH, STORY_HEIGHT);
+    const grad = ctx.createLinearGradient(0, 0, W, H);
     grad.addColorStop(0, primaryColor);
     grad.addColorStop(1, accentColor);
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+    ctx.fillRect(0, 0, W, H);
   }
 
-  // ── Dark overlay (bottom 50%) ────────────────────────────────────────────
-  const overlayGrad = ctx.createLinearGradient(0, STORY_HEIGHT * 0.4, 0, STORY_HEIGHT);
-  overlayGrad.addColorStop(0, "rgba(0,0,0,0)");
-  overlayGrad.addColorStop(0.4, "rgba(0,0,0,0.55)");
-  overlayGrad.addColorStop(1, "rgba(0,0,0,0.92)");
-  ctx.fillStyle = overlayGrad;
-  ctx.fillRect(0, 0, STORY_WIDTH, STORY_HEIGHT);
+  const layout = slide.layout ?? "classic";
 
-  // ── Bottom accent line ────────────────────────────────────────────────────
-  ctx.fillStyle = accentColor;
-  ctx.fillRect(STORY_WIDTH * 0.1, STORY_HEIGHT - 80, STORY_WIDTH * 0.8, 6);
+  if (layout === "center") {
+    // ── Full screen dim ────────────────────────────────────────────────────
+    ctx.fillStyle = "rgba(0,0,0,0.58)";
+    ctx.fillRect(0, 0, W, H);
+    // ── Accent lines flanking the title ───────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(W * 0.2, H * 0.38, W * 0.6, 5);
+    // ── Centered text ──────────────────────────────────────────────────────
+    ctx.textAlign = "center";
+    let y = H * 0.42;
+    ctx.font = `bold 110px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapTextCentered(ctx, slide.title, W - 160, 110)) {
+      ctx.fillText(line, W / 2, y);
+      y += 130;
+    }
+    if (slide.body) {
+      y += 28;
+      ctx.font = `400 54px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      for (const line of wrapTextCentered(ctx, slide.body, W - 180, 54)) {
+        if (y < H - 120) {
+          ctx.fillText(line, W / 2, y);
+          y += 70;
+        }
+      }
+    }
+    // ── Bottom accent line ─────────────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(W * 0.2, H - 100, W * 0.6, 5);
+  } else if (layout === "top") {
+    // ── Dark gradient from top ─────────────────────────────────────────────
+    const topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.52);
+    topGrad.addColorStop(0, "rgba(0,0,0,0.9)");
+    topGrad.addColorStop(0.6, "rgba(0,0,0,0.55)");
+    topGrad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = topGrad;
+    ctx.fillRect(0, 0, W, H * 0.52);
+    // ── Centered text at top ───────────────────────────────────────────────
+    ctx.textAlign = "center";
+    let y = H * 0.1;
+    ctx.font = `bold 104px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapTextCentered(ctx, slide.title, W - 160, 104)) {
+      ctx.fillText(line, W / 2, y);
+      y += 122;
+    }
+    if (slide.body) {
+      y += 24;
+      ctx.font = `400 54px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (const line of wrapTextCentered(ctx, slide.body, W - 180, 54)) {
+        if (y < H * 0.48) {
+          ctx.fillText(line, W / 2, y);
+          y += 70;
+        }
+      }
+    }
+    // ── Accent bar below text ──────────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(W * 0.35, y + 20, W * 0.3, 6);
+  } else if (layout === "card") {
+    // ── Subtle vignette ───────────────────────────────────────────────────
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.fillRect(0, 0, W, H);
+    // ── Centered card ─────────────────────────────────────────────────────
+    const cardX = 80;
+    const cardY = Math.round(H * 0.5);
+    const cardW = W - 160;
+    const cardH = Math.round(H * 0.38);
+    drawRoundedRect(ctx, cardX, cardY, cardW, cardH, 32);
+    ctx.fillStyle = "rgba(8,8,8,0.86)";
+    ctx.fill();
+    // ── Accent top border on card ──────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(cardX + 30, cardY, cardW - 60, 6);
+    // ── Text centered in card ─────────────────────────────────────────────
+    ctx.textAlign = "center";
+    let y = cardY + 90;
+    ctx.font = `bold 96px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapTextCentered(ctx, slide.title, cardW - 80, 96)) {
+      if (y < cardY + cardH - 40) {
+        ctx.fillText(line, W / 2, y);
+        y += 114;
+      }
+    }
+    if (slide.body) {
+      y += 20;
+      ctx.font = `400 50px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
+      for (const line of wrapTextCentered(ctx, slide.body, cardW - 80, 50)) {
+        if (y < cardY + cardH - 30) {
+          ctx.fillText(line, W / 2, y);
+          y += 64;
+        }
+      }
+    }
+  } else if (layout === "split") {
+    // ── Solid color band on bottom 40% ────────────────────────────────────
+    const splitY = Math.round(H * 0.6);
+    ctx.fillStyle = primaryColor;
+    ctx.fillRect(0, splitY, W, H - splitY);
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
+    ctx.fillRect(0, splitY, W, H - splitY);
+    // ── Accent divider ────────────────────────────────────────────────────
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(0, splitY - 5, W, 8);
+    // ── Text on solid band, centered ──────────────────────────────────────
+    ctx.textAlign = "center";
+    let y = splitY + 110;
+    ctx.font = `bold 104px "${fonts.title}"`;
+    ctx.fillStyle = "#ffffff";
+    for (const line of wrapTextCentered(ctx, slide.title, W - 160, 104)) {
+      if (y < H - 60) {
+        ctx.fillText(line, W / 2, y);
+        y += 122;
+      }
+    }
+    if (slide.body) {
+      y += 24;
+      ctx.font = `400 52px "${fonts.body}"`;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (const line of wrapTextCentered(ctx, slide.body, W - 180, 52)) {
+        if (y < H - 60) {
+          ctx.fillText(line, W / 2, y);
+          y += 66;
+        }
+      }
+    }
+  } else {
+    // ── "classic" (default) — adaptive font scaling ───────────────────────
+    // ── Bottom accent line
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(STORY_WIDTH * 0.1, STORY_HEIGHT - 80, STORY_WIDTH * 0.8, 6);
 
-  const textX = STORY_WIDTH / 2;
-  const maxTextWidth = STORY_WIDTH - 160;
-  const titleStyle = { shadow: true };
-  let textY = STORY_HEIGHT * 0.62;
+    const textX = STORY_WIDTH / 2;
+    const maxTextWidth = STORY_WIDTH - 160;
+    const titleStyle = { shadow: true };
+    let textY = STORY_HEIGHT * 0.62;
 
-  // ── Adaptive font scaling (prevents body from being cut off) ─────────────
-  const available = STORY_HEIGHT * 0.38 - 100; // = 628px
-  const scale = computeLayoutScale(ctx, slide, fonts, maxTextWidth, 100, 0, 52, available);
-  const titleSize = Math.round(100 * scale);
-  const bodySize = Math.round(52 * scale);
+    // ── Adaptive font scaling (prevents body from being cut off)
+    const available = STORY_HEIGHT * 0.38 - 100; // = 628px
+    const scale = computeLayoutScale(ctx, slide, fonts, maxTextWidth, 100, 0, 52, available);
+    const titleSize = Math.round(100 * scale);
+    const bodySize = Math.round(52 * scale);
 
-  // ── Title ────────────────────────────────────────────────────────────────
-  textY = drawStyledTextBlock(ctx, {
-    text: slide.title,
-    x: textX,
-    y: textY,
-    maxWidth: maxTextWidth,
-    font: `bold ${titleSize}px "${fonts.title}"`,
-    fontSize: titleSize,
-    color: "#ffffff",
-    align: "center",
-    maxLines: 4,
-    style: titleStyle,
-    accentColor,
-    bgPadding: 16,
-  });
-
-  // ── Body ─────────────────────────────────────────────────────────────────
-  if (slide.body) {
-    textY += 24;
-    drawStyledTextBlock(ctx, {
-      text: slide.body,
+    // ── Title
+    textY = drawStyledTextBlock(ctx, {
+      text: slide.title,
       x: textX,
       y: textY,
       maxWidth: maxTextWidth,
-      font: `400 ${bodySize}px "${fonts.body}"`,
-      fontSize: bodySize,
-      color: "rgba(255,255,255,0.85)",
+      font: `bold ${titleSize}px "${fonts.title}"`,
+      fontSize: titleSize,
+      color: "#ffffff",
       align: "center",
-      maxLines: 3,
-      style: { shadow: true },
+      maxLines: 4,
+      style: titleStyle,
       accentColor,
+      bgPadding: 16,
     });
+
+    // ── Body
+    if (slide.body) {
+      textY += 24;
+      drawStyledTextBlock(ctx, {
+        text: slide.body,
+        x: textX,
+        y: textY,
+        maxWidth: maxTextWidth,
+        font: `400 ${bodySize}px "${fonts.body}"`,
+        fontSize: bodySize,
+        color: "rgba(255,255,255,0.85)",
+        align: "center",
+        maxLines: 3,
+        style: { shadow: true },
+        accentColor,
+      });
+    }
   }
 
   return new Promise<Blob>((resolve, reject) =>
@@ -426,8 +750,11 @@ export default function CarouselPage() {
   // Format switcher
   const [activeFormat, setActiveFormat] = useState<"carousel" | "stories" | "reels">("carousel");
 
-  // Model selector
-  const [aiModel, setAiModel] = useState("gemini-3-flash-preview");
+  // Model selector — persisted per feature (useEffect avoids SSR/client hydration mismatch)
+  const [aiModel, setAiModel] = useState(DEFAULT_MODEL);
+  useEffect(() => {
+    setAiModel(getModelPref("carousel"));
+  }, []);
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1514,7 +1841,16 @@ export default function CarouselPage() {
                 </CardContent>
               </Card>
 
-              {/* Generate button */}
+              {/* Model selector + Generate button */}
+              <ModelSelector
+                feature="carousel"
+                value={aiModel}
+                onChange={(m) => {
+                  setAiModel(m);
+                  saveModelPref("carousel", m);
+                }}
+                className="mb-2"
+              />
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating || !subject.trim()}
@@ -1566,6 +1902,12 @@ export default function CarouselPage() {
                         <div className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-xs font-bold text-white ring-1 ring-white/30">
                           {previewIndex + 1}
                         </div>
+                        {/* HOOK badge on slide 1 */}
+                        {previewIndex === 0 && (
+                          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white shadow-sm">
+                            ⚡ Hook
+                          </div>
+                        )}
                         {/* Navigation arrows */}
                         {previewBlobs.length > 1 && (
                           <>

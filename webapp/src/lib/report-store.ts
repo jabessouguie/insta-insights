@@ -3,10 +3,13 @@
 import type { ExecutiveReport } from "@/types/instagram";
 
 const KEY = "insta_executive_reports";
-const MAX_REPORTS = 10;
+const MAX_REPORTS = 20;
+
+export type ReportPeriodType = "weekly" | "monthly";
 
 export interface SavedReport {
   id: string;
+  periodType: ReportPeriodType;
   report: ExecutiveReport;
   savedAt: string; // ISO date
 }
@@ -22,9 +25,13 @@ export function loadReports(): SavedReport[] {
   }
 }
 
-export function saveReport(report: ExecutiveReport): SavedReport {
+export function saveReport(
+  report: ExecutiveReport,
+  periodType: ReportPeriodType = "monthly"
+): SavedReport {
   const saved: SavedReport = {
-    id: `report_${Date.now()}`,
+    id: crypto.randomUUID(),
+    periodType,
     report,
     savedAt: new Date().toISOString(),
   };

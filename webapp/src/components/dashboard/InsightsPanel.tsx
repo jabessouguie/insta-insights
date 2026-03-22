@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useAnimatedStatus } from "@/hooks/useAnimatedStatus";
-import { Sparkles, TrendingUp, AlertTriangle, Lightbulb, Bell, RefreshCw } from "lucide-react";
+import {
+  Sparkles,
+  TrendingUp,
+  AlertTriangle,
+  Lightbulb,
+  Bell,
+  RefreshCw,
+  Copy,
+  Check,
+  CalendarClock,
+} from "lucide-react";
 import { AIFeedbackBar } from "@/components/ui/ai-feedback-bar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +22,8 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import type { AIInsight, InsightsApiRequest } from "@/types/instagram";
 import { useInsights } from "@/hooks/useInsights";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
 interface InsightsPanelProps {
   request: InsightsApiRequest;
@@ -46,10 +58,74 @@ const PRIORITY_BADGES = {
   low: "secondary" as const,
 };
 
+function PromptTemplatesSection({ templates }: { templates: string[] }) {
+  const [copied, setCopied] = useState<number | null>(null);
+
+  const handleCopy = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(idx);
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  return (
+    <div className="border-t border-border/50 p-4">
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <Copy className="h-3 w-3" /> Templates de captions
+      </p>
+      <div className="space-y-2">
+        {templates.map((tpl, i) => (
+          <div key={i} className="flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2">
+            <p className="flex-1 text-xs leading-relaxed text-foreground/80">{tpl}</p>
+            <button
+              onClick={() => handleCopy(tpl, i)}
+              className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+            >
+              {copied === i ? (
+                <Check className="h-3 w-3 text-emerald-400" />
+              ) : (
+                <Copy className="h-3 w-3" />
+              )}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CalendarSuggestionsSection({
+  suggestions,
+}: {
+  suggestions: Array<{ day: string; time: string; contentType: string; rationale: string }>;
+}) {
+  return (
+    <div className="border-t border-border/50 p-4">
+      <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <CalendarClock className="h-3 w-3" /> Créneaux recommandés
+      </p>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {suggestions.map((s, i) => (
+          <div key={i} className="rounded-lg border border-border bg-card/60 px-3 py-2">
+            <p className="text-xs font-semibold">
+              {s.day} · {s.time}
+            </p>
+            <p className="text-[10px] font-medium text-primary">{s.contentType}</p>
+            <p className="mt-0.5 text-[10px] leading-tight text-muted-foreground">{s.rationale}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function InsightsPanel({ request, initialInsights, summary }: InsightsPanelProps) {
   const t = useT();
   const { insights, isLoading, generate } = useInsights();
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [insightsModel, setInsightsModel] = useState(DEFAULT_MODEL);
+  useEffect(() => {
+    setInsightsModel(getModelPref("insights"));
+  }, []);
 
   const insightsStatuses = [
     t("insights.status.analyzeProfile"),
@@ -77,7 +153,7 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
   useEffect(() => {
     if (hasData && !hasGenerated && !isLoading) {
       setHasGenerated(true);
-      generate(request);
+      generate({ ...request, model: insightsModel });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasData]);
@@ -86,6 +162,7 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
     setHasGenerated(true);
     await generate({
       ...request,
+      model: insightsModel,
       userFeedback: feedback,
       // Pass current insights so Gemini can deepen the analysis on regeneration
       previousInsights: hasGenerated ? (displayInsights ?? undefined) : undefined,
@@ -104,25 +181,36 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
             <CardDescription>{t("insights.subtitle")}</CardDescription>
           </div>
 
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleGenerate()}
-            disabled={isLoading}
-            className="shrink-0 text-xs"
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="h-3 w-3 animate-spin" />
-                {t("insights.button.analyzing")}
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-3 w-3" />
-                {hasGenerated ? t("insights.button.refresh") : t("insights.button.generate")}
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ModelSelector
+              feature="insights"
+              value={insightsModel}
+              onChange={(m) => {
+                setInsightsModel(m);
+                saveModelPref("insights", m);
+              }}
+              className="w-44"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleGenerate()}
+              disabled={isLoading}
+              className="shrink-0 text-xs"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  {t("insights.button.analyzing")}
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3" />
+                  {hasGenerated ? t("insights.button.refresh") : t("insights.button.generate")}
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Summary */}
@@ -215,6 +303,14 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
             <Sparkles className="h-8 w-8 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">{t("insights.empty")}</p>
           </div>
+        )}
+        {/* Caption templates */}
+        {insights?.postPromptTemplates && insights.postPromptTemplates.length > 0 && (
+          <PromptTemplatesSection templates={insights.postPromptTemplates} />
+        )}
+        {/* Calendar suggestions */}
+        {insights?.calendarSuggestions && insights.calendarSuggestions.length > 0 && (
+          <CalendarSuggestionsSection suggestions={insights.calendarSuggestions} />
         )}
         {displayInsights && displayInsights.length > 0 && (
           <div className="p-4 pt-0">

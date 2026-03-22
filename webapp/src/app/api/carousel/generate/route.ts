@@ -64,7 +64,12 @@ ${captionsSection}
 
 ### Slide content rules
 - Write every word in ${lang}. No other language.
-- Slide 1: scroll-stopping hook — bold statement or surprising truth (title max 5 words, no full stop)
+- Slide 1 — SCROLL-STOPPING HOOK (critical): title MUST use one of these three formulas:
+  • A shocking number or stat that reframes the topic (e.g. "3 jours pour changer ça", "92% of travellers miss this")
+  • A counterintuitive truth that contradicts common belief (e.g. "Less sleep, better results", "The 'safe' choice that costs more")
+  • A concrete specific promise + curiosity gap that demands slide 2 (e.g. "I lost 2k followers doing this", "The trick guides never mention")
+  FORBIDDEN in slide 1 title: "Voici comment", "Discover", "Here's how", "Learn how", "Introducing", "Find out", "Check out", "Amazing", "The ultimate guide"
+  Slide 1 title: max 5 words, no full stop, no exclamation mark unless essential for the formula
 - Slides 2–${numSlides - 1}: one key insight or tip per slide, written from personal experience
 - Slide ${numSlides}: clear CTA (save, share, follow, comment)
 - Title: max 5 words, sentence case (only first word capitalised, no caps after colons)
@@ -75,6 +80,13 @@ ${captionsSection}
 - NEVER capitalise after a colon (e.g. "what worked: keep it simple", not "what worked: Keep It Simple")
 - No exclamation marks in titles unless genuinely needed
 - photoIndex: choose the photo that best matches the slide content (0-based index into available photos). If no photos are available, use -1. DO NOT just rotate — pick the most relevant photo for each slide's topic.
+- layout: choose a visual layout for each slide based on its content and emotional tone:
+  • "classic" — text at bottom-left behind a dark gradient, safe and reliable default
+  • "center" — oversized title centered over a full-bleed photo, powerful for bold hooks/statements
+  • "top" — text banner at top with photo fully visible below, ideal for tip/list slides
+  • "card" — frosted glass card over photo at bottom, best for detail-rich body text
+  • "split" — photo on top half, solid brand color band on bottom half, clean for CTA slides
+  Vary layouts across the carousel for visual rhythm. Never use the same layout 3 times in a row.
 
 ### Instagram description rules (also in ${lang})
 - Structure: scroll-stopping hook (1 sentence) → 1–2 lines of context or strong opinion → 1–3 practical tips → CTA
@@ -92,7 +104,8 @@ Reply ONLY with this JSON (no markdown fences, no extra text):
       "title": "Hook that stops the scroll",
       "subtitle": "One line of context",
       "body": "Short punchy insight from experience",
-      "photoIndex": 0
+      "photoIndex": 0,
+      "layout": "classic"
     }
   ],
   "instagramDescription": "Full optimised caption ready to post...",
