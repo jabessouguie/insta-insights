@@ -32,6 +32,7 @@ import {
   Target,
   BookOpen,
   HelpCircle,
+  Clapperboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
@@ -134,6 +135,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
     { href: "/creator/audience", label: t("nav.audience"), icon: Users },
     { href: "/creator/reels", label: t("nav.reels"), icon: Video },
+    { href: "/creator/reels-editor", label: t("nav.reels_editor"), icon: Clapperboard },
     { href: "/creator/competitive", label: t("nav.competitive"), icon: TrendingUp },
     { href: "/creator/reports", label: t("nav.reports"), icon: BarChart2 },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },

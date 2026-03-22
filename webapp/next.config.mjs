@@ -35,7 +35,8 @@ const nextConfig = {
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "img-src 'self' data: blob: https://*.cdninstagram.com https://ui-avatars.com",
             "font-src 'self' https://fonts.gstatic.com",
-            "connect-src 'self' https://generativelanguage.googleapis.com https://ui-avatars.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.sentry.io",
+            "connect-src 'self' https://generativelanguage.googleapis.com https://ui-avatars.com https://fonts.googleapis.com https://fonts.gstatic.com https://*.sentry.io https://unpkg.com",
+            "worker-src 'self' blob:",
             "media-src 'self' data: blob:",
           ].join("; "),
         },
@@ -45,14 +46,13 @@ const nextConfig = {
 };
 
 export default withSentryConfig(nextConfig, {
-  // Sentry org/project — only active when SENTRY_AUTH_TOKEN is set
   silent: !process.env.SENTRY_AUTH_TOKEN,
-  disableLogger: true,
   hideSourceMaps: true,
-  // Disable source map upload unless auth token is provided
   sourcemaps: {
     disable: !process.env.SENTRY_AUTH_TOKEN,
   },
-  // Disable Sentry build-time features when DSN is absent
-  autoInstrumentServerFunctions: !!process.env.SENTRY_DSN,
+  webpack: {
+    autoInstrumentServerFunctions: !!process.env.SENTRY_DSN,
+    treeshake: { removeDebugLogging: true },
+  },
 });

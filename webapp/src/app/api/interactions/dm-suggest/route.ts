@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText, isAIConfigured, GEMINI_FLASH } from "@/lib/ai-provider";
+import { generateText, isAIConfigured } from "@/lib/ai-provider";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +76,7 @@ Rules:
 - ${langInstruction}
 - Return ONLY the message text, no explanation, no quotes around it`;
 
-    const message = await generateText(prompt, { model: GEMINI_FLASH, maxTokens: 200 });
+    const message = await generateText(prompt, { maxTokens: 200 });
     return NextResponse.json({ success: true, message: message.trim() });
   } catch (error) {
     console.error("Error in /api/interactions/dm-suggest:", error);

@@ -48,6 +48,23 @@ export function getDefaultModel(provider?: AIProvider): string {
   return process.env.AI_MODEL ?? DEFAULT_MODELS[provider ?? getActiveProvider()];
 }
 
+/**
+ * Returns true if `model` looks compatible with `provider`.
+ * Prevents cross-provider model names from being forwarded to the wrong API.
+ */
+function isModelCompatible(model: string, provider: AIProvider): boolean {
+  switch (provider) {
+    case "gemini":
+      return model.startsWith("gemini");
+    case "anthropic":
+      return model.startsWith("claude");
+    case "openai":
+      return model.startsWith("gpt") || /^o\d/.test(model);
+    case "openai-compatible":
+      return true; // self-hosted: accept any model name
+  }
+}
+
 /** True if at least one AI provider is configured. */
 export function isAIConfigured(): boolean {
   return !!(
@@ -74,7 +91,9 @@ export async function generateText(
   options: GenerateTextOptions = {}
 ): Promise<string> {
   const provider = getActiveProvider();
-  const model = options.model ?? getDefaultModel(provider);
+  const requested = options.model;
+  const model =
+    requested && isModelCompatible(requested, provider) ? requested : getDefaultModel(provider);
   const maxTokens = options.maxTokens ?? 4096;
 
   switch (provider) {

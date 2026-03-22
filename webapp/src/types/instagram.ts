@@ -701,8 +701,7 @@ export interface GuideConfig {
 
 // ============================================================
 // UGC Content Generator Types
-// ============================================================
-
+// =====================================================
 export type UGCFormat = "carousel" | "reels" | "stories";
 
 export interface UGCPost {
@@ -733,5 +732,55 @@ export interface UGCGenerateRequest {
 export interface UGCGenerateResponse {
   success: boolean;
   ugc?: UGCScript;
+  error?: string;
+}
+
+// Reels Editor Types
+// ============================================================
+
+/** Transition style between clips in the assembled reel. */
+export type ReelsTransition = "none" | "fade" | "wiperight" | "zoomin";
+
+/** How to cut each clip: skip initial silence, or use a fixed start offset. */
+export type ReelsCutMode = "silence" | "fixed";
+
+/** Current stage in the FFmpeg pipeline. */
+export type ReelsPipelineStage =
+  | "idle"
+  | "loading_ffmpeg"
+  | "processing"
+  | "assembling"
+  | "exporting"
+  | "done"
+  | "error";
+
+/** Metadata probed from a video clip via the HTML5 Video API. */
+export interface VideoClipMetadata {
+  name: string;
+  /** Duration in seconds */
+  duration: number;
+  width: number;
+  height: number;
+  hasAudio: boolean;
+}
+
+/** User-configurable parameters for the reels editor pipeline. */
+export interface ReelsEditorConfig {
+  cutMode: ReelsCutMode;
+  /** Target duration to extract from each clip, in seconds (5–15) */
+  clipDuration: number;
+  /** Silence detection threshold in dB, default –30 */
+  silenceThreshold: number;
+  transition: ReelsTransition;
+  /** Duration of the cross-transition in seconds (0.3–0.8) */
+  transitionDuration: number;
+}
+
+/** Live progress update emitted by the pipeline orchestrator. */
+export interface ReelsPipelineProgress {
+  stage: ReelsPipelineStage;
+  /** Overall completion percentage 0–100 */
+  percent: number;
+  message: string;
   error?: string;
 }

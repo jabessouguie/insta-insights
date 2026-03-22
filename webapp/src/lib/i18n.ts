@@ -578,6 +578,8 @@ const FR = {
   "reports.locked.cta": "Nécessite le compte Business Instagram",
   "reports.advanced_features": "Fonctionnalités avancées",
 
+  "nav.reels_editor": "Éditeur de réels",
+
   // ── Skip Rate Analysis ────────────────────────────────────────────────────
   "nav.reels": "Skip Rate",
   "skiprate.title": "Analyse du Taux de Skip",
@@ -1359,6 +1361,8 @@ const EN: Record<keyof typeof FR, string> = {
     "Analyse competitor content strategies and identify narrative white space.",
   "reports.locked.cta": "Requires Instagram Business account",
   "reports.advanced_features": "Advanced features",
+
+  "nav.reels_editor": "Reels Editor",
 
   // ── Skip Rate Analysis ────────────────────────────────────────────────────
   "nav.reels": "Skip Rate",
