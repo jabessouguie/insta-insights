@@ -434,6 +434,7 @@ export default function CarouselPage() {
   const [result, setResult] = useState<CarouselGenerateResponse | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewBlobs, setPreviewBlobs] = useState<string[]>([]); // object URLs
+  const [previewBlobData, setPreviewBlobData] = useState<Blob[]>([]); // raw blobs for ZIP
   const [isRendering, setIsRendering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [refineFeedback, setRefineFeedback] = useState("");
@@ -534,6 +535,7 @@ export default function CarouselPage() {
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
   const [storyResult, setStoryResult] = useState<CarouselGenerateResponse | null>(null);
   const [storyPreviewBlobs, setStoryPreviewBlobs] = useState<string[]>([]);
+  const [storyBlobData, setStoryBlobData] = useState<Blob[]>([]); // raw blobs for ZIP
   const [storyPreviewIndex, setStoryPreviewIndex] = useState(0);
   const [isRenderingStory, setIsRenderingStory] = useState(false);
   const [storyCopied, setStoryCopied] = useState(false);
@@ -594,6 +596,7 @@ export default function CarouselPage() {
     setIsGenerating(true);
     setResult(null);
     setPreviewBlobs([]);
+    setPreviewBlobData([]);
     setPreviewIndex(0);
 
     const previousCaptions =
@@ -639,6 +642,7 @@ export default function CarouselPage() {
 
         const renderer = slideFormat === "story" ? renderStoryToBlob : renderSlideToBlob;
         const blobs: string[] = [];
+        const blobData: Blob[] = [];
         for (const [i, slide] of json.slides.entries()) {
           const blob = await renderer(
             slide,
@@ -649,8 +653,10 @@ export default function CarouselPage() {
             i,
             json.slides.length
           );
+          blobData.push(blob);
           blobs.push(URL.createObjectURL(blob));
         }
+        setPreviewBlobData(blobData);
         setPreviewBlobs(blobs);
         setIsRendering(false);
       }
@@ -673,7 +679,7 @@ export default function CarouselPage() {
   };
 
   const downloadAll = async () => {
-    if (previewBlobs.length === 0) return;
+    if (previewBlobData.length === 0) return;
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     const slug =
@@ -683,13 +689,9 @@ export default function CarouselPage() {
         .replace(/[^a-z0-9]+/gi, "-")
         .toLowerCase() || "carousel";
     const ts = new Date().toISOString().replace(/[-T:]/g, "").slice(0, 14);
-    await Promise.all(
-      previewBlobs.map(async (url, i) => {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        zip.file(`${slug}-slide-${i + 1}.png`, blob);
-      })
-    );
+    previewBlobData.forEach((blob, i) => {
+      zip.file(`${slug}-slide-${i + 1}.png`, blob);
+    });
     const content = await zip.generateAsync({ type: "blob" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(content);
@@ -720,6 +722,7 @@ export default function CarouselPage() {
         setRefineFeedback("");
         // Re-render slides with the updated content
         setPreviewBlobs([]);
+        setPreviewBlobData([]);
         setIsRendering(true);
         try {
           await loadFont(fonts.title);
@@ -727,6 +730,7 @@ export default function CarouselPage() {
           await loadFont(fonts.body);
           const renderer = slideFormat === "story" ? renderStoryToBlob : renderSlideToBlob;
           const blobs: string[] = [];
+          const blobData: Blob[] = [];
           for (let i = 0; i < json.slides.length; i++) {
             const blob = await renderer(
               json.slides[i]!,
@@ -737,8 +741,10 @@ export default function CarouselPage() {
               i,
               json.slides.length
             );
+            blobData.push(blob);
             blobs.push(URL.createObjectURL(blob));
           }
+          setPreviewBlobData(blobData);
           setPreviewBlobs(blobs);
         } finally {
           setIsRendering(false);
@@ -768,6 +774,7 @@ export default function CarouselPage() {
     setIsGeneratingStory(true);
     setStoryResult(null);
     setStoryPreviewBlobs([]);
+    setStoryBlobData([]);
     setStoryPreviewIndex(0);
 
     const previousCaptions =
@@ -804,6 +811,7 @@ export default function CarouselPage() {
         await loadFont(fonts.body);
 
         const blobs: string[] = [];
+        const blobData: Blob[] = [];
         for (const [i, slide] of json.slides.entries()) {
           const blob = await renderStoryToBlob(
             slide,
@@ -814,8 +822,10 @@ export default function CarouselPage() {
             i,
             json.slides.length
           );
+          blobData.push(blob);
           blobs.push(URL.createObjectURL(blob));
         }
+        setStoryBlobData(blobData);
         setStoryPreviewBlobs(blobs);
         setIsRenderingStory(false);
       }
@@ -837,7 +847,7 @@ export default function CarouselPage() {
   };
 
   const downloadAllStories = async () => {
-    if (storyPreviewBlobs.length === 0) return;
+    if (storyBlobData.length === 0) return;
     const JSZip = (await import("jszip")).default;
     const zip = new JSZip();
     const slug =
@@ -847,13 +857,9 @@ export default function CarouselPage() {
         .replace(/[^a-z0-9]+/gi, "-")
         .toLowerCase() || "stories";
     const ts = new Date().toISOString().replace(/[-T:]/g, "").slice(0, 14);
-    await Promise.all(
-      storyPreviewBlobs.map(async (url, i) => {
-        const res = await fetch(url);
-        const blob = await res.blob();
-        zip.file(`${slug}-story-${i + 1}.png`, blob);
-      })
-    );
+    storyBlobData.forEach((blob, i) => {
+      zip.file(`${slug}-story-${i + 1}.png`, blob);
+    });
     const content = await zip.generateAsync({ type: "blob" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(content);
