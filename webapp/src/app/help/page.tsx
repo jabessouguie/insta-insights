@@ -11,12 +11,13 @@ import {
   BarChart3,
   BookOpen,
   HelpCircle,
+  Smartphone,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Centre d'aide — InstaInsights",
   description:
-    "Guides, tutoriels et FAQ pour bien démarrer avec InstaInsights. Import ZIP, mode démo, IA, Media Kit, Collabs.",
+    "Guides, tutoriels et FAQ pour bien démarrer avec InstaInsights. Import ZIP, mobile iOS/Android, IA, Media Kit, Collabs.",
   openGraph: {
     title: "Centre d'aide — InstaInsights",
     description: "Tout ce qu'il faut savoir pour utiliser InstaInsights efficacement.",
@@ -77,6 +78,38 @@ const GUIDES = [
         body: "À tout moment, importe ton export ZIP via la zone d'upload en haut du dashboard. Tes vraies données remplacent immédiatement les données démo.",
       },
     ],
+  },
+  {
+    id: "mobile",
+    icon: Smartphone,
+    color: "text-violet-400",
+    bg: "bg-violet-400/10",
+    title: "Utiliser InstaInsights sur mobile",
+    intro:
+      "L'app est entièrement responsive. Sur iOS et Android tu peux l'ajouter à l'écran d'accueil pour une expérience application native, et importer ton export ZIP depuis les fichiers de ton téléphone.",
+    steps: [
+      {
+        title: "Ajouter à l'écran d'accueil (iOS — Safari)",
+        body: "Ouvre instainsights.app dans Safari → appuie sur le bouton Partage (carré avec une flèche) → sélectionne \"Sur l'écran d'accueil\" → confirme. L'icône apparaît comme une vraie app.",
+      },
+      {
+        title: "Ajouter à l'écran d'accueil (Android — Chrome)",
+        body: "Ouvre instainsights.app dans Chrome → appuie sur ⋮ (menu) → \"Ajouter à l'écran d'accueil\" → confirme. Sur Samsung Internet, le bouton est dans le menu ≡.",
+      },
+      {
+        title: "Importer ton export ZIP sur iOS",
+        body: "Télécharge le ZIP depuis l'email Instagram (appui long → \"Télécharger le fichier\"). Dans InstaInsights, appuie sur la zone d'import → navigue dans l'app Fichiers → sélectionne le fichier .zip. L'import prend quelques secondes.",
+      },
+      {
+        title: "Importer ton export ZIP sur Android",
+        body: 'Télécharge le ZIP depuis Gmail ou l\'email Instagram. Dans InstaInsights, appuie sur la zone d\'import → sélectionne "Fichiers" ou "Téléchargements" → choisis le .zip. Tous les navigateurs modernes (Chrome, Firefox) sont supportés.',
+      },
+      {
+        title: "Navigation sur petit écran",
+        body: "Le bouton ☰ en haut à droite ouvre le menu complet. Toutes les fonctionnalités sont accessibles : carousel, guide, collabs, media kit. Sur les pages avec tabs, glisse horizontalement pour voir tous les onglets.",
+      },
+    ],
+    tip: "💡 Sur iOS, l'app en mode écran d'accueil masque la barre d'adresse et la barre du bas — ça donne une vraie expérience PWA plein écran.",
   },
   {
     id: "ai",
@@ -184,7 +217,11 @@ const FAQ = [
   },
   {
     q: "Peut-on utiliser InstaInsights sur mobile ?",
-    a: "Oui, la plateforme est responsive. Sur iOS/Android, tu peux l'ajouter à l'écran d'accueil via le bouton partage de Safari/Chrome pour une expérience PWA. L'import ZIP fonctionne depuis les fichiers téléchargés.",
+    a: "Oui, totalement. Consulte la section \"Utiliser InstaInsights sur mobile\" ci-dessus pour le guide complet : ajout à l'écran d'accueil iOS/Android, import ZIP depuis les fichiers, navigation tactile.",
+  },
+  {
+    q: "Quelles sont les fonctionnalités les plus récentes ?",
+    a: "Les dernières features : générateur de carousels avec 5 templates visuels et Gemini 3.1, éditeur de Reels avec FFmpeg WASM (montage in-browser), générateur UGC, guide PDF enrichi par IA, sélecteur de modèle IA par feature (Flash 3.0 / 3.1 / Pro 3.1), et boucles de feedback pour affiner le contenu.",
   },
   {
     q: "Le plan Pro est-il disponible ?",
@@ -239,7 +276,7 @@ export default function HelpPage() {
 
       {/* Quick links */}
       <section className="border-y border-white/5 bg-white/[0.02] px-6 py-8">
-        <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+        <div className="mx-auto grid max-w-5xl grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
           {GUIDES.map((g) => (
             <a
               key={g.id}
