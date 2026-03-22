@@ -28,6 +28,7 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
 
 /** Gemini model aliases — pass as `options.model` to override the default. */
 export const GEMINI_FLASH = "gemini-3-flash-preview"; // Gemini 3.0 — fast, efficient (default)
+export const GEMINI_FLASH_31 = "gemini-3.1-flash-preview"; // Gemini 3.1 Flash — faster, smarter
 export const GEMINI_FLASH_LITE = "gemini-3.1-flash-lite-preview"; // Gemini 3.1 Lite — cost-efficient
 export const GEMINI_PRO = "gemini-3.1-pro-preview"; // Gemini 3.1 Pro — most capable
 

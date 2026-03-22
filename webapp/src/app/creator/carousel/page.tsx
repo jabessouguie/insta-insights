@@ -427,7 +427,7 @@ export default function CarouselPage() {
   const [activeFormat, setActiveFormat] = useState<"carousel" | "stories" | "reels">("carousel");
 
   // Model selector
-  const [aiModel, setAiModel] = useState("gemini-2.5-flash");
+  const [aiModel, setAiModel] = useState("gemini-3-flash-preview");
 
   // Generation state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1478,11 +1478,16 @@ export default function CarouselPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {(
                       [
-                        ["gemini-2.5-flash", t("model.flash25.label"), t("model.flash25.desc")],
-                        ["gemini-2.5-pro", t("model.pro25.label"), t("model.pro25.desc")],
+                        ["gemini-3-flash-preview", t("model.flash3.label"), t("model.flash3.desc")],
+                        [
+                          "gemini-3.1-flash-preview",
+                          t("model.flash31.label"),
+                          t("model.flash31.desc"),
+                        ],
+                        ["gemini-3.1-pro-preview", t("model.pro31.label"), t("model.pro31.desc")],
                       ] as const
                     ).map(([id, label, desc]) => (
                       <button
@@ -2264,11 +2269,16 @@ export default function CarouselPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {(
                       [
-                        ["gemini-2.5-flash", t("model.flash25.label"), t("model.flash25.desc")],
-                        ["gemini-2.5-pro", t("model.pro25.label"), t("model.pro25.desc")],
+                        ["gemini-3-flash-preview", t("model.flash3.label"), t("model.flash3.desc")],
+                        [
+                          "gemini-3.1-flash-preview",
+                          t("model.flash31.label"),
+                          t("model.flash31.desc"),
+                        ],
+                        ["gemini-3.1-pro-preview", t("model.pro31.label"), t("model.pro31.desc")],
                       ] as const
                     ).map(([id, label, desc]) => (
                       <button

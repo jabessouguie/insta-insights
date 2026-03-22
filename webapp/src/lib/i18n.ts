@@ -359,10 +359,12 @@ const FR = {
   "model.flash25.desc": "Rapide et créatif (défaut)",
   "model.pro25.label": "Pro 2.5 🧠",
   "model.pro25.desc": "Meilleure qualité, plus lent",
-  "model.flash3.label": "Flash 3.0 🆕",
-  "model.flash3.desc": "Nouvelle génération, rapide",
-  "model.pro3.label": "Pro 3.0 ✨",
-  "model.pro3.desc": "Dernier modèle, raisonnement max",
+  "model.flash3.label": "Flash 3.0 ⚡",
+  "model.flash3.desc": "Rapide, défaut recommandé",
+  "model.flash31.label": "Flash 3.1 🚀",
+  "model.flash31.desc": "Plus rapide, meilleure qualité",
+  "model.pro31.label": "Pro 3.1 🧠",
+  "model.pro31.desc": "Qualité max, raisonnement",
 
   // ── Format switcher (carousel page) ──────────────────────────────────────
   "format.carousel": "Carrousel",
@@ -1142,10 +1144,12 @@ const EN: Record<keyof typeof FR, string> = {
   "model.flash25.desc": "Fast and creative (default)",
   "model.pro25.label": "Pro 2.5 🧠",
   "model.pro25.desc": "Best quality, slower",
-  "model.flash3.label": "Flash 3.0 🆕",
-  "model.flash3.desc": "New generation, fast",
-  "model.pro3.label": "Pro 3.0 ✨",
-  "model.pro3.desc": "Latest model, max reasoning",
+  "model.flash3.label": "Flash 3.0 ⚡",
+  "model.flash3.desc": "Fast, recommended default",
+  "model.flash31.label": "Flash 3.1 🚀",
+  "model.flash31.desc": "Faster, better quality",
+  "model.pro31.label": "Pro 3.1 🧠",
+  "model.pro31.desc": "Max quality, reasoning",
 
   // ── Format switcher (carousel page) ──────────────────────────────────────
   "format.carousel": "Carousel",
