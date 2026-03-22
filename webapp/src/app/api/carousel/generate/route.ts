@@ -80,6 +80,13 @@ ${captionsSection}
 - NEVER capitalise after a colon (e.g. "what worked: keep it simple", not "what worked: Keep It Simple")
 - No exclamation marks in titles unless genuinely needed
 - photoIndex: choose the photo that best matches the slide content (0-based index into available photos). If no photos are available, use -1. DO NOT just rotate — pick the most relevant photo for each slide's topic.
+- layout: choose a visual layout for each slide based on its content and emotional tone:
+  • "classic" — text at bottom-left behind a dark gradient, safe and reliable default
+  • "center" — oversized title centered over a full-bleed photo, powerful for bold hooks/statements
+  • "top" — text banner at top with photo fully visible below, ideal for tip/list slides
+  • "card" — frosted glass card over photo at bottom, best for detail-rich body text
+  • "split" — photo on top half, solid brand color band on bottom half, clean for CTA slides
+  Vary layouts across the carousel for visual rhythm. Never use the same layout 3 times in a row.
 
 ### Instagram description rules (also in ${lang})
 - Structure: scroll-stopping hook (1 sentence) → 1–2 lines of context or strong opinion → 1–3 practical tips → CTA
@@ -97,7 +104,8 @@ Reply ONLY with this JSON (no markdown fences, no extra text):
       "title": "Hook that stops the scroll",
       "subtitle": "One line of context",
       "body": "Short punchy insight from experience",
-      "photoIndex": 0
+      "photoIndex": 0,
+      "layout": "classic"
     }
   ],
   "instagramDescription": "Full optimised caption ready to post...",

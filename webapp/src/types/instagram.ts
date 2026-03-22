@@ -314,6 +314,12 @@ export interface CarouselTextStyle {
   autoScale?: boolean;
 }
 
+/**
+ * Visual layout template for a carousel/story slide.
+ * The AI chooses the best layout per slide; the canvas renderer applies it.
+ */
+export type CarouselLayout = "classic" | "center" | "top" | "card" | "split";
+
 export interface CarouselSlideContent {
   title: string;
   subtitle: string;
@@ -322,6 +328,9 @@ export interface CarouselSlideContent {
   photoIndex: number;
   /** Optional per-slide text style for the title block. */
   textStyle?: CarouselTextStyle;
+
+  /** Visual layout — omitted = "classic" */
+  layout?: CarouselLayout;
 }
 
 export interface CarouselGenerateRequest {

@@ -81,15 +81,9 @@ function CandidateRow({ candidate }: { candidate: UnfollowCandidate }) {
 
 // ─── Free DM generator (any bio, not tied to listed accounts) ─────────────────
 
-function DMCard({
-  suggestion,
-  onDismiss,
-}: {
-  suggestion: DMSuggestion;
-  onDismiss: (username: string) => void;
-}) {
+function FreeDMGenerator() {
   const { lang } = useLanguage();
-  const [bio, setBio] = useState<string>(suggestion.bio ?? "");
+  const [bio, setBio] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -232,7 +226,13 @@ function DMCard({
 
 // ─── DM card (dm-suggest tabs) ────────────────────────────────────────────────
 
-function DMCard({ suggestion }: { suggestion: DMSuggestion }) {
+function DMCard({
+  suggestion,
+  onDismiss,
+}: {
+  suggestion: DMSuggestion;
+  onDismiss: (username: string) => void;
+}) {
   const { lang } = useLanguage();
   const [bio, setBio] = useState<string>(suggestion.bio ?? "");
   const [message, setMessage] = useState<string | null>(null);
@@ -460,10 +460,7 @@ export default function InteractionsPage() {
           </div>
         )}
 
-        <DMCard
-          suggestion={{ username: "", followedSince: new Date(), profileUrl: "", bio: "", reason: "" }}
-          onDismiss={() => {}}
-        />
+        <FreeDMGenerator />
 
         <Tabs defaultValue="dm-nofollowback" className="space-y-6">
           <TabsList className="grid w-full max-w-lg grid-cols-3">
