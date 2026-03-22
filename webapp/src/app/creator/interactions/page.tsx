@@ -335,16 +335,25 @@ function DMCard({
           Générer DM
         </Button>
         {message && (
-          <button
-            onClick={copyMsg}
-            className="rounded p-1 text-muted-foreground hover:text-foreground"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </button>
+          <>
+            <button
+              onClick={copyMsg}
+              className="rounded p-1 text-muted-foreground hover:text-foreground"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <button
+              onClick={() => setShowFeedback((v) => !v)}
+              title="Affiner le DM"
+              className="rounded p-1 text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
+          </>
         )}
       </div>
 

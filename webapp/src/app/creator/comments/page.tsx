@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Copy, Check, RefreshCw, MessageSquarePlus } from "lucide-react";
+import { Sparkles, Copy, Check, RefreshCw, MessageSquarePlus, Loader2 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,20 @@ type Tone = "enthusiastic" | "casual" | "thoughtful" | "inspiring";
 
 // ─── Comment card ─────────────────────────────────────────────────────────────
 
-function CommentCard({ text, index }: { text: string; index: number }) {
+function CommentCard({
+  text,
+  index,
+  onRegenerate,
+}: {
+  text: string;
+  index: number;
+  onRegenerate: (feedback: string, previousComment: string) => Promise<void>;
+}) {
   const t = useT();
   const [copied, setCopied] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
 
   const copy = async () => {
     await navigator.clipboard.writeText(text);
@@ -27,23 +38,65 @@ function CommentCard({ text, index }: { text: string; index: number }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleRegenerate = async () => {
+    if (!feedback.trim()) return;
+    setRegenerating(true);
+    await onRegenerate(feedback.trim(), text);
+    setFeedback("");
+    setShowFeedback(false);
+    setRegenerating(false);
+  };
+
   return (
-    <div className="group relative rounded-xl border border-border bg-card p-4 transition-colors hover:border-violet-500/40">
+    <div className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-violet-500/40">
       <div className="mb-2 flex items-center justify-between">
         <Badge variant="outline" className="text-[10px] text-muted-foreground">
           {t("comments.card.option")} {index + 1}
         </Badge>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={copy}
-          className="h-7 gap-1.5 px-2 text-xs opacity-0 transition-opacity group-hover:opacity-100"
-        >
-          {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
-          {copied ? t("comments.card.copied") : t("comments.card.copy")}
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowFeedback((v) => !v)}
+            title="Affiner ce commentaire"
+            className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Affiner
+          </Button>
+          <Button variant="ghost" size="sm" onClick={copy} className="h-7 gap-1.5 px-2 text-xs">
+            {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+            {copied ? t("comments.card.copied") : t("comments.card.copy")}
+          </Button>
+        </div>
       </div>
       <p className="text-sm leading-relaxed">{text}</p>
+
+      {showFeedback && (
+        <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
+          <textarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            placeholder="Ex : plus court, ajoute de l'humour, moins d'emojis…"
+            rows={2}
+            className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRegenerate}
+            disabled={regenerating || !feedback.trim()}
+            className="gap-1.5 text-xs"
+          >
+            {regenerating ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            Régénérer ce commentaire
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -107,6 +160,36 @@ export default function CommentsPage() {
       setError(t("comments.error.networkError"));
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerateOne = async (feedback: string, previousComment: string, index: number) => {
+    try {
+      const recentCaptions = (data?.posts ?? [])
+        .filter((p) => p.caption)
+        .slice(0, 5)
+        .map((p) => p.caption);
+
+      const res = await fetch("/api/comments/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caption,
+          postUrl: postUrl || undefined,
+          tone,
+          language: lang,
+          userBio: data?.profile.bio,
+          recentCaptions,
+          feedback,
+          previousComment,
+        }),
+      });
+      const json = await res.json();
+      if (json.comments?.[0]) {
+        setComments((prev) => prev.map((c, i) => (i === index ? json.comments[0] : c)));
+      }
+    } catch {
+      // silent
     }
   };
 
@@ -231,7 +314,12 @@ export default function CommentsPage() {
               {t("comments.results.label")}
             </p>
             {comments.map((c, i) => (
-              <CommentCard key={i} text={c} index={i} />
+              <CommentCard
+                key={i}
+                text={c}
+                index={i}
+                onRegenerate={(fb, prev) => handleRegenerateOne(fb, prev, i)}
+              />
             ))}
 
             {/* Regenerate */}

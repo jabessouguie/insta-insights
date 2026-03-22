@@ -10,6 +10,8 @@ interface GenerateRequest {
   language: "fr" | "en";
   userBio?: string;
   recentCaptions?: string[];
+  feedback?: string;
+  previousComment?: string;
 }
 
 interface GenerateResponse {
@@ -26,7 +28,8 @@ const TONE_LABELS = {
 
 export async function POST(request: Request): Promise<NextResponse<GenerateResponse>> {
   const body = (await request.json()) as GenerateRequest;
-  const { caption, postUrl, tone, language, userBio, recentCaptions } = body;
+  const { caption, postUrl, tone, language, userBio, recentCaptions, feedback, previousComment } =
+    body;
 
   if (!caption?.trim()) {
     return NextResponse.json({ comments: [], error: "Caption required" }, { status: 400 });
@@ -56,7 +59,24 @@ Ma personnalité et style (pour t'inspirer) :
 `
       : "";
 
-  const prompt = `Tu es moi — un créateur de contenu Instagram. Tu dois laisser un commentaire sur un post.
+  const isFeedbackMode = !!(feedback?.trim() && previousComment?.trim());
+
+  const prompt = isFeedbackMode
+    ? `Tu es moi — un créateur de contenu Instagram. J'avais écrit ce commentaire sur un post :
+"${previousComment!.trim()}"
+
+Mon feedback : "${feedback!.trim()}"
+
+Réécris ce commentaire en tenant compte du feedback. Garde le même ton ${toneLabel}, en ${lang}.
+Contraintes :
+- Maximum 2 phrases
+- Utilise des emojis naturellement (1-3 max)
+- Parle en ton propre nom
+- Sois authentique, pas commercial
+
+Réponds UNIQUEMENT avec un JSON valide :
+{"comments": ["nouveau commentaire"]}`
+    : `Tu es moi — un créateur de contenu Instagram. Tu dois laisser un commentaire sur un post.
 
 ${personalitySection}
 Post à commenter :
