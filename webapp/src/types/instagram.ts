@@ -672,3 +672,40 @@ export interface GuideConfig {
   /** Base64 data URLs for uploaded photos */
   photos?: string[];
 }
+
+// ============================================================
+// UGC Content Generator Types
+// ============================================================
+
+export type UGCFormat = "carousel" | "reels" | "stories";
+
+export interface UGCPost {
+  index: number;
+  /** Slide title / Scene name / Story moment */
+  title: string;
+  /** Caption or script text */
+  script: string;
+  /** What appears on screen */
+  visualDescription: string;
+  /** Optional call-to-action */
+  cta?: string;
+}
+
+export interface UGCScript {
+  format: UGCFormat;
+  /** Explanation of why this format was recommended */
+  formatReason: string;
+  posts: UGCPost[];
+}
+
+export interface UGCGenerateRequest {
+  brandName: string;
+  constraints?: string;
+  language?: "fr" | "en";
+}
+
+export interface UGCGenerateResponse {
+  success: boolean;
+  ugc?: UGCScript;
+  error?: string;
+}

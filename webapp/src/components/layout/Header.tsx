@@ -145,6 +145,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/invoice", label: t("nav.invoice"), icon: Receipt },
     { href: "/creator/referral", label: t("nav.referral"), icon: Share2 },
     { href: "/creator/guide", label: t("nav.guide"), icon: BookOpen },
+    { href: "/creator/ugc", label: t("nav.ugc"), icon: Sparkles },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
     { href: "/help", label: t("nav.help"), icon: HelpCircle },
   ];

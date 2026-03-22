@@ -21,6 +21,7 @@ const FR = {
   "nav.carousel": "Carrousel",
   "nav.more": "Plus",
   "nav.guide": "Guide PDF",
+  "nav.ugc": "UGC",
   "nav.help": "Aide",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
@@ -765,6 +766,28 @@ const FR = {
   "campaigns.totalRevenue": "Revenu total",
   "campaigns.avgRoi": "ROI moyen",
   "campaigns.totalCampaigns": "Campagnes suivies",
+
+  // ── UGC Generator ────────────────────────────────────────────────────────
+  "ugc.title": "Générateur de contenu UGC",
+  "ugc.subtitle": "Crée un script de contenu sponsorisé authentique pour une marque",
+  "ugc.brand.label": "Nom de la marque *",
+  "ugc.brand.placeholder": "ex : Sephora, Nike, Oatly...",
+  "ugc.constraints.label": "Idées & contraintes (optionnel)",
+  "ugc.constraints.placeholder":
+    "ex : mise en avant du nouveau sérum, ton humour, vidéo en extérieur, pas de comparaison avec d'autres marques...",
+  "ugc.button.generate": "Générer le script",
+  "ugc.button.generating": "Génération...",
+  "ugc.format.label": "Format recommandé",
+  "ugc.format.reason": "Pourquoi ce format",
+  "ugc.format.carousel": "Carrousel",
+  "ugc.format.reels": "Réels",
+  "ugc.format.stories": "Stories",
+  "ugc.post.visual": "Visuel",
+  "ugc.post.cta": "CTA",
+  "ugc.copy.post": "Copier",
+  "ugc.copy.all": "Tout copier",
+  "ugc.copied": "Copié !",
+  "ugc.error.brand": "Le nom de la marque est requis",
 } as const;
 
 const EN: Record<keyof typeof FR, string> = {
@@ -782,6 +805,7 @@ const EN: Record<keyof typeof FR, string> = {
   "nav.carousel": "Carousel",
   "nav.more": "More",
   "nav.guide": "PDF Guide",
+  "nav.ugc": "UGC",
   "nav.help": "Help",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
@@ -1516,6 +1540,28 @@ const EN: Record<keyof typeof FR, string> = {
   "campaigns.totalRevenue": "Total revenue",
   "campaigns.avgRoi": "Avg. ROI",
   "campaigns.totalCampaigns": "Campaigns tracked",
+
+  // ── UGC Generator ────────────────────────────────────────────────────────
+  "ugc.title": "UGC Content Generator",
+  "ugc.subtitle": "Create an authentic sponsored content script for a brand",
+  "ugc.brand.label": "Brand name *",
+  "ugc.brand.placeholder": "e.g. Sephora, Nike, Oatly...",
+  "ugc.constraints.label": "Ideas & constraints (optional)",
+  "ugc.constraints.placeholder":
+    "e.g. highlight the new serum, your humour, outdoor video, no comparison with other brands...",
+  "ugc.button.generate": "Generate script",
+  "ugc.button.generating": "Generating...",
+  "ugc.format.label": "Recommended format",
+  "ugc.format.reason": "Why this format",
+  "ugc.format.carousel": "Carousel",
+  "ugc.format.reels": "Reels",
+  "ugc.format.stories": "Stories",
+  "ugc.post.visual": "Visual",
+  "ugc.post.cta": "CTA",
+  "ugc.copy.post": "Copy",
+  "ugc.copy.all": "Copy all",
+  "ugc.copied": "Copied!",
+  "ugc.error.brand": "Brand name is required",
 };
 
 export type TranslationKey = keyof typeof FR;
