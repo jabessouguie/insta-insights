@@ -64,12 +64,12 @@ ${captionsSection}
 
 ### Slide content rules
 - Write every word in ${lang}. No other language.
-- Slide 1: scroll-stopping hook — bold statement or surprising truth (title max 7 words, no full stop)
+- Slide 1: scroll-stopping hook — bold statement or surprising truth (title max 5 words, no full stop)
 - Slides 2–${numSlides - 1}: one key insight or tip per slide, written from personal experience
 - Slide ${numSlides}: clear CTA (save, share, follow, comment)
-- Title: max 7 words, sentence case (only first word capitalised, no caps after colons)
-- Subtitle: max 14 words, sentence case
-- Body: max 28 words, conversational, no corporate buzzwords
+- Title: max 5 words, sentence case (only first word capitalised, no caps after colons)
+- Subtitle: max 8 words, sentence case
+- Body: max 18 words, conversational, no corporate buzzwords
 - Tone: funny, slightly sarcastic, bold, authentic — human, not influencer-perfect
 - NEVER capitalise common nouns mid-sentence (e.g. write "the best travel tips", not "the best Travel Tips")
 - NEVER capitalise after a colon (e.g. "what worked: keep it simple", not "what worked: Keep It Simple")

@@ -46,6 +46,7 @@ The user wants to refine it with this feedback:
 Apply the feedback to the carousel. Keep the same JSON structure and number of slides.
 Only change what the feedback asks for.
 photoIndex values must remain valid (keep existing values unless the feedback explicitly asks to change them).
+Text length rules (always enforce): title max 5 words, subtitle max 8 words, body max 18 words.
 
 Reply ONLY with the updated JSON (no markdown fences, no extra text):
 {
