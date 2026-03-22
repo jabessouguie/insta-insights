@@ -101,7 +101,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body
-        className={`${playfair.variable} ${roboto.variable} ${montserrat.variable} font-sans`}
+        className={`${playfair.variable} ${roboto.variable} ${montserrat.variable} overflow-x-hidden font-sans`}
         suppressHydrationWarning
       >
         {/* Skip to main content — WCAG 2.1 AA */}

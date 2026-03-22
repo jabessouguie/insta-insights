@@ -28,6 +28,7 @@ const DEFAULT_MODELS: Record<AIProvider, string> = {
 
 /** Gemini model aliases — pass as `options.model` to override the default. */
 export const GEMINI_FLASH = "gemini-3-flash-preview"; // Gemini 3.0 — fast, efficient (default)
+export const GEMINI_FLASH_31 = "gemini-3.1-flash-preview"; // Gemini 3.1 Flash — faster, smarter
 export const GEMINI_FLASH_LITE = "gemini-3.1-flash-lite-preview"; // Gemini 3.1 Lite — cost-efficient
 export const GEMINI_PRO = "gemini-3.1-pro-preview"; // Gemini 3.1 Pro — most capable
 
@@ -45,6 +46,23 @@ export function getActiveProvider(): AIProvider {
 /** Return the model name to use (respects AI_MODEL override). */
 export function getDefaultModel(provider?: AIProvider): string {
   return process.env.AI_MODEL ?? DEFAULT_MODELS[provider ?? getActiveProvider()];
+}
+
+/**
+ * Returns true if `model` looks compatible with `provider`.
+ * Prevents cross-provider model names from being forwarded to the wrong API.
+ */
+function isModelCompatible(model: string, provider: AIProvider): boolean {
+  switch (provider) {
+    case "gemini":
+      return model.startsWith("gemini");
+    case "anthropic":
+      return model.startsWith("claude");
+    case "openai":
+      return model.startsWith("gpt") || /^o\d/.test(model);
+    case "openai-compatible":
+      return true; // self-hosted: accept any model name
+  }
 }
 
 /** True if at least one AI provider is configured. */
@@ -73,7 +91,9 @@ export async function generateText(
   options: GenerateTextOptions = {}
 ): Promise<string> {
   const provider = getActiveProvider();
-  const model = options.model ?? getDefaultModel(provider);
+  const requested = options.model;
+  const model =
+    requested && isModelCompatible(requested, provider) ? requested : getDefaultModel(provider);
   const maxTokens = options.maxTokens ?? 4096;
 
   switch (provider) {
@@ -123,10 +143,12 @@ export async function generateText(
       const key = process.env.OPENAI_API_KEY ?? "ollama";
       const baseURL = process.env.OPENAI_BASE_URL;
       const client = new OpenAI({ apiKey: key, ...(baseURL ? { baseURL } : {}) });
+      // o-series reasoning models (o1, o3, o4-mini, etc.) require max_completion_tokens
+      const isReasoningModel = /^o\d/.test(model);
       const completion = await client.chat.completions.create({
         model,
         messages: [{ role: "user", content: prompt }],
-        max_tokens: maxTokens,
+        ...(isReasoningModel ? { max_completion_tokens: maxTokens } : { max_tokens: maxTokens }),
       });
       return (completion.choices[0]?.message?.content ?? "").trim();
     }
@@ -155,9 +177,24 @@ export async function callGeminiVision(
   if (!key) throw new Error("GEMINI_API_KEY is not configured for vision tasks");
   const model = options.model ?? GEMINI_FLASH;
   const genAI = new GoogleGenerativeAI(key);
-  const m = genAI.getGenerativeModel({ model });
-  const result = await m.generateContent(parts);
-  return result.response.text().trim();
+  try {
+    const m = genAI.getGenerativeModel({ model });
+    const result = await m.generateContent(parts);
+    return result.response.text().trim();
+  } catch (e) {
+    const msg = String(e);
+    // Preview model names may be rejected (404) — fall back to stable Flash
+    if (msg.includes("404") || msg.includes("not found") || msg.includes("preview")) {
+      console.error(
+        `[ai-provider] vision model "${model}" rejected, falling back to gemini-2.5-flash:`,
+        msg
+      );
+      const fallback = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+      const result = await fallback.generateContent(parts);
+      return result.response.text().trim();
+    }
+    throw e;
+  }
 }
 
 /**

@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import type React from "react";
-import { Hash, Sparkles, Loader2, Copy, Check, TrendingUp, BarChart2 } from "lucide-react";
+import { Hash, Sparkles, Loader2, Copy, Check, TrendingUp, BarChart2, Info } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInstagramData } from "@/hooks/useInstagramData";
-import { analyzeHashtags } from "@/lib/hashtag-analyzer";
+import { analyzeHashtags, hasEngagementData } from "@/lib/hashtag-analyzer";
 import type { HashtagStat } from "@/lib/hashtag-analyzer";
 import type { HashtagSuggestResponse } from "@/app/api/hashtags/suggest/route";
 import { useT } from "@/lib/i18n";
@@ -26,7 +26,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 
 // ─── Hashtag row ──────────────────────────────────────────────────────────────
 
-function HashtagRow({ stat }: { stat: HashtagStat }) {
+function HashtagRow({ stat, showEngagement }: { stat: HashtagStat; showEngagement: boolean }) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
@@ -39,13 +39,17 @@ function HashtagRow({ stat }: { stat: HashtagStat }) {
     <div className="flex items-center gap-3 rounded-lg border border-border/40 bg-muted/20 px-4 py-2.5">
       <span className="flex-1 font-mono text-sm text-primary">{stat.tag}</span>
       <span className="w-16 text-right text-xs text-muted-foreground">{stat.count}×</span>
-      <span className="w-20 text-right text-xs text-muted-foreground">
-        {stat.avgLikes.toLocaleString()}
-      </span>
-      <span className="w-20 text-right text-xs text-muted-foreground">{stat.avgComments}</span>
-      <span className="w-24 text-right text-xs font-medium text-foreground">
-        {stat.avgEngagement.toLocaleString()}
-      </span>
+      {showEngagement && (
+        <>
+          <span className="w-20 text-right text-xs text-muted-foreground">
+            {stat.avgLikes.toLocaleString()}
+          </span>
+          <span className="w-20 text-right text-xs text-muted-foreground">{stat.avgComments}</span>
+          <span className="w-24 text-right text-xs font-medium text-foreground">
+            {stat.avgEngagement.toLocaleString()}
+          </span>
+        </>
+      )}
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={handleCopy}>
         {copied ? (
           <Check className="h-3.5 w-3.5 text-green-400" />
@@ -75,9 +79,18 @@ export default function HashtagsPage() {
     return analyzeHashtags(data.posts);
   }, [data]);
 
+  const engagementAvailable = useMemo(
+    () => (data?.posts ? hasEngagementData(data.posts) : false),
+    [data]
+  );
+
+  // When engagement data is unavailable, top performers = most used (already sorted by count)
   const topPerformers = useMemo(
-    () => [...stats].sort((a, b) => b.avgEngagement - a.avgEngagement).slice(0, 10),
-    [stats]
+    () =>
+      engagementAvailable
+        ? [...stats].sort((a, b) => b.avgEngagement - a.avgEngagement).slice(0, 10)
+        : stats.slice(0, 10),
+    [stats, engagementAvailable]
   );
 
   const totalUses = useMemo(() => stats.reduce((sum, s) => sum + s.count, 0), [stats]);
@@ -143,6 +156,21 @@ export default function HashtagsPage() {
 
         {stats.length > 0 && (
           <>
+            {/* Engagement data unavailable banner */}
+            {!engagementAvailable && (
+              <div className="flex items-start gap-3 rounded-xl border border-[#ffd953]/20 bg-[#ffd953]/5 px-4 py-3">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#ffd953]" />
+                <p className="text-sm text-[#cfcbba]/80">
+                  <span className="font-medium text-[#ffd953]">
+                    Métriques d&apos;engagement non disponibles.
+                  </span>{" "}
+                  L&apos;export HTML Instagram ne contient pas les likes et commentaires par
+                  publication. Les hashtags sont triés par fréquence d&apos;utilisation. Connecte
+                  l&apos;API Instagram pour débloquer les données d&apos;engagement.
+                </p>
+              </div>
+            )}
+
             {/* Overview stats */}
             <div className="grid grid-cols-3 gap-4">
               <StatCard label={t("hashtags.stats.total")} value={stats.length} />
@@ -163,35 +191,49 @@ export default function HashtagsPage() {
                   <div className="flex items-center gap-3 px-4 text-[10px] uppercase tracking-wide text-muted-foreground">
                     <span className="flex-1">{t("hashtags.col.tag")}</span>
                     <span className="w-16 text-right">{t("hashtags.col.count")}</span>
-                    <span className="w-20 text-right">{t("hashtags.col.avg_likes")}</span>
-                    <span className="w-20 text-right">{t("hashtags.col.avg_comments")}</span>
-                    <span className="w-24 text-right">{t("hashtags.col.avg_engagement")}</span>
+                    {engagementAvailable && (
+                      <>
+                        <span className="w-20 text-right">{t("hashtags.col.avg_likes")}</span>
+                        <span className="w-20 text-right">{t("hashtags.col.avg_comments")}</span>
+                        <span className="w-24 text-right">{t("hashtags.col.avg_engagement")}</span>
+                      </>
+                    )}
                     <span className="w-7" />
                   </div>
                   {stats.slice(0, 15).map((stat) => (
-                    <HashtagRow key={stat.tag} stat={stat} />
+                    <HashtagRow key={stat.tag} stat={stat} showEngagement={engagementAvailable} />
                   ))}
                 </div>
               </section>
 
-              {/* Top performers by engagement */}
+              {/* Top performers by engagement (or most used when no engagement) */}
               <section>
                 <div className="mb-3 flex items-center gap-2">
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <h2 className="text-sm font-semibold">{t("hashtags.top_performers")}</h2>
-                  <Badge variant="secondary">{t("hashtags.col.avg_engagement")}</Badge>
+                  <h2 className="text-sm font-semibold">
+                    {engagementAvailable ? t("hashtags.top_performers") : t("hashtags.top_used")}
+                  </h2>
+                  <Badge variant="secondary">
+                    {engagementAvailable
+                      ? t("hashtags.col.avg_engagement")
+                      : t("hashtags.col.count")}
+                  </Badge>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-3 px-4 text-[10px] uppercase tracking-wide text-muted-foreground">
                     <span className="flex-1">{t("hashtags.col.tag")}</span>
                     <span className="w-16 text-right">{t("hashtags.col.count")}</span>
-                    <span className="w-20 text-right">{t("hashtags.col.avg_likes")}</span>
-                    <span className="w-20 text-right">{t("hashtags.col.avg_comments")}</span>
-                    <span className="w-24 text-right">{t("hashtags.col.avg_engagement")}</span>
+                    {engagementAvailable && (
+                      <>
+                        <span className="w-20 text-right">{t("hashtags.col.avg_likes")}</span>
+                        <span className="w-20 text-right">{t("hashtags.col.avg_comments")}</span>
+                        <span className="w-24 text-right">{t("hashtags.col.avg_engagement")}</span>
+                      </>
+                    )}
                     <span className="w-7" />
                   </div>
                   {topPerformers.map((stat) => (
-                    <HashtagRow key={stat.tag} stat={stat} />
+                    <HashtagRow key={stat.tag} stat={stat} showEngagement={engagementAvailable} />
                   ))}
                 </div>
               </section>

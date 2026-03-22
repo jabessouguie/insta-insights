@@ -1,7 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Palette, Type, Check, RotateCcw, User, Camera } from "lucide-react";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
+import {
+  Palette,
+  Type,
+  Check,
+  RotateCcw,
+  User,
+  Camera,
+  Handshake,
+  Trash2,
+  Plus,
+} from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +31,12 @@ import {
   DEFAULT_USER_PROFILE,
   type UserProfile,
 } from "@/lib/user-profile-store";
+import {
+  loadPastCollabs,
+  savePastCollab,
+  deletePastCollab,
+  type PastCollab,
+} from "@/lib/past-collabs-store";
 
 // Popular Google Fonts for creator content
 const FONT_OPTIONS = [
@@ -161,20 +179,64 @@ function TextInput({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const profileSwrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r) => r.profile);
+
 export default function SettingsPage() {
   const t = useT();
   const { data: instagramData } = useInstagramData();
+  const { data: session } = useSession();
   const [settings, setSettings] = useState<BrandSettings>(DEFAULT_BRAND_SETTINGS);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_USER_PROFILE);
   const [saved, setSaved] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
-  // Load from localStorage on mount
+  // Past collaborations
+  const [pastCollabs, setPastCollabs] = useState<PastCollab[]>([]);
+  const [showAddCollab, setShowAddCollab] = useState(false);
+  const [newCollab, setNewCollab] = useState({
+    brand: "",
+    deliverables: "",
+    obtained: "",
+    results: "",
+    doneAt: "",
+  });
+
+  const { data: remoteProfile } = useSWR<UserProfile | null>(
+    session?.user?.id ? "/api/user/profile" : null,
+    profileSwrFetcher
+  );
+
+  // Load from localStorage on mount; prefer remote profile when authenticated
   useEffect(() => {
     setSettings(loadBrandSettings());
-    setProfile(loadUserProfile());
-  }, []);
+    setPastCollabs(loadPastCollabs());
+    if (remoteProfile) setProfile({ ...DEFAULT_USER_PROFILE, ...remoteProfile });
+    else setProfile(loadUserProfile());
+  }, [remoteProfile]);
+
+  const handleAddCollab = () => {
+    if (!newCollab.brand.trim() || !newCollab.deliverables.trim() || !newCollab.obtained.trim())
+      return;
+    const added = savePastCollab({
+      brand: newCollab.brand.trim(),
+      deliverables: newCollab.deliverables.trim(),
+      obtained: newCollab.obtained.trim(),
+      results: newCollab.results.trim() || undefined,
+      doneAt: newCollab.doneAt || new Date().toISOString().slice(0, 7),
+    });
+    setPastCollabs((prev) => [added, ...prev]);
+    setNewCollab({ brand: "", deliverables: "", obtained: "", results: "", doneAt: "" });
+    setShowAddCollab(false);
+  };
+
+  const handleDeleteCollab = (id: string) => {
+    deletePastCollab(id);
+    setPastCollabs((prev) => prev.filter((c) => c.id !== id));
+  };
 
   const update = (key: keyof BrandSettings, value: string) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -192,6 +254,13 @@ export default function SettingsPage() {
 
   const handleSaveProfile = () => {
     saveUserProfile(profile);
+    if (session?.user?.id) {
+      fetch("/api/user/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+    }
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
   };
@@ -411,6 +480,160 @@ export default function SettingsPage() {
               {t("settings.reset")}
             </Button>
           </div>
+
+          {/* Past collaborations */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Handshake className="h-4 w-4 text-primary" />
+                  Collaborations passées
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 text-xs"
+                  onClick={() => setShowAddCollab((v) => !v)}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Ajouter
+                </Button>
+              </div>
+              <CardDescription>
+                Tes collabs passées seront injectées automatiquement dans la génération
+                d&apos;emails et le Media Kit pour renforcer ta crédibilité.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Add form */}
+              {showAddCollab && (
+                <div className="space-y-3 rounded-xl border border-border/50 bg-muted/10 p-4">
+                  <p className="text-sm font-medium">Nouvelle collaboration</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Marque / Partenaire *</label>
+                      <input
+                        type="text"
+                        value={newCollab.brand}
+                        onChange={(e) => setNewCollab((p) => ({ ...p, brand: e.target.value }))}
+                        placeholder="ex : Hôtel Le Meurice"
+                        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Date (mois)</label>
+                      <input
+                        type="month"
+                        value={newCollab.doneAt}
+                        onChange={(e) => setNewCollab((p) => ({ ...p, doneAt: e.target.value }))}
+                        className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Ce que tu as livré *</label>
+                    <input
+                      type="text"
+                      value={newCollab.deliverables}
+                      onChange={(e) =>
+                        setNewCollab((p) => ({ ...p, deliverables: e.target.value }))
+                      }
+                      placeholder="ex : 3 posts + 5 stories + 1 reel"
+                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Ce que tu as obtenu *</label>
+                    <input
+                      type="text"
+                      value={newCollab.obtained}
+                      onChange={(e) => setNewCollab((p) => ({ ...p, obtained: e.target.value }))}
+                      placeholder="ex : Séjour offert 2 nuits + 500 € de cachet"
+                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">
+                      Résultats obtenus{" "}
+                      <span className="text-muted-foreground/60">(optionnel)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newCollab.results}
+                      onChange={(e) => setNewCollab((p) => ({ ...p, results: e.target.value }))}
+                      placeholder="ex : 12k vues sur le reel, 80 codes promo utilisés"
+                      className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddCollab} className="gap-1.5">
+                      <Check className="h-3.5 w-3.5" />
+                      Enregistrer
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowAddCollab(false)}
+                      className="text-muted-foreground"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* List */}
+              {pastCollabs.length === 0 && !showAddCollab ? (
+                <p className="rounded-xl border border-dashed border-border/40 py-6 text-center text-sm text-muted-foreground">
+                  Aucune collaboration enregistrée.{" "}
+                  <button
+                    className="text-primary underline-offset-2 hover:underline"
+                    onClick={() => setShowAddCollab(true)}
+                  >
+                    Ajouter la première
+                  </button>
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {pastCollabs.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-start gap-3 rounded-xl border border-border/40 bg-muted/10 p-3"
+                    >
+                      <div className="flex-1 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{c.brand}</p>
+                          {c.doneAt && (
+                            <span className="text-xs text-muted-foreground">{c.doneAt}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground/70">Livré :</span>{" "}
+                          {c.deliverables}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground/70">Obtenu :</span>{" "}
+                          {c.obtained}
+                        </p>
+                        {c.results && (
+                          <p className="text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground/70">Résultats :</span>{" "}
+                            {c.results}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteCollab(c.id)}
+                        className="mt-0.5 shrink-0 text-muted-foreground/40 transition-colors hover:text-red-400"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

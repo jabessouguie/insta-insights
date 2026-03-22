@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText, isAIConfigured, stripJsonFences, GEMINI_PRO } from "@/lib/ai-provider";
+import { generateText, isAIConfigured, stripJsonFences } from "@/lib/ai-provider";
 import type { InstagramProfile } from "@/types/instagram";
 
 export const dynamic = "force-dynamic";
@@ -216,7 +216,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) — le tableau collabs doit con
 
 collabFormats doit être un tableau non-vide choisi parmi : partenariat, nuitee_offerte, code_promo, sponsorise, ugc, ambassador. Sélectionne 1 à 3 formats adaptés au type et à la niche du partenaire.`;
 
-    const raw = await generateText(prompt, { model: GEMINI_PRO });
+    const raw = await generateText(prompt);
     const rawClean = stripJsonFences(raw);
     const parsed = JSON.parse(rawClean) as { collabs: CollabMatch[]; summary: string };
 

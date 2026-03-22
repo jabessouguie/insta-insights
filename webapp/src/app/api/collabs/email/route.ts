@@ -11,6 +11,10 @@ export interface CollabEmailRequest {
   language?: "fr" | "en";
   /** When true, generates a follow-up reminder email referencing the initial contact */
   followUp?: boolean;
+  /** Creator first name from Identity settings — used to sign the email */
+  creatorFirstName?: string;
+  /** Past collaborations formatted as text — injected into the prompt for social proof */
+  pastCollabsContext?: string;
 }
 
 export interface CollabEmailResponse {
@@ -22,7 +26,15 @@ export interface CollabEmailResponse {
 export async function POST(request: Request): Promise<NextResponse<CollabEmailResponse>> {
   try {
     const body: CollabEmailRequest & { feedback?: string } = await request.json();
-    const { collab, profile, language = "fr", feedback, followUp = false } = body;
+    const {
+      collab,
+      profile,
+      language = "fr",
+      feedback,
+      followUp = false,
+      creatorFirstName,
+      pastCollabsContext,
+    } = body;
 
     if (!isAIConfigured()) {
       return NextResponse.json(
@@ -33,6 +45,18 @@ export async function POST(request: Request): Promise<NextResponse<CollabEmailRe
 
     const isEn = language === "en";
     const followers = (profile.followerCount ?? 0).toLocaleString(isEn ? "en-US" : "fr-FR");
+    // Signature line — use first name if provided, otherwise fall back to @username
+    const sigName = creatorFirstName?.trim() || `@${profile.username ?? "creator"}`;
+    const signatureLine = isEn
+      ? `- Sign the email with the name: ${sigName}`
+      : `- Signe l'email avec le prénom : ${sigName}`;
+
+    // Past collaborations block for social proof
+    const pastCollabsBlock = pastCollabsContext
+      ? isEn
+        ? `\n\nCreator's past collaborations (use as social proof in the email, naturally):\n${pastCollabsContext}`
+        : `\n\nCollaborations passées du créateur (à utiliser comme preuve sociale dans l'email, de façon naturelle) :\n${pastCollabsContext}`
+      : "";
 
     // Tailor collaboration formats to the partner type (hotel / excursion get specific proposals)
     const collabFormats = isEn
@@ -62,7 +86,7 @@ export async function POST(request: Request): Promise<NextResponse<CollabEmailRe
 
 You want to contact "${collab.name}" (${collab.type} · ${collab.niche}) for a collaboration.
 
-Identified reason: ${collab.reason}
+Identified reason: ${collab.reason}${pastCollabsBlock}
 
 **IMPORTANT**: Act as if you just discovered this brand — never claim to have known them for a long time or to have an existing relationship. In your opening line, briefly explain how you found them (e.g. "While browsing Instagram, I came across your account…", "I was looking for brands in the ${collab.niche} space and found you…").
 
@@ -74,6 +98,7 @@ The email must:
 ${collabFormats}
 - Keep a professional but human tone, not generic
 ${mediaKitLine}
+${signatureLine}
 - Include a clear call-to-action
 - Stay within 200-300 words
 
@@ -86,7 +111,7 @@ Respond ONLY with this JSON (no markdown, no surrounding quotes):
 
 Tu veux contacter "${collab.name}" (${collab.type} · ${collab.niche}) pour une collaboration.
 
-Raison identifiée : ${collab.reason}
+Raison identifiée : ${collab.reason}${pastCollabsBlock}
 
 **IMPORTANT** : Considère que tu viens tout juste de découvrir cette entreprise/marque — n'affirme pas la connaître depuis longtemps ni avoir une relation existante. Dans l'accroche, explique brièvement comment tu l'as découverte (ex : "En parcourant Instagram, je suis tombé sur votre compte...", "En recherchant des marques dans le secteur ${collab.niche}...").
 
@@ -98,6 +123,7 @@ L'email doit :
 ${collabFormats}
 - Avoir un ton professionnel mais humain, pas générique
 ${mediaKitLine}
+${signatureLine}
 - Inclure un call-to-action clair
 - Faire 200-300 mots max
 
@@ -120,6 +146,7 @@ The email must:
 - Open by referencing your previous message briefly (1 sentence)
 - Reiterate your interest and the potential value in 1-2 sentences
 - Keep a friendly, non-pushy tone
+${signatureLine}
 - End with a clear question or call-to-action
 - Stay within 100-150 words (follow-ups must be short)
 
@@ -138,6 +165,7 @@ L'email doit :
 - Ouvrir en faisant brièvement référence à ton message précédent (1 phrase)
 - Réitérer ton intérêt et la valeur potentielle en 1-2 phrases
 - Garder un ton amical, sans pression
+${signatureLine}
 - Terminer par une question claire ou un call-to-action
 - Faire 100-150 mots max (une relance doit être courte)
 

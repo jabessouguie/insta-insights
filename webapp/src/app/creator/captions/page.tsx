@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Sparkles, Copy, Check, FlaskConical, History } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Sparkles, Copy, Check, FlaskConical, History, Hash } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useInstagramData } from "@/hooks/useInstagramData";
+import { analyzeHashtags } from "@/lib/hashtag-analyzer";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { AbTestResponse } from "@/app/api/captions/ab-test/route";
@@ -110,6 +111,17 @@ export default function CaptionsPage() {
   const t = useT();
   const { lang } = useLanguage();
 
+  // Top 10 performing hashtags from the creator's data — passed to the AI
+  const topHashtags = useMemo(() => {
+    if (!data?.posts?.length) return [];
+    const stats = analyzeHashtags(data.posts);
+    // Prefer engagement-sorted, fall back to usage-count sorted
+    const sorted = stats.some((s) => s.avgEngagement > 0)
+      ? [...stats].sort((a, b) => b.avgEngagement - a.avgEngagement)
+      : stats;
+    return sorted.slice(0, 10).map((s) => s.tag);
+  }, [data]);
+
   const [idea, setIdea] = useState("");
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState<AbTestEntry | null>(null);
@@ -128,7 +140,11 @@ export default function CaptionsPage() {
       const res = await fetch("/api/captions/ab-test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: idea.trim(), language: lang }),
+        body: JSON.stringify({
+          idea: idea.trim(),
+          language: lang,
+          ...(topHashtags.length > 0 && { topHashtags }),
+        }),
       });
       const json = (await res.json()) as AbTestResponse;
       if (!json.success || !json.variantA || !json.variantB) return;
@@ -191,10 +207,18 @@ export default function CaptionsPage() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
           />
-          <Button onClick={generate} disabled={loading || !idea.trim()} className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            {loading ? t("captions.generating") : t("captions.generate")}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button onClick={generate} disabled={loading || !idea.trim()} className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              {loading ? t("captions.generating") : t("captions.generate")}
+            </Button>
+            {topHashtags.length > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Hash className="h-3 w-3" />
+                {topHashtags.length} hashtags performants injectés
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Current test */}

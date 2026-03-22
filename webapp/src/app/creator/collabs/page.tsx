@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   Search,
   Mail,
@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
   Eye,
   EyeOff,
@@ -38,6 +39,8 @@ import {
   saveTracking,
   needsFollowUp,
   getAllTrackedNames,
+  updateSentEmail,
+  updateProspectReply,
   FOLLOWUP_DAYS,
   STATUS_LABELS,
   STATUS_COLORS,
@@ -51,10 +54,13 @@ import {
 } from "@/lib/mediakit-generator";
 import { loadBrandSettings } from "@/lib/brand-settings-store";
 import { loadUserProfile, getDisplayName } from "@/lib/user-profile-store";
+import { loadPastCollabs, formatPastCollabsForPrompt } from "@/lib/past-collabs-store";
 import { loadMediaKitConfig } from "@/lib/mediakit-config-store";
 import type { InstagramAnalytics } from "@/types/instagram";
 import type { BrandPitchResponse } from "@/app/api/collabs/brand-pitch/route";
 import { captureEvent } from "@/lib/posthog";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
 
 // ─── Type badge colors ─────────────────────────────────────────────────────────
 
@@ -164,7 +170,14 @@ function TrackingPanel({
       const res = await fetch("/api/collabs/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ collab, profile: profile ?? {}, language, followUp: true }),
+        body: JSON.stringify({
+          collab,
+          profile: profile ?? {},
+          language,
+          followUp: true,
+          creatorFirstName: loadUserProfile().firstName || undefined,
+          pastCollabsContext: formatPastCollabsForPrompt(loadPastCollabs()) || undefined,
+        }),
       });
       const json = await res.json();
       if (json.success && json.data)
@@ -510,6 +523,12 @@ function EmailPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [mediaKitUrl, setMediaKitUrl] = useState<string | null>(null);
+  // Prospect reply & follow-up suggestion
+  const [prospectReplyText, setProspectReplyText] = useState(tracking.prospectReply ?? "");
+  const [showReplySection, setShowReplySection] = useState(!!tracking.prospectReply);
+  const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
+  const [isGeneratingReply, setIsGeneratingReply] = useState(false);
+  const [copiedReplyIndex, setCopiedReplyIndex] = useState<number | null>(null);
   const [isGeneratingKit, setIsGeneratingKit] = useState(false);
 
   const genStatuses = [
@@ -592,7 +611,14 @@ function EmailPanel({
         const res = await fetch("/api/collabs/email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ collab, profile, feedback, language }),
+          body: JSON.stringify({
+            collab,
+            profile,
+            feedback,
+            language,
+            creatorFirstName: loadUserProfile().firstName || undefined,
+            pastCollabsContext: formatPastCollabsForPrompt(loadPastCollabs()) || undefined,
+          }),
         });
         const json = await res.json();
         if (json.success && json.data) {
@@ -621,20 +647,72 @@ function EmailPanel({
     if (mailtoUrl) {
       window.open(mailtoUrl, "_blank");
     }
-    // Mark as email sent
+    // Mark as email sent and save the email body for future reply context
     const updated: CollabTracking = {
       ...tracking,
       status: "email_sent",
       sentAt: new Date().toISOString(),
+      sentEmailBody: emailData?.body ?? tracking.sentEmailBody,
     };
     saveTracking(updated);
     onTrackingUpdate(updated);
+    setShowReplySection(true);
+  };
+
+  const handleGenerateReply = async () => {
+    const sentBody = emailData?.body ?? tracking.sentEmailBody ?? "";
+    if (!prospectReplyText.trim() || !sentBody.trim()) return;
+    setIsGeneratingReply(true);
+    setSuggestedReplies([]);
+    // Persist prospect reply
+    updateProspectReply(tracking.collabId, prospectReplyText.trim());
+    try {
+      const res = await fetch("/api/collabs/reply-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          collabName: collab.name,
+          sentEmailBody: sentBody,
+          prospectReply: prospectReplyText.trim(),
+          language,
+        }),
+      });
+      const data = (await res.json()) as { success: boolean; replies?: string[]; error?: string };
+      if (data.success && data.replies) {
+        setSuggestedReplies(data.replies);
+        // Also update email body in store if not already saved
+        if (!tracking.sentEmailBody && sentBody) {
+          updateSentEmail(tracking.collabId, sentBody);
+        }
+      }
+    } catch {
+      // silent
+    } finally {
+      setIsGeneratingReply(false);
+    }
   };
 
   const kitFileName = `mediakit-${collab.name.replace(/\s+/g, "-").toLowerCase()}.html`;
 
+  const markBounced = () => {
+    const updated: CollabTracking = { ...tracking, status: "email_bounced" };
+    saveTracking(updated);
+    onTrackingUpdate(updated);
+  };
+
   return (
     <div className="space-y-2">
+      {/* Email delivery warning */}
+      {collab.contactEmail && (
+        <div className="flex items-start gap-2 rounded-md border border-orange-400/20 bg-orange-400/5 px-3 py-2 text-xs text-orange-300/80">
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-orange-400" />
+          <span>
+            Ces adresses sont publiques mais peuvent ne pas être délivrées (boîte pleine, alias
+            inactif…). Utilise le DM Instagram en priorité.
+          </span>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         {collab.contactEmail && (
           <span className="font-mono text-xs text-muted-foreground">{collab.contactEmail}</span>
@@ -657,6 +735,18 @@ function EmailPanel({
               ? t("collabs.card.regenerateEmail")
               : t("collabs.card.generateEmail")}
         </Button>
+        {/* Bounce report button — visible after email was sent */}
+        {tracking.status === "email_sent" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs text-orange-400 hover:text-orange-300"
+            onClick={markBounced}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            Email non délivré
+          </Button>
+        )}
         {emailData && (
           <button
             onClick={() => setShowPanel((p) => !p)}
@@ -747,6 +837,85 @@ function EmailPanel({
             isGenerating={isGenerating}
             placeholder={t("collabs.email.feedbackPlaceholder")}
           />
+        </div>
+      )}
+
+      {/* ── Prospect reply & AI follow-up suggestion ── */}
+      {(showReplySection ||
+        tracking.status === "email_sent" ||
+        tracking.status === "replied_positive" ||
+        tracking.status === "replied_negative") && (
+        <div className="space-y-2.5 rounded-lg border border-violet-500/20 bg-violet-500/5 p-3">
+          <button
+            onClick={() => setShowReplySection((p) => !p)}
+            className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-violet-400"
+          >
+            <span className="flex items-center gap-1.5">
+              <MessageCircle className="h-3 w-3" />
+              Réponse du prospect
+            </span>
+            {showReplySection ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
+          </button>
+
+          {showReplySection && (
+            <div className="space-y-2">
+              <textarea
+                value={prospectReplyText}
+                onChange={(e) => setProspectReplyText(e.target.value)}
+                placeholder="Colle ici la réponse reçue du prospect..."
+                rows={3}
+                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-full gap-1.5 text-xs"
+                onClick={() => void handleGenerateReply()}
+                disabled={isGeneratingReply || !prospectReplyText.trim()}
+              >
+                {isGeneratingReply ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3 text-violet-400" />
+                )}
+                {isGeneratingReply ? "Génération..." : "Suggérer une réponse"}
+              </Button>
+
+              {suggestedReplies.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    3 propositions de réponse
+                  </p>
+                  {suggestedReplies.map((reply, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 rounded-md border bg-background/60 p-2.5"
+                    >
+                      <p className="flex-1 text-xs leading-relaxed">{reply}</p>
+                      <button
+                        onClick={() => {
+                          void navigator.clipboard.writeText(reply);
+                          setCopiedReplyIndex(i);
+                          setTimeout(() => setCopiedReplyIndex(null), 2000);
+                        }}
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                      >
+                        {copiedReplyIndex === i ? (
+                          <Check className="h-3.5 w-3.5 text-green-500" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -1454,10 +1623,16 @@ const INTEREST_SUGGESTIONS = [
   "Excursions & Activités",
 ];
 
+const collabSwrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r): CollabTracking[] => r.items ?? []);
+
 export default function CollabsPage() {
   const t = useT();
   const { lang } = useLanguage();
   const { data } = useInstagramData();
+  const { data: session } = useSession();
   const [pageTab, setPageTab] = useState<"finder" | "tracker">("finder");
   const [location, setLocation] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -1471,6 +1646,13 @@ export default function CollabsPage() {
 
   // Tracking state
   const [trackings, setTrackings] = useState<Record<string, CollabTracking>>({});
+  const sessionUserId = useRef<string | undefined>(undefined);
+  sessionUserId.current = session?.user?.id;
+
+  const { data: remoteTrackings } = useSWR<CollabTracking[]>(
+    session?.user?.id ? "/api/user/collabs" : null,
+    collabSwrFetcher
+  );
 
   // Filter state
   const [filterAccountTypes, setFilterAccountTypes] = useState<string[]>([]);
@@ -1485,13 +1667,14 @@ export default function CollabsPage() {
   >({});
   const [isValidating, setIsValidating] = useState(false);
 
-  // Load trackings on mount
+  // Load trackings: prefer Supabase when authenticated, fall back to localStorage
   useEffect(() => {
-    const all = loadTrackings();
+    const source = remoteTrackings ?? (session?.user?.id ? null : loadTrackings());
+    if (!source) return;
     const map: Record<string, CollabTracking> = {};
-    for (const t of all) map[t.collabId] = t;
+    for (const t of source) map[t.collabId] = t;
     setTrackings(map);
-  }, []);
+  }, [remoteTrackings, session]);
 
   const searchStatuses = [
     t("collabs.search.status.analyzeProfile"),
@@ -1515,6 +1698,13 @@ export default function CollabsPage() {
 
   const handleTrackingUpdate = (updated: CollabTracking) => {
     setTrackings((prev) => ({ ...prev, [updated.collabId]: updated }));
+    if (sessionUserId.current) {
+      fetch("/api/user/collabs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated),
+      });
+    }
   };
 
   const getOrCreateTracking = (collab: CollabMatch): CollabTracking => {

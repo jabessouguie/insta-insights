@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText, isAIConfigured, stripJsonFences, GEMINI_PRO } from "@/lib/ai-provider";
+import { generateText, isAIConfigured, stripJsonFences } from "@/lib/ai-provider";
 import type { InstagramProfile } from "@/types/instagram";
 
 export const dynamic = "force-dynamic";
@@ -101,7 +101,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
   }
 }`;
 
-    const raw = await generateText(prompt, { model: GEMINI_PRO });
+    const raw = await generateText(prompt);
     const clean = stripJsonFences(raw);
     const parsed = JSON.parse(clean) as BrandPitchResponse["data"];
 

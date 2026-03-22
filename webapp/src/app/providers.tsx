@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
+import { SessionProvider } from "next-auth/react";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 
 const BugReportButton = dynamic(
@@ -26,14 +27,16 @@ const OnboardingWizard = dynamic(
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
-      <LanguageProvider>
-        {children}
-        <PosthogProvider />
-        <OnboardingWizard />
-        <BugReportButton />
-        <CookieBanner />
-      </LanguageProvider>
-    </ThemeProvider>
+    <SessionProvider>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
+        <LanguageProvider>
+          {children}
+          <PosthogProvider />
+          <OnboardingWizard />
+          <BugReportButton />
+          <CookieBanner />
+        </LanguageProvider>
+      </ThemeProvider>
+    </SessionProvider>
   );
 }

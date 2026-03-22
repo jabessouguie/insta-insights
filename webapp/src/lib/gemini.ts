@@ -236,6 +236,16 @@ Inclus obligatoirement :
       "recommendation": "Action concrète et spécifique à cette niche et cette audience",
       "priority": "high|medium|low"
     }
+  ],
+  "postPromptTemplates": [
+    "Template de caption 1 basé sur les meilleures performances (max 60 mots, avec [SUJET] comme placeholder)",
+    "Template de caption 2 — format différent (ex: liste, question, anecdote)",
+    "Template de caption 3 — format reel/court"
+  ],
+  "calendarSuggestions": [
+    { "day": "Lundi", "time": "18h", "contentType": "Reel", "rationale": "Audience la plus active ce soir d'après les données" },
+    { "day": "Jeudi", "time": "12h", "contentType": "Carrousel", "rationale": "Fort engagement historique les jeudis midis" },
+    { "day": "Samedi", "time": "10h", "contentType": "Image", "rationale": "Audience disponible le week-end matin" }
   ]
 }${req.userFeedback ? `\n\nRetours utilisateur sur la version précédente : ${req.userFeedback}` : ""}`;
 }
@@ -284,10 +294,20 @@ Génère exactement 5 insights JSON pour l'agence (sans markdown, juste le JSON)
 
 export async function generateInsights(req: InsightsApiRequest): Promise<InsightsResponse> {
   const prompt = req.mode === "agency" ? buildAgencyPrompt(req) : buildCreatorPrompt(req);
-  const raw = await generateText(prompt);
+  const raw = await generateText(prompt, { model: req.model });
   const clean = stripJsonFences(raw);
 
-  let parsed: { summary: string; insights: AIInsight[] };
+  let parsed: {
+    summary: string;
+    insights: AIInsight[];
+    postPromptTemplates?: string[];
+    calendarSuggestions?: Array<{
+      day: string;
+      time: string;
+      contentType: string;
+      rationale: string;
+    }>;
+  };
   try {
     parsed = JSON.parse(clean);
   } catch {
@@ -315,5 +335,7 @@ export async function generateInsights(req: InsightsApiRequest): Promise<Insight
     summary: parsed.summary || "",
     generatedAt: new Date(),
     model: getDefaultModel(),
+    postPromptTemplates: parsed.postPromptTemplates,
+    calendarSuggestions: parsed.calendarSuggestions,
   };
 }

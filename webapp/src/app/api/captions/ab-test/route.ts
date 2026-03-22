@@ -6,6 +6,8 @@ export interface AbTestRequest {
   language?: "fr" | "en";
   /** Optional context: creator niche, tone, audience */
   context?: string;
+  /** Top performing hashtags from the creator's own data — injected into the prompt */
+  topHashtags?: string[];
 }
 
 export interface AbTestResponse {
@@ -25,7 +27,7 @@ const MOCK_RESPONSE: AbTestResponse = {
 
 export async function POST(req: NextRequest): Promise<NextResponse<AbTestResponse>> {
   const body = (await req.json()) as AbTestRequest;
-  const { idea, language = "fr", context = "" } = body;
+  const { idea, language = "fr", context = "", topHashtags } = body;
 
   if (!idea?.trim()) {
     return NextResponse.json({ success: false, error: "idea is required" }, { status: 400 });
@@ -33,10 +35,14 @@ export async function POST(req: NextRequest): Promise<NextResponse<AbTestRespons
 
   const lang = language === "en" ? "English" : "French";
   const contextBlock = context ? `\nCreator context: ${context}` : "";
+  const hashtagsBlock =
+    topHashtags && topHashtags.length > 0
+      ? `\nTop performing hashtags from your data (prioritize these): ${topHashtags.slice(0, 10).join(", ")}`
+      : "";
 
   const prompt = `You are an expert Instagram copywriter. Generate exactly 2 caption variants (A and B) for the same post idea.
 
-Post idea: "${idea}"${contextBlock}
+Post idea: "${idea}"${contextBlock}${hashtagsBlock}
 Language: ${lang}
 
 Rules:

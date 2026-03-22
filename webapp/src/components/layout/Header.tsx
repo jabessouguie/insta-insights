@@ -32,9 +32,12 @@ import {
   Target,
   BookOpen,
   HelpCircle,
+  Clapperboard,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
+import { useSession, signOut } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/i18n";
 import {
@@ -54,6 +57,7 @@ interface HeaderProps {
 export function Header({ profile, mode, agencyName }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const { data: session } = useSession();
   const { lang, toggle } = useLanguage();
   const t = useT();
   const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -115,9 +119,10 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
   const activeAccount = accounts.find((a) => a.id === activeId) ?? accounts[accounts.length - 1];
   const displayUsername =
     mode === "creator"
-      ? (activeAccount?.username ?? profile?.username ?? "...")
+      ? (activeAccount?.username ?? profile?.username ?? session?.user?.name ?? "...")
       : (agencyName ?? "...");
-  const displayPicUrl = activeAccount?.profilePicUrl ?? profile?.profilePicUrl;
+  const displayPicUrl =
+    activeAccount?.profilePicUrl ?? profile?.profilePicUrl ?? session?.user?.image ?? undefined;
   const displayFollowers = activeAccount?.followerCount ?? profile?.followerCount;
 
   // ── Navigation ────────────────────────────────────────────────────────
@@ -134,6 +139,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/interactions", label: t("nav.interactions"), icon: Users },
     { href: "/creator/audience", label: t("nav.audience"), icon: Users },
     { href: "/creator/reels", label: t("nav.reels"), icon: Video },
+    { href: "/creator/reels-editor", label: t("nav.reels_editor"), icon: Clapperboard },
     { href: "/creator/competitive", label: t("nav.competitive"), icon: TrendingUp },
     { href: "/creator/reports", label: t("nav.reports"), icon: BarChart2 },
     { href: "/creator/mediakit", label: t("nav.mediakit"), icon: FileText },
@@ -145,6 +151,7 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
     { href: "/creator/invoice", label: t("nav.invoice"), icon: Receipt },
     { href: "/creator/referral", label: t("nav.referral"), icon: Share2 },
     { href: "/creator/guide", label: t("nav.guide"), icon: BookOpen },
+    { href: "/creator/ugc", label: t("nav.ugc"), icon: Sparkles },
     { href: "/creator/connect", label: t("nav.connect"), icon: Link2 },
     { href: "/help", label: t("nav.help"), icon: HelpCircle },
   ];
@@ -267,17 +274,13 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
 
           <ThemeToggle />
 
-          {/* Profile avatar — with account switcher dropdown when multiple accounts */}
+          {/* Profile avatar — with account switcher + sign-out dropdown */}
           <div className="relative" ref={dropdownRef}>
             <button
               className="flex items-center gap-2.5 rounded-md py-1 pl-2 pr-1 transition-colors hover:bg-accent/50"
-              onClick={() =>
-                mode === "creator" && accounts.length >= 2
-                  ? setAccountDropdownOpen((o) => !o)
-                  : undefined
-              }
+              onClick={() => (mode === "creator" ? setAccountDropdownOpen((o) => !o) : undefined)}
               aria-label={t("header.accounts.switch")}
-              aria-haspopup={mode === "creator" && accounts.length >= 2 ? "listbox" : undefined}
+              aria-haspopup={mode === "creator" ? "listbox" : undefined}
               aria-expanded={accountDropdownOpen}
               type="button"
             >
@@ -297,64 +300,91 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
                     : t("header.portfolio")}
                 </span>
               </div>
-              {mode === "creator" && accounts.length >= 2 && (
+              {mode === "creator" && (
                 <ChevronDown
                   className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${accountDropdownOpen ? "rotate-180" : ""}`}
                 />
               )}
             </button>
 
-            {/* Account switcher dropdown */}
-            {accountDropdownOpen && accounts.length >= 2 && (
+            {/* Account switcher + sign-out dropdown */}
+            {accountDropdownOpen && (
               <div
                 role="listbox"
                 aria-label={t("header.accounts.switch")}
                 className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-border bg-popover shadow-lg"
               >
-                <div className="p-1">
-                  {accounts.map((acc) => {
-                    const isActive =
-                      acc.id === activeId || (!activeId && acc === accounts[accounts.length - 1]);
-                    return (
-                      <button
-                        key={acc.id}
-                        role="option"
-                        aria-selected={isActive}
-                        tabIndex={0}
-                        type="button"
-                        className={`group flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent ${isActive ? "bg-accent/50" : ""}`}
-                        onClick={() => handleSwitchAccount(acc.id)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSwitchAccount(acc.id)}
-                      >
-                        <Avatar className="h-7 w-7 shrink-0">
-                          <AvatarImage src={acc.profilePicUrl} alt={acc.username} />
-                          <AvatarFallback className="text-[10px]">
-                            {acc.username.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium">@{acc.username}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {acc.followerCount.toLocaleString("fr-FR")} {t("header.followers")}
-                          </p>
-                        </div>
-                        {isActive ? (
-                          <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
-                        ) : (
-                          <button
-                            type="button"
-                            title={t("header.accounts.remove")}
-                            className="opacity-0 transition-opacity group-hover:opacity-100"
-                            onClick={(e) => handleRemoveAccount(acc.id, e)}
-                            aria-label={t("header.accounts.remove")}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                          </button>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                {/* Session user info */}
+                {session?.user && (
+                  <div className="border-b border-border px-3 py-2.5">
+                    <p className="truncate text-xs font-medium">{session.user.name}</p>
+                    <p className="truncate text-[10px] text-muted-foreground">
+                      {session.user.email}
+                    </p>
+                  </div>
+                )}
+
+                {/* Instagram accounts */}
+                {accounts.length >= 2 && (
+                  <div className="p-1">
+                    {accounts.map((acc) => {
+                      const isActive =
+                        acc.id === activeId || (!activeId && acc === accounts[accounts.length - 1]);
+                      return (
+                        <button
+                          key={acc.id}
+                          role="option"
+                          aria-selected={isActive}
+                          tabIndex={0}
+                          type="button"
+                          className={`group flex w-full cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-left transition-colors hover:bg-accent ${isActive ? "bg-accent/50" : ""}`}
+                          onClick={() => handleSwitchAccount(acc.id)}
+                          onKeyDown={(e) => e.key === "Enter" && handleSwitchAccount(acc.id)}
+                        >
+                          <Avatar className="h-7 w-7 shrink-0">
+                            <AvatarImage src={acc.profilePicUrl} alt={acc.username} />
+                            <AvatarFallback className="text-[10px]">
+                              {acc.username.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-medium">@{acc.username}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {acc.followerCount.toLocaleString("fr-FR")} {t("header.followers")}
+                            </p>
+                          </div>
+                          {isActive ? (
+                            <Check className="h-3.5 w-3.5 shrink-0 text-primary" />
+                          ) : (
+                            <button
+                              type="button"
+                              title={t("header.accounts.remove")}
+                              className="opacity-0 transition-opacity group-hover:opacity-100"
+                              onClick={(e) => handleRemoveAccount(acc.id, e)}
+                              aria-label={t("header.accounts.remove")}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                            </button>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Sign out */}
+                {session && (
+                  <div className="border-t border-border p-1">
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
+                      onClick={() => signOut({ callbackUrl: "/" })}
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      {lang === "fr" ? "Déconnexion" : "Sign out"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

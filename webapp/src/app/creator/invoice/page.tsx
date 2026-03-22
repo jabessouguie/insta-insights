@@ -16,6 +16,8 @@ import {
 } from "@/lib/invoice-store";
 import type { Invoice, InvoiceItem, InvoiceCurrency } from "@/lib/invoice-store";
 import { useT } from "@/lib/i18n";
+import { useSession } from "next-auth/react";
+import useSWR from "swr";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -192,18 +194,30 @@ async function downloadPdf(invoice: Invoice) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const swrFetcher = (url: string) =>
+  fetch(url)
+    .then((r) => r.json())
+    .then((r) => r.items ?? []);
+
 export default function InvoicePage() {
   const { data } = useInstagramData();
   const t = useT();
+  const { data: session } = useSession();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
 
+  const { data: remoteInvoices } = useSWR<Invoice[]>(
+    session?.user?.id ? "/api/user/invoices" : null,
+    swrFetcher
+  );
+
   useEffect(() => {
-    setInvoices(loadInvoices());
-  }, []);
+    if (remoteInvoices) setInvoices(remoteInvoices);
+    else if (!session?.user?.id) setInvoices(loadInvoices());
+  }, [remoteInvoices, session]);
 
   const refreshList = useCallback(() => setInvoices(loadInvoices()), []);
 
@@ -227,17 +241,29 @@ export default function InvoicePage() {
     setShowForm(true);
   }
 
+  function syncInvoiceToSupabase(inv: Invoice) {
+    if (!session?.user?.id) return;
+    fetch("/api/user/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(inv),
+    });
+  }
+
   function handleSave() {
     if (!form.clientName || form.items.length === 0) return;
 
     if (editId) {
       const existing = loadInvoices().find((i) => i.id === editId);
       if (existing) {
-        saveInvoice({ ...existing, ...form });
+        const updated = { ...existing, ...form };
+        saveInvoice(updated);
+        syncInvoiceToSupabase(updated);
       }
     } else {
       const inv = createInvoice(form);
       saveInvoice(inv);
+      syncInvoiceToSupabase(inv);
     }
     refreshList();
     setShowForm(false);
@@ -246,11 +272,16 @@ export default function InvoicePage() {
 
   function handleDelete(id: string) {
     deleteInvoice(id);
+    if (session?.user?.id) {
+      fetch(`/api/user/invoices?id=${id}`, { method: "DELETE" });
+    }
     refreshList();
   }
 
   function handleStatusChange(invoice: Invoice, status: Invoice["status"]) {
-    saveInvoice({ ...invoice, status });
+    const updated = { ...invoice, status };
+    saveInvoice(updated);
+    syncInvoiceToSupabase(updated);
     refreshList();
   }
 

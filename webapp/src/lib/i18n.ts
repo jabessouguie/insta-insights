@@ -21,6 +21,7 @@ const FR = {
   "nav.carousel": "Carrousel",
   "nav.more": "Plus",
   "nav.guide": "Guide PDF",
+  "nav.ugc": "UGC",
   "nav.help": "Aide",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
@@ -348,6 +349,7 @@ const FR = {
   "carousel.preview.empty": "L'aperçu apparaîtra ici",
   "carousel.download.slide": "Slide",
   "carousel.download.all": "Tout télécharger",
+  "carousel.posting.order": "Postez les images dans cet ordre sur Instagram",
   "carousel.description.label": "Description Instagram",
   "carousel.error.network": "Erreur réseau",
   "carousel.error.generic": "Une erreur est survenue",
@@ -358,10 +360,12 @@ const FR = {
   "model.flash25.desc": "Rapide et créatif (défaut)",
   "model.pro25.label": "Pro 2.5 🧠",
   "model.pro25.desc": "Meilleure qualité, plus lent",
-  "model.flash3.label": "Flash 3.0 🆕",
-  "model.flash3.desc": "Nouvelle génération, rapide",
-  "model.pro3.label": "Pro 3.0 ✨",
-  "model.pro3.desc": "Dernier modèle, raisonnement max",
+  "model.flash3.label": "Flash 3.0 ⚡",
+  "model.flash3.desc": "Rapide, défaut recommandé",
+  "model.flash31.label": "Flash 3.1 🚀",
+  "model.flash31.desc": "Plus rapide, meilleure qualité",
+  "model.pro31.label": "Pro 3.1 🧠",
+  "model.pro31.desc": "Qualité max, raisonnement",
 
   // ── Format switcher (carousel page) ──────────────────────────────────────
   "format.carousel": "Carrousel",
@@ -574,6 +578,8 @@ const FR = {
   "reports.locked.cta": "Nécessite le compte Business Instagram",
   "reports.advanced_features": "Fonctionnalités avancées",
 
+  "nav.reels_editor": "Éditeur de réels",
+
   // ── Skip Rate Analysis ────────────────────────────────────────────────────
   "nav.reels": "Skip Rate",
   "skiprate.title": "Analyse du Taux de Skip",
@@ -765,6 +771,28 @@ const FR = {
   "campaigns.totalRevenue": "Revenu total",
   "campaigns.avgRoi": "ROI moyen",
   "campaigns.totalCampaigns": "Campagnes suivies",
+
+  // ── UGC Generator ────────────────────────────────────────────────────────
+  "ugc.title": "Générateur de contenu UGC",
+  "ugc.subtitle": "Crée un script de contenu sponsorisé authentique pour une marque",
+  "ugc.brand.label": "Nom de la marque *",
+  "ugc.brand.placeholder": "ex : Sephora, Nike, Oatly...",
+  "ugc.constraints.label": "Idées & contraintes (optionnel)",
+  "ugc.constraints.placeholder":
+    "ex : mise en avant du nouveau sérum, ton humour, vidéo en extérieur, pas de comparaison avec d'autres marques...",
+  "ugc.button.generate": "Générer le script",
+  "ugc.button.generating": "Génération...",
+  "ugc.format.label": "Format recommandé",
+  "ugc.format.reason": "Pourquoi ce format",
+  "ugc.format.carousel": "Carrousel",
+  "ugc.format.reels": "Réels",
+  "ugc.format.stories": "Stories",
+  "ugc.post.visual": "Visuel",
+  "ugc.post.cta": "CTA",
+  "ugc.copy.post": "Copier",
+  "ugc.copy.all": "Tout copier",
+  "ugc.copied": "Copié !",
+  "ugc.error.brand": "Le nom de la marque est requis",
 } as const;
 
 const EN: Record<keyof typeof FR, string> = {
@@ -782,6 +810,7 @@ const EN: Record<keyof typeof FR, string> = {
   "nav.carousel": "Carousel",
   "nav.more": "More",
   "nav.guide": "PDF Guide",
+  "nav.ugc": "UGC",
   "nav.help": "Help",
 
   // ── Guide Generator ────────────────────────────────────────────────────────
@@ -1108,6 +1137,7 @@ const EN: Record<keyof typeof FR, string> = {
   "carousel.preview.empty": "Preview will appear here",
   "carousel.download.slide": "Slide",
   "carousel.download.all": "Download all",
+  "carousel.posting.order": "Post the images in this order on Instagram",
   "carousel.description.label": "Instagram description",
   "carousel.error.network": "Network error",
   "carousel.error.generic": "An error occurred",
@@ -1118,10 +1148,12 @@ const EN: Record<keyof typeof FR, string> = {
   "model.flash25.desc": "Fast and creative (default)",
   "model.pro25.label": "Pro 2.5 🧠",
   "model.pro25.desc": "Best quality, slower",
-  "model.flash3.label": "Flash 3.0 🆕",
-  "model.flash3.desc": "New generation, fast",
-  "model.pro3.label": "Pro 3.0 ✨",
-  "model.pro3.desc": "Latest model, max reasoning",
+  "model.flash3.label": "Flash 3.0 ⚡",
+  "model.flash3.desc": "Fast, recommended default",
+  "model.flash31.label": "Flash 3.1 🚀",
+  "model.flash31.desc": "Faster, better quality",
+  "model.pro31.label": "Pro 3.1 🧠",
+  "model.pro31.desc": "Max quality, reasoning",
 
   // ── Format switcher (carousel page) ──────────────────────────────────────
   "format.carousel": "Carousel",
@@ -1330,6 +1362,8 @@ const EN: Record<keyof typeof FR, string> = {
   "reports.locked.cta": "Requires Instagram Business account",
   "reports.advanced_features": "Advanced features",
 
+  "nav.reels_editor": "Reels Editor",
+
   // ── Skip Rate Analysis ────────────────────────────────────────────────────
   "nav.reels": "Skip Rate",
   "skiprate.title": "Skip Rate Analysis",
@@ -1516,6 +1550,28 @@ const EN: Record<keyof typeof FR, string> = {
   "campaigns.totalRevenue": "Total revenue",
   "campaigns.avgRoi": "Avg. ROI",
   "campaigns.totalCampaigns": "Campaigns tracked",
+
+  // ── UGC Generator ────────────────────────────────────────────────────────
+  "ugc.title": "UGC Content Generator",
+  "ugc.subtitle": "Create an authentic sponsored content script for a brand",
+  "ugc.brand.label": "Brand name *",
+  "ugc.brand.placeholder": "e.g. Sephora, Nike, Oatly...",
+  "ugc.constraints.label": "Ideas & constraints (optional)",
+  "ugc.constraints.placeholder":
+    "e.g. highlight the new serum, your humour, outdoor video, no comparison with other brands...",
+  "ugc.button.generate": "Generate script",
+  "ugc.button.generating": "Generating...",
+  "ugc.format.label": "Recommended format",
+  "ugc.format.reason": "Why this format",
+  "ugc.format.carousel": "Carousel",
+  "ugc.format.reels": "Reels",
+  "ugc.format.stories": "Stories",
+  "ugc.post.visual": "Visual",
+  "ugc.post.cta": "CTA",
+  "ugc.copy.post": "Copy",
+  "ugc.copy.all": "Copy all",
+  "ugc.copied": "Copied!",
+  "ugc.error.brand": "Brand name is required",
 };
 
 export type TranslationKey = keyof typeof FR;

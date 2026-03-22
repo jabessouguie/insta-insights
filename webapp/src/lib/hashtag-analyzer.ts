@@ -20,6 +20,15 @@ export function extractHashtags(caption: string): string[] {
 }
 
 /**
+ * Returns true if at least some posts carry per-post engagement data (likes > 0).
+ * The HTML Instagram export does NOT include per-post likes/comments, so this
+ * returns false when the data comes from a real export rather than mock or Graph API.
+ */
+export function hasEngagementData(posts: InstagramPost[]): boolean {
+  return posts.some((p) => p.likes > 0 || p.comments > 0);
+}
+
+/**
  * Compute per-hashtag performance statistics across all posts.
  * Returns stats sorted by usage count descending.
  */
