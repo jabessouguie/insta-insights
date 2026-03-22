@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Unit tests for the interaction analyser logic.
  * Tests the business rules for classifying accounts by mocking fs and testing the actual module.

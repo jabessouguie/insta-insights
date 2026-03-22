@@ -124,7 +124,7 @@ export async function POST(request: Request): Promise<Response> {
     //     when the browser session ends or manually via the Settings page.
     //
     // We log the request for audit purposes and return the required confirmation.
-    console.info(
+    console.warn(
       `[data-deletion] Received deletion request for user_id=${userId} at ${new Date().toISOString()}`
     );
 

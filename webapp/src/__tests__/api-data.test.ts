@@ -35,7 +35,7 @@ describe("/api/data route logic", () => {
   };
 
   it("returns export data when parseInstagramExport succeeds", async () => {
-    mockParseExport.mockResolvedValue(fakeExportData as any);
+    mockParseExport.mockResolvedValue(fakeExportData as never);
 
     // Inline simulate the route logic
     const data = await parseInstagramExport();
