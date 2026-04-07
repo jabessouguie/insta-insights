@@ -14,6 +14,8 @@ const FEATURE_LABELS: Record<ModelFeature, string> = {
   carousel: "Modèle IA (carrousel)",
   insights: "Modèle IA (analyse)",
   report: "Modèle IA (rapport)",
+  audience: "Modèle IA (audience)",
+  captions: "Modèle IA (légendes)",
 };
 
 export function ModelSelector({ feature, value, onChange, className }: ModelSelectorProps) {

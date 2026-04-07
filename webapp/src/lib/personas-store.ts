@@ -1,11 +1,12 @@
 "use client";
 
-import type { AudiencePersona } from "@/types/instagram";
+import type { AudiencePersona, BrandVoiceAudit } from "@/types/instagram";
 
 const KEY = "insta_audience_personas";
 
 export interface SavedPersonas {
   personas: AudiencePersona[];
+  brandVoice?: BrandVoiceAudit;
   savedAt: string; // ISO date
 }
 
@@ -20,9 +21,9 @@ export function loadPersonas(): SavedPersonas | null {
   }
 }
 
-export function savePersonas(personas: AudiencePersona[]): void {
+export function savePersonas(personas: AudiencePersona[], brandVoice?: BrandVoiceAudit): void {
   if (typeof window === "undefined") return;
-  const payload: SavedPersonas = { personas, savedAt: new Date().toISOString() };
+  const payload: SavedPersonas = { personas, brandVoice, savedAt: new Date().toISOString() };
   localStorage.setItem(KEY, JSON.stringify(payload));
 }
 

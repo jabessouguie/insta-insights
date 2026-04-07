@@ -32,6 +32,7 @@ interface CarouselPost {
 interface CarouselAnalyzeRequest {
   posts: CarouselPost[];
   profile: { username: string; followerCount: number };
+  model?: string;
 }
 
 interface SlideAnalysis {
@@ -73,7 +74,7 @@ export async function POST(request: Request): Promise<NextResponse<CarouselAnaly
       );
     }
 
-    const provider = getActiveProvider();
+    const provider = getActiveProvider(body.model);
 
     // Sort posts by engagement rate to identify top vs bottom performers
     const withEngagement = posts.map((p) => ({
@@ -154,7 +155,7 @@ Réponds en 2-3 phrases max.`,
         ? `\n\nAnalyse visuelle des slides (IA Vision) :\n${slideAnalyses.map((s) => `- Slide ${s.slideIndex + 1}: ${s.visualAnalysis}`).join("\n")}`
         : "";
 
-    const prompt = `Tu es un expert en stratégie de contenu carousel Instagram.
+    const prompt = `Tu es un expert en psychologie d'audience et en stratégie de contenu carousel Instagram.
 
 Compte : @${profile.username} (${profile.followerCount.toLocaleString()} abonnés)
 
@@ -165,23 +166,23 @@ CAROUSELS LES MOINS PERFORMANTS :
 ${bottomSummary || "Aucune donnée"}
 ${visionInsights}
 
-Note importante : Instagram n'expose pas les données par slide (quel slide reçoit le like, jusqu'où les gens scrollent).
-L'analyse est basée sur l'engagement global du post et le contenu textuel/visuel des slides.
+Note importante : Instagram n'expose pas les données précises par slide (où les gens arrêtent de swiper). 
+Tu dois DÉDUIRE où se situe la "drop-off" (perte d'attention) en analysant la friction dans les textes, la lourdeur des slides, ou les coupures de rythme.
 
 Réponds UNIQUEMENT en JSON strict :
 {
   "topPerformingSlideTypes": ["type1", "type2", "type3"],
   "topContentAngles": ["angle1", "angle2", "angle3"],
   "weakSlidePatterns": ["pattern faible 1", "pattern faible 2"],
-  "promptFragment": "Phrase courte (1-2 lignes) à injecter dans les prompts de génération de carousel. Ex: Commence par un slide choc avec un chiffre ou une question. Slide 2 = contexte, slides 3-5 = contenu listé, dernier slide = CTA fort."
+  "promptFragment": "Instruction à injecter dans les générateurs d'IA. Ex: Slide 3 = texte aéré car c'est là qu'ils arrêtent de swiper."
 }
 
-- topPerformingSlideTypes : types de slides qui reviennent dans les carousels performants (ex: "chiffre choc en slide 1", "liste numérotée", "question rhétorique")
-- topContentAngles : angles thématiques qui fonctionnent le mieux pour ce créateur
-- weakSlidePatterns : patterns à éviter (ex: "slides trop textuels sans accroche visuelle", "CTA absent")
-- promptFragment : instruction à injecter dans les futurs prompts carousel`;
+- topPerformingSlideTypes : types de slides qui performent.
+- topContentAngles : angles thématiques gagnants.
+- weakSlidePatterns : erreurs qui font que les gens arrêtent de swiper ou n'engagent pas (ex: "slide 3 trop verbeux").
+- promptFragment : instruction contextuelle hyper spécifique.`;
 
-    const raw = await generateText(prompt);
+    const raw = await generateText(prompt, { model: body.model });
     const parsed = JSON.parse(stripJsonFences(raw)) as Partial<CarouselAnalysisResult>;
 
     const analysis: CarouselAnalysisResult = {

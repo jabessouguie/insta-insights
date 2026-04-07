@@ -10,14 +10,19 @@ import { analyzeHashtags } from "@/lib/hashtag-analyzer";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { AbTestResponse } from "@/app/api/captions/ab-test/route";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+interface CaptionVariant {
+  hook: string;
+  body: string;
+}
 
 interface AbTestEntry {
   id: string;
   idea: string;
-  variantA: string;
-  variantB: string;
+  variantA: string | CaptionVariant;
+  variantB: string | CaptionVariant;
   winner: "A" | "B" | null;
   createdAt: string;
 }
@@ -49,14 +54,14 @@ function updateWinner(id: string, winner: "A" | "B"): AbTestEntry[] {
 
 function VariantCard({
   label,
-  text,
+  variant,
   winner,
   onPick,
   onCopy,
   copied,
 }: {
   label: string;
-  text: string;
+  variant: string | CaptionVariant;
   winner: "A" | "B" | null;
   onPick: () => void;
   onCopy: () => void;
@@ -84,8 +89,17 @@ function VariantCard({
           </Badge>
         )}
       </div>
-      <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{text}</p>
-      <div className="flex gap-2">
+      <div className="flex-1 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+        {typeof variant === "string" ? (
+          <p>{variant}</p>
+        ) : (
+          <div className="space-y-2">
+            <p className="font-bold text-foreground">Hook : {variant.hook}</p>
+            <p>Body : {variant.body}</p>
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex gap-2">
         {!isPicked && (
           <Button size="sm" onClick={onPick} className="gap-1.5">
             {t("captions.pick")}
@@ -122,12 +136,41 @@ export default function CaptionsPage() {
     return sorted.slice(0, 10).map((s) => s.tag);
   }, [data]);
 
+  const { topReelsCaptions, worstReelsCaptions } = useMemo(() => {
+    if (!data?.posts?.length) return { topReelsCaptions: [], worstReelsCaptions: [] };
+    const reels = data.posts.filter((p) => p.mediaType === "VIDEO" || p.mediaType === "REEL");
+    if (reels.length < 4) return { topReelsCaptions: [], worstReelsCaptions: [] }; // Need enough data
+
+    const sortedByEngagement = [...reels].sort(
+      (a, b) => b.likes + b.comments - (a.likes + a.comments)
+    );
+
+    // Grab top 3 and worst 3 that actually have captions
+    const topCaptions = sortedByEngagement
+      .map((p) => p.caption)
+      .filter((c) => c && c.length > 20)
+      .slice(0, 3);
+    const worstCaptions = sortedByEngagement
+      .reverse()
+      .map((p) => p.caption)
+      .filter((c) => c && c.length > 20)
+      .slice(0, 3);
+
+    return { topReelsCaptions: topCaptions, worstReelsCaptions: worstCaptions };
+  }, [data]);
+
   const [idea, setIdea] = useState("");
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState<AbTestEntry | null>(null);
   const [history, setHistory] = useState<AbTestEntry[]>([]);
   const [copiedA, setCopiedA] = useState(false);
   const [copiedB, setCopiedB] = useState(false);
+  const [testVariable, setTestVariable] = useState<"hook" | "body" | "auto">("hook");
+
+  const [aiModel, setAiModel] = useState(DEFAULT_MODEL);
+  useEffect(() => {
+    setAiModel(getModelPref("captions"));
+  }, []);
 
   useEffect(() => {
     setHistory(loadHistory());
@@ -144,6 +187,10 @@ export default function CaptionsPage() {
           idea: idea.trim(),
           language: lang,
           ...(topHashtags.length > 0 && { topHashtags }),
+          ...(topReelsCaptions.length > 0 && { topReelsCaptions }),
+          ...(worstReelsCaptions.length > 0 && { worstReelsCaptions }),
+          model: aiModel,
+          testVariable,
         }),
       });
       const json = (await res.json()) as AbTestResponse;
@@ -172,8 +219,9 @@ export default function CaptionsPage() {
     if (current?.id === id) setCurrent({ ...current, winner: variant });
   }
 
-  function copy(text: string, which: "A" | "B") {
-    void navigator.clipboard.writeText(text);
+  function copy(variant: string | CaptionVariant, which: "A" | "B") {
+    const textToCopy = typeof variant === "string" ? variant : `${variant.hook}\n\n${variant.body}`;
+    void navigator.clipboard.writeText(textToCopy);
     if (which === "A") {
       setCopiedA(true);
       setTimeout(() => setCopiedA(false), 1500);
@@ -207,17 +255,42 @@ export default function CaptionsPage() {
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button onClick={generate} disabled={loading || !idea.trim()} className="gap-2">
               <Sparkles className="h-4 w-4" />
               {loading ? t("captions.generating") : t("captions.generate")}
             </Button>
             {topHashtags.length > 0 && (
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="mr-auto flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Hash className="h-3 w-3" />
                 {topHashtags.length} hashtags performants injectés
               </span>
             )}
+            <div className="ml-auto flex items-center gap-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                  Isoler la variable
+                </label>
+                <select
+                  value={testVariable}
+                  onChange={(e) => setTestVariable(e.target.value as "hook" | "body" | "auto")}
+                  className="w-40 rounded-md border border-input bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                >
+                  <option value="hook">Différents Hooks</option>
+                  <option value="body">Différentes Descriptions</option>
+                  <option value="auto">Auto (les deux)</option>
+                </select>
+              </div>
+              <ModelSelector
+                feature="captions"
+                value={aiModel}
+                onChange={(m) => {
+                  setAiModel(m);
+                  saveModelPref("captions", m);
+                }}
+                className="w-40"
+              />
+            </div>
           </div>
         </div>
 
@@ -226,7 +299,7 @@ export default function CaptionsPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <VariantCard
               label={t("captions.variantA")}
-              text={current.variantA}
+              variant={current.variantA}
               winner={current.winner}
               onPick={() => pickWinner(current.id, "A")}
               onCopy={() => copy(current.variantA, "A")}
@@ -234,7 +307,7 @@ export default function CaptionsPage() {
             />
             <VariantCard
               label={t("captions.variantB")}
-              text={current.variantB}
+              variant={current.variantB}
               winner={current.winner}
               onPick={() => pickWinner(current.id, "B")}
               onCopy={() => copy(current.variantB, "B")}

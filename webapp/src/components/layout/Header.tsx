@@ -33,11 +33,9 @@ import {
   BookOpen,
   HelpCircle,
   Clapperboard,
-  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { InstagramProfile } from "@/types/instagram";
-import { useSession, signOut } from "next-auth/react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useT } from "@/lib/i18n";
 import {
@@ -57,7 +55,6 @@ interface HeaderProps {
 export function Header({ profile, mode, agencyName }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const { data: session } = useSession();
   const { lang, toggle } = useLanguage();
   const t = useT();
   const moreMenuRef = useRef<HTMLDivElement>(null);
@@ -119,10 +116,9 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
   const activeAccount = accounts.find((a) => a.id === activeId) ?? accounts[accounts.length - 1];
   const displayUsername =
     mode === "creator"
-      ? (activeAccount?.username ?? profile?.username ?? session?.user?.name ?? "...")
+      ? (activeAccount?.username ?? profile?.username ?? "...")
       : (agencyName ?? "...");
-  const displayPicUrl =
-    activeAccount?.profilePicUrl ?? profile?.profilePicUrl ?? session?.user?.image ?? undefined;
+  const displayPicUrl = activeAccount?.profilePicUrl ?? profile?.profilePicUrl ?? undefined;
   const displayFollowers = activeAccount?.followerCount ?? profile?.followerCount;
 
   // ── Navigation ────────────────────────────────────────────────────────
@@ -314,16 +310,6 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
                 aria-label={t("header.accounts.switch")}
                 className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-border bg-popover shadow-lg"
               >
-                {/* Session user info */}
-                {session?.user && (
-                  <div className="border-b border-border px-3 py-2.5">
-                    <p className="truncate text-xs font-medium">{session.user.name}</p>
-                    <p className="truncate text-[10px] text-muted-foreground">
-                      {session.user.email}
-                    </p>
-                  </div>
-                )}
-
                 {/* Instagram accounts */}
                 {accounts.length >= 2 && (
                   <div className="p-1">
@@ -369,20 +355,6 @@ export function Header({ profile, mode, agencyName }: HeaderProps) {
                         </button>
                       );
                     })}
-                  </div>
-                )}
-
-                {/* Sign out */}
-                {session && (
-                  <div className="border-t border-border p-1">
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-destructive"
-                      onClick={() => signOut({ callbackUrl: "/" })}
-                    >
-                      <LogOut className="h-3.5 w-3.5" />
-                      {lang === "fr" ? "Déconnexion" : "Sign out"}
-                    </button>
                   </div>
                 )}
               </div>

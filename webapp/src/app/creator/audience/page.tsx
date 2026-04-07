@@ -10,6 +10,8 @@ import { useInstagramData } from "@/hooks/useInstagramData";
 import type { AudiencePersona, BrandVoiceAudit, AudienceSegmentsResponse } from "@/types/instagram";
 import { useT } from "@/lib/i18n";
 import { loadPersonas, savePersonas } from "@/lib/personas-store";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
 // ─── Big Five axis labels ──────────────────────────────────────────────────────
 
@@ -178,16 +180,28 @@ export default function AudiencePage() {
   const [error, setError] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
+  const [aiModel, setAiModel] = useState(DEFAULT_MODEL);
+  useEffect(() => {
+    setAiModel(getModelPref("audience"));
+  }, []);
+
   // Load persisted personas on mount
   useEffect(() => {
     const saved = loadPersonas();
     if (saved) {
       setPersonas(saved.personas);
+      setBrandVoice(saved.brandVoice ?? null);
       setSavedAt(saved.savedAt);
     }
   }, []);
 
-  const isApiConnected = typeof window !== "undefined" && !!localStorage.getItem("ig_access_token");
+  const [isApiConnected, setIsApiConnected] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setIsApiConnected(!!localStorage.getItem("ig_access_token"));
+  }, []);
 
   async function handleGenerate() {
     if (!data) return;
@@ -218,6 +232,7 @@ export default function AudiencePage() {
           metrics: data.metrics,
           audienceInsights: data.audienceInsights,
           captions,
+          model: aiModel,
         }),
       });
       const json: AudienceSegmentsResponse = await res.json();
@@ -226,7 +241,7 @@ export default function AudiencePage() {
         setBrandVoice(json.brandVoice ?? null);
         setCommentCount(json.commentCount ?? 0);
         setDataSource(json.dataSource);
-        savePersonas(json.personas);
+        savePersonas(json.personas, json.brandVoice);
         setSavedAt(new Date().toISOString());
       } else {
         setError(json.error ?? "Erreur lors de l'analyse");
@@ -278,6 +293,15 @@ export default function AudiencePage() {
                 })}
               </span>
             )}
+            <ModelSelector
+              feature="audience"
+              value={aiModel}
+              onChange={(m) => {
+                setAiModel(m);
+                saveModelPref("audience", m);
+              }}
+              className="w-48 text-left"
+            />
             <Button
               onClick={handleGenerate}
               disabled={loading || !data}
@@ -302,7 +326,7 @@ export default function AudiencePage() {
         </div>
 
         {/* API connection notice */}
-        {!isApiConnected && (
+        {mounted && !isApiConnected && (
           <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
             <Lock className="h-4 w-4 shrink-0" />
             <span>

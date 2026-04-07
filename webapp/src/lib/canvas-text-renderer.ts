@@ -267,10 +267,10 @@ export function drawStyledTextBlock(ctx: CanvasRenderingContext2D, opts: DrawTex
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
   } else if (style?.shadow) {
-    ctx.shadowColor = "rgba(0,0,0,0.72)";
-    ctx.shadowBlur = fontSize * 0.3;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = fontSize * 0.5;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
   }
 
   // ── Draw each line ────────────────────────────────────────────────────────

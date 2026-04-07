@@ -17,6 +17,7 @@ interface SegmentsRequest {
   metrics: Partial<InstagramMetrics>;
   audienceInsights?: Partial<AudienceInsights>;
   captions: string[];
+  model?: string;
 }
 
 function buildPrompt(req: SegmentsRequest, comments: string[]): string {
@@ -139,7 +140,7 @@ export async function POST(request: Request): Promise<NextResponse<AudienceSegme
     }
 
     const prompt = buildPrompt(body, comments);
-    const raw = await generateText(prompt);
+    const raw = await generateText(prompt, { model: body.model });
     const parsed = JSON.parse(stripJsonFences(raw)) as {
       personas: AudiencePersona[];
       brandVoice: BrandVoiceAudit;

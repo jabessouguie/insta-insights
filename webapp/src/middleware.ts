@@ -1,12 +1,9 @@
-import { auth } from "@/auth";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default auth((req) => {
-  if (!req.auth) {
-    return NextResponse.redirect(new URL("/login", req.url));
-  }
-});
+// Auth middleware disabled — login feature hidden for this version.
+export function middleware(_req: NextRequest) {
+  return NextResponse.next();
+}
 
-export const config = {
-  matcher: ["/creator/:path*", "/agency/:path*"],
-};
+export const config = { matcher: [] };

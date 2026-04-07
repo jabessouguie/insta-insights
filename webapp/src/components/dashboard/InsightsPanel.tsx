@@ -244,39 +244,49 @@ export function InsightsPanel({ request, initialInsights, summary }: InsightsPan
         ) : displayInsights && displayInsights.length > 0 ? (
           <ul className="divide-y divide-border/50">
             {displayInsights.map((insight) => {
-              const Icon = INSIGHT_ICONS[insight.type];
+              const safeType = (insight.type as string) in INSIGHT_ICONS ? insight.type : "tip";
+              const safePriority =
+                (insight.priority as string) in PRIORITY_BADGES ? insight.priority : "low";
+
+              const Icon = INSIGHT_ICONS[safeType as keyof typeof INSIGHT_ICONS];
               return (
                 <li
                   key={insight.id}
                   className={cn(
                     "border-l-[3px] p-4 transition-colors hover:bg-muted/30",
-                    INSIGHT_COLORS[insight.type]
+                    INSIGHT_COLORS[safeType as keyof typeof INSIGHT_COLORS]
                   )}
                 >
                   <div className="flex gap-3">
                     <div
                       className={cn(
                         "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
-                        insight.type === "success"
+                        safeType === "success"
                           ? "bg-emerald-500/10"
-                          : insight.type === "warning"
+                          : safeType === "warning"
                             ? "bg-amber-500/10"
-                            : insight.type === "tip"
+                            : safeType === "tip"
                               ? "bg-violet-500/10"
                               : "bg-red-500/10"
                       )}
                     >
-                      <Icon className={cn("h-3.5 w-3.5", ICON_COLORS[insight.type])} />
+                      <Icon
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          ICON_COLORS[safeType as keyof typeof ICON_COLORS]
+                        )}
+                      />
                     </div>
 
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-2">
                         <p className="text-sm font-semibold leading-tight">{insight.title}</p>
                         <Badge
-                          variant={PRIORITY_BADGES[insight.priority]}
+                          variant={PRIORITY_BADGES[safePriority as keyof typeof PRIORITY_BADGES]}
                           className="h-4 px-1.5 text-[10px]"
                         >
-                          {priorityLabels[insight.priority]}
+                          {priorityLabels[safePriority as keyof typeof priorityLabels] ||
+                            safePriority}
                         </Badge>
                         {insight.metric && (
                           <span className="font-mono text-xs font-medium text-muted-foreground">

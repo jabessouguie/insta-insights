@@ -20,7 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  Star,
   RefreshCw,
 } from "lucide-react";
 import { ScheduleModal } from "@/components/calendar/ScheduleModal";
@@ -36,7 +35,13 @@ import type {
   ReelAudioResponse,
 } from "@/types/instagram";
 import { loadBrandSettings } from "@/lib/brand-settings-store";
-import { saveCarouselContext, saveStoriesContext } from "@/lib/content-prompt-context-store";
+import {
+  saveCarouselContext,
+  saveStoriesContext,
+  loadContentPromptContext,
+} from "@/lib/content-prompt-context-store";
+import { loadPersonas } from "@/lib/personas-store";
+import { loadReports } from "@/lib/report-store";
 import { OptimalSlotsWidget } from "@/components/creator/OptimalSlotsWidget";
 import { drawStyledTextBlock, wrapText } from "@/lib/canvas-text-renderer";
 import { ModelSelector } from "@/components/creator/ModelSelector";
@@ -130,9 +135,7 @@ async function renderSlideToBlob(
   const layout = slide.layout ?? "classic";
 
   if (layout === "center") {
-    // ── Full screen dim ────────────────────────────────────────────────────
-    ctx.fillStyle = "rgba(0,0,0,0.58)";
-    ctx.fillRect(0, 0, S, S);
+    // ── Full screen dim removed to maintain natural brightness ──────────────────────────────
     // ── Horizontal accent line above title ─────────────────────────────────
     ctx.fillStyle = accentColor;
     ctx.fillRect(S * 0.28, S * 0.4, S * 0.44, 5);
@@ -141,6 +144,8 @@ async function renderSlideToBlob(
     let y = S * 0.47;
     ctx.font = `bold 90px "${fonts.title}"`;
     ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = 35;
     for (const line of wrapText(ctx, slide.title, S - 160, 3)) {
       ctx.fillText(line, S / 2, y);
       y += 108;
@@ -166,13 +171,7 @@ async function renderSlideToBlob(
       }
     }
   } else if (layout === "top") {
-    // ── Dark gradient from top down ────────────────────────────────────────
-    const topGrad = ctx.createLinearGradient(0, 0, 0, S * 0.6);
-    topGrad.addColorStop(0, "rgba(0,0,0,0.88)");
-    topGrad.addColorStop(0.6, "rgba(0,0,0,0.55)");
-    topGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, S, S * 0.6);
+    // ── Dark gradient removed to maintain natural brightness ──────────────────────────────
     // ── Left accent bar at top ─────────────────────────────────────────────
     ctx.fillStyle = accentColor;
     ctx.fillRect(60, S * 0.07, 6, S * 0.33);
@@ -181,6 +180,8 @@ async function renderSlideToBlob(
     let y = S * 0.115;
     ctx.font = `bold 72px "${fonts.title}"`;
     ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = 30;
     for (const line of wrapText(ctx, slide.title, S - 150, 3)) {
       ctx.fillText(line, 90, y);
       y += 84;
@@ -206,9 +207,7 @@ async function renderSlideToBlob(
       }
     }
   } else if (layout === "card") {
-    // ── Subtle vignette over photo ─────────────────────────────────────────
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(0, 0, S, S);
+    // ── Subtle vignette removed to maintain natural brightness ───────────────────────
     // ── Frosted glass card ─────────────────────────────────────────────────
     const cardX = 50;
     const cardY = Math.round(S * 0.51);
@@ -254,9 +253,7 @@ async function renderSlideToBlob(
     const splitY = Math.round(S * 0.58);
     ctx.fillStyle = primaryColor;
     ctx.fillRect(0, splitY, S, S - splitY);
-    // Dark overlay on band for text readability
-    ctx.fillStyle = "rgba(0,0,0,0.42)";
-    ctx.fillRect(0, splitY, S, S - splitY);
+    // Dark overlay removed to maintain natural brightness
     // ── Accent divider line ────────────────────────────────────────────────
     ctx.fillStyle = accentColor;
     ctx.fillRect(0, splitY - 5, S, 8);
@@ -339,7 +336,7 @@ async function renderSlideToBlob(
       color: accentColor,
       align: "left",
       maxLines: 2,
-      style: { shadow: titleStyle.shadow ?? true },
+      style: { shadow: true },
       accentColor,
     });
 
@@ -450,9 +447,7 @@ async function renderStoryToBlob(
   const layout = slide.layout ?? "classic";
 
   if (layout === "center") {
-    // ── Full screen dim ────────────────────────────────────────────────────
-    ctx.fillStyle = "rgba(0,0,0,0.58)";
-    ctx.fillRect(0, 0, W, H);
+    // ── Full screen dim removed to maintain natural brightness ──────────────────────────────
     // ── Accent lines flanking the title ───────────────────────────────────
     ctx.fillStyle = accentColor;
     ctx.fillRect(W * 0.2, H * 0.38, W * 0.6, 5);
@@ -461,6 +456,8 @@ async function renderStoryToBlob(
     let y = H * 0.42;
     ctx.font = `bold 110px "${fonts.title}"`;
     ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = 45;
     for (const line of wrapTextCentered(ctx, slide.title, W - 160, 110)) {
       ctx.fillText(line, W / 2, y);
       y += 130;
@@ -480,18 +477,14 @@ async function renderStoryToBlob(
     ctx.fillStyle = accentColor;
     ctx.fillRect(W * 0.2, H - 100, W * 0.6, 5);
   } else if (layout === "top") {
-    // ── Dark gradient from top ─────────────────────────────────────────────
-    const topGrad = ctx.createLinearGradient(0, 0, 0, H * 0.52);
-    topGrad.addColorStop(0, "rgba(0,0,0,0.9)");
-    topGrad.addColorStop(0.6, "rgba(0,0,0,0.55)");
-    topGrad.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, W, H * 0.52);
+    // ── Dark gradient removed to maintain natural brightness ────────────────────────────
     // ── Centered text at top ───────────────────────────────────────────────
     ctx.textAlign = "center";
     let y = H * 0.1;
     ctx.font = `bold 104px "${fonts.title}"`;
     ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.85)";
+    ctx.shadowBlur = 40;
     for (const line of wrapTextCentered(ctx, slide.title, W - 160, 104)) {
       ctx.fillText(line, W / 2, y);
       y += 122;
@@ -511,9 +504,7 @@ async function renderStoryToBlob(
     ctx.fillStyle = accentColor;
     ctx.fillRect(W * 0.35, y + 20, W * 0.3, 6);
   } else if (layout === "card") {
-    // ── Subtle vignette ───────────────────────────────────────────────────
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(0, 0, W, H);
+    // ── Subtle vignette removed to maintain natural brightness ───────────────────────
     // ── Centered card ─────────────────────────────────────────────────────
     const cardX = 80;
     const cardY = Math.round(H * 0.5);
@@ -552,8 +543,7 @@ async function renderStoryToBlob(
     const splitY = Math.round(H * 0.6);
     ctx.fillStyle = primaryColor;
     ctx.fillRect(0, splitY, W, H - splitY);
-    ctx.fillStyle = "rgba(0,0,0,0.42)";
-    ctx.fillRect(0, splitY, W, H - splitY);
+    // Dark overlay removed
     // ── Accent divider ────────────────────────────────────────────────────
     ctx.fillStyle = accentColor;
     ctx.fillRect(0, splitY - 5, W, 8);
@@ -760,6 +750,10 @@ export default function CarouselPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<CarouselGenerateResponse | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [slideOverrides, setSlideOverrides] = useState<Array<{ title: string; body: string }>>(
+    Array.from({ length: 20 }, () => ({ title: "", body: "" }))
+  );
+  const [showOverrides, setShowOverrides] = useState(false);
   const [previewBlobs, setPreviewBlobs] = useState<string[]>([]); // object URLs
   const [previewBlobData, setPreviewBlobData] = useState<Blob[]>([]); // raw blobs for ZIP
   const [isRendering, setIsRendering] = useState(false);
@@ -900,19 +894,22 @@ export default function CarouselPage() {
     setPhotoNames((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  /** Move a photo to index 0 so it becomes the carousel cover */
-  const movePhotoToFront = useCallback((index: number) => {
-    if (index === 0) return;
+  /** Move a photo left or right */
+  const movePhoto = useCallback((index: number, dir: 1 | -1) => {
     setPhotos((prev) => {
+      if (index + dir < 0 || index + dir >= prev.length) return prev;
       const next = [...prev];
-      const [moved] = next.splice(index, 1);
-      next.unshift(moved);
+      const tmp = next[index]!;
+      next[index] = next[index + dir]!;
+      next[index + dir] = tmp;
       return next;
     });
     setPhotoNames((prev) => {
+      if (index + dir < 0 || index + dir >= prev.length) return prev;
       const next = [...prev];
-      const [moved] = next.splice(index, 1);
-      next.unshift(moved);
+      const tmp = next[index]!;
+      next[index] = next[index + dir]!;
+      next[index + dir] = tmp;
       return next;
     });
   }, []);
@@ -932,8 +929,45 @@ export default function CarouselPage() {
         .slice(-15)
         .map((p) => p.caption) ?? [];
 
+    const overridesText = slideOverrides
+      .slice(0, numSlides)
+      .map((o, i) =>
+        o.title || o.body ? `Slide ${i + 1}:\n- Titre : ${o.title}\n- Corps : ${o.body}` : ""
+      )
+      .filter(Boolean)
+      .join("\n\n");
+
+    const finalSubject =
+      subject +
+      (overridesText
+        ? `\n\nConsignes textuelles par slide (à respecter strictement) :\n${overridesText}`
+        : "");
+
+    const savedGenContext = loadContentPromptContext().carousel;
+    const personasCtx = loadPersonas();
+    let promptContext = "";
+    if (savedGenContext?.promptFragment) {
+      promptContext += `Context d'analyse de performances : ${savedGenContext.promptFragment}\n`;
+    }
+    if (personasCtx?.personas && personasCtx.personas.length > 0) {
+      promptContext += `Audience ciblée principale : ${personasCtx.personas[0].name} - ${personasCtx.personas.map((p) => p.motivations.slice(0, 2).join(", ")).join("; ")}. \n`;
+    }
+    if (personasCtx?.brandVoice) {
+      promptContext += `Ton de voix recommandé : ${personasCtx.brandVoice.dominantTone}. Suggestions vocales : ${personasCtx.brandVoice.suggestions.join(", ")}.\n`;
+    }
+
+    const recentReport = loadReports()[0]?.report;
+    if (recentReport) {
+      if (recentReport.nextMonthRecommendations) {
+        promptContext += `Recommandations stratégiques (issues du dernier rapport) : ${recentReport.nextMonthRecommendations.join(", ")}\n`;
+      }
+      if (recentReport.postPromptTemplates) {
+        promptContext += `Styles de narration et légendes recommandés : ${recentReport.postPromptTemplates.join(" | ")}\n`;
+      }
+    }
+
     const req: CarouselGenerateRequest = {
-      subject,
+      subject: finalSubject,
       audience,
       fonts,
       primaryColor,
@@ -943,6 +977,7 @@ export default function CarouselPage() {
       previousCaptions,
       language,
       model: aiModel,
+      promptContext: promptContext.trim() || undefined,
     };
 
     try {
@@ -967,10 +1002,24 @@ export default function CarouselPage() {
         await loadFont(fonts.subtitle);
         await loadFont(fonts.body);
 
+        // Layout: une pour la 1ère, une pour la dernière, une pour le reste
+        if (json.slides!.length > 0) {
+          const firstLayout = json.slides![0]?.layout || "center";
+          const lastLayout = json.slides![json.slides!.length - 1]?.layout || "split";
+          const middleLayout =
+            json.slides!.length > 2 ? json.slides![1]?.layout || "classic" : "classic";
+
+          json.slides!.forEach((s, idx) => {
+            if (idx === 0) s.layout = firstLayout;
+            else if (idx === json.slides!.length - 1) s.layout = lastLayout;
+            else s.layout = middleLayout;
+          });
+        }
+
         const renderer = slideFormat === "story" ? renderStoryToBlob : renderSlideToBlob;
         const blobs: string[] = [];
         const blobData: Blob[] = [];
-        for (const [i, slide] of json.slides.entries()) {
+        for (const [i, slide] of json.slides!.entries()) {
           const blob = await renderer(
             slide,
             photos,
@@ -978,7 +1027,7 @@ export default function CarouselPage() {
             primaryColor,
             accentColor,
             i,
-            json.slides.length
+            json.slides!.length
           );
           blobData.push(blob);
           blobs.push(URL.createObjectURL(blob));
@@ -995,7 +1044,41 @@ export default function CarouselPage() {
     }
   };
 
-  // ── Download ──────────────────────────────────────────────────────────────
+  // ── Ordering & Download ────────────────────────────────────────────────────
+  const moveSlide = (dir: 1 | -1) => {
+    if (!result?.slides) return;
+    const i = previewIndex;
+    const j = i + dir;
+    if (j < 0 || j >= result.slides.length) return;
+
+    // Swap in result.slides
+    const newSlides = [...result.slides];
+    const tempSlide = newSlides[i]!;
+    newSlides[i] = newSlides[j]!;
+    newSlides[j] = tempSlide;
+    setResult({ ...result, slides: newSlides });
+
+    // Swap in previewBlobs
+    setPreviewBlobs((prev) => {
+      const next = [...prev];
+      const tempBlobs = next[i]!;
+      next[i] = next[j]!;
+      next[j] = tempBlobs;
+      return next;
+    });
+
+    // Swap in previewBlobData
+    setPreviewBlobData((prev) => {
+      const next = [...prev];
+      const tempData = next[i]!;
+      next[i] = next[j]!;
+      next[j] = tempData;
+      return next;
+    });
+
+    setPreviewIndex(j);
+  };
+
   const downloadSlide = (index: number) => {
     const url = previewBlobs[index];
     if (!url) return;
@@ -1055,18 +1138,32 @@ export default function CarouselPage() {
           await loadFont(fonts.title);
           await loadFont(fonts.subtitle);
           await loadFont(fonts.body);
+          // Layout: une pour la 1ère, une pour la dernière, une pour le reste
+          if (json.slides!.length > 0) {
+            const firstLayout = json.slides![0]?.layout || "center";
+            const lastLayout = json.slides![json.slides!.length - 1]?.layout || "split";
+            const middleLayout =
+              json.slides!.length > 2 ? json.slides![1]?.layout || "classic" : "classic";
+
+            json.slides!.forEach((s, idx) => {
+              if (idx === 0) s.layout = firstLayout;
+              else if (idx === json.slides!.length - 1) s.layout = lastLayout;
+              else s.layout = middleLayout;
+            });
+          }
+
           const renderer = slideFormat === "story" ? renderStoryToBlob : renderSlideToBlob;
           const blobs: string[] = [];
           const blobData: Blob[] = [];
-          for (let i = 0; i < json.slides.length; i++) {
+          for (let i = 0; i < json.slides!.length; i++) {
             const blob = await renderer(
-              json.slides[i]!,
+              json.slides![i]!,
               photos,
               fonts,
               primaryColor,
               accentColor,
               i,
-              json.slides.length
+              json.slides!.length
             );
             blobData.push(blob);
             blobs.push(URL.createObjectURL(blob));
@@ -1137,9 +1234,23 @@ export default function CarouselPage() {
         await loadFont(fonts.title);
         await loadFont(fonts.body);
 
+        // Layout: une pour la 1ère, une pour la dernière, une pour le reste
+        if (json.slides!.length > 0) {
+          const firstLayout = json.slides![0]?.layout || "center";
+          const lastLayout = json.slides![json.slides!.length - 1]?.layout || "split";
+          const middleLayout =
+            json.slides!.length > 2 ? json.slides![1]?.layout || "classic" : "classic";
+
+          json.slides!.forEach((s, idx) => {
+            if (idx === 0) s.layout = firstLayout;
+            else if (idx === json.slides!.length - 1) s.layout = lastLayout;
+            else s.layout = middleLayout;
+          });
+        }
+
         const blobs: string[] = [];
         const blobData: Blob[] = [];
-        for (const [i, slide] of json.slides.entries()) {
+        for (const [i, slide] of json.slides!.entries()) {
           const blob = await renderStoryToBlob(
             slide,
             photos,
@@ -1147,7 +1258,7 @@ export default function CarouselPage() {
             primaryColor,
             accentColor,
             i,
-            json.slides.length
+            json.slides!.length
           );
           blobData.push(blob);
           blobs.push(URL.createObjectURL(blob));
@@ -1302,7 +1413,7 @@ export default function CarouselPage() {
       const res = await fetch("/api/carousel/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posts: carouselPosts, profile: data.profile }),
+        body: JSON.stringify({ posts: carouselPosts, profile: data.profile, model: aiModel }),
       });
       const json: { success: boolean; analysis?: typeof carouselAnalysis } = await res.json();
       if (json.success && json.analysis) setCarouselAnalysis(json.analysis);
@@ -1449,6 +1560,53 @@ export default function CarouselPage() {
                       </button>
                     ))}
                   </div>
+
+                  {/* Manual Title / Body overrides */}
+                  <div className="mt-4 border-t border-border pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowOverrides(!showOverrides)}
+                      className="text-xs font-semibold text-primary hover:text-primary/80 hover:underline"
+                    >
+                      {showOverrides
+                        ? "Cacher les textes optionnels"
+                        : "✍️ Écrire le texte des slides manuellement (Optionnel)"}
+                    </button>
+                    {showOverrides && (
+                      <div className="mt-3 space-y-3">
+                        {Array.from({ length: numSlides }).map((_, i) => (
+                          <div key={i} className="rounded-lg border border-border bg-muted/20 p-3">
+                            <span className="mb-2 block text-xs font-bold text-muted-foreground">
+                              Slide {i + 1}
+                            </span>
+                            <div className="space-y-2">
+                              <input
+                                placeholder="Titre..."
+                                value={slideOverrides[i]?.title || ""}
+                                onChange={(e) => {
+                                  const next = [...slideOverrides];
+                                  next[i] = { ...next[i]!, title: e.target.value };
+                                  setSlideOverrides(next);
+                                }}
+                                className="w-full rounded border border-border px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+                              />
+                              <textarea
+                                placeholder="Corps de texte..."
+                                value={slideOverrides[i]?.body || ""}
+                                rows={2}
+                                onChange={(e) => {
+                                  const next = [...slideOverrides];
+                                  next[i] = { ...next[i]!, body: e.target.value };
+                                  setSlideOverrides(next);
+                                }}
+                                className="w-full resize-none rounded border border-border px-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1501,15 +1659,24 @@ export default function CarouselPage() {
                               Cover
                             </span>
                           )}
-                          {/* Move-to-front button on non-cover photos */}
+                          {/* Move left button */}
                           {i > 0 && (
                             <button
                               type="button"
-                              title={t("carousel.photos.cover")}
-                              onClick={() => movePhotoToFront(i)}
-                              className="absolute -left-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                              onClick={() => movePhoto(i, -1)}
+                              className="absolute -left-1.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
                             >
-                              <Star className="h-2.5 w-2.5" />
+                              <ChevronLeft className="h-2.5 w-2.5" />
+                            </button>
+                          )}
+                          {/* Move right button */}
+                          {i < photos.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => movePhoto(i, 1)}
+                              className="absolute -right-1.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100"
+                            >
+                              <ChevronRight className="h-2.5 w-2.5" />
                             </button>
                           )}
                           {/* Remove button */}
@@ -1803,44 +1970,6 @@ export default function CarouselPage() {
                 </CardContent>
               </Card>
 
-              {/* Model selector */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold">
-                    {t("model.selector.label")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {(
-                      [
-                        ["gemini-3-flash-preview", t("model.flash3.label"), t("model.flash3.desc")],
-                        [
-                          "gemini-3.1-flash-preview",
-                          t("model.flash31.label"),
-                          t("model.flash31.desc"),
-                        ],
-                        ["gemini-3.1-pro-preview", t("model.pro31.label"), t("model.pro31.desc")],
-                      ] as const
-                    ).map(([id, label, desc]) => (
-                      <button
-                        key={id}
-                        onClick={() => setAiModel(id)}
-                        title={desc}
-                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${
-                          aiModel === id
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        <span className="text-xs font-semibold">{label}</span>
-                        <span className="text-[10px] leading-tight opacity-70">{desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Model selector + Generate button */}
               <ModelSelector
                 feature="carousel"
@@ -1950,9 +2079,35 @@ export default function CarouselPage() {
                     )}
                   </div>
 
-                  {/* Download buttons */}
+                  {/* Download and Reorder buttons */}
                   {previewBlobs.length > 0 && (
-                    <>
+                    <div className="space-y-2">
+                      {/* Reorder */}
+                      {previewBlobs.length > 1 && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 gap-1.5 text-xs"
+                            disabled={previewIndex === 0}
+                            onClick={() => moveSlide(-1)}
+                          >
+                            <ChevronLeft className="h-3.5 w-3.5" />
+                            Déplacer gauche
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 gap-1.5 text-xs"
+                            disabled={previewIndex === previewBlobs.length - 1}
+                            onClick={() => moveSlide(1)}
+                          >
+                            Déplacer droite
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -1978,7 +2133,7 @@ export default function CarouselPage() {
                           {t("carousel.posting.order")}
                         </p>
                       )}
-                    </>
+                    </div>
                   )}
 
                   {/* Instagram description */}
@@ -2092,8 +2247,8 @@ export default function CarouselPage() {
               <div>
                 <p className="text-sm font-semibold">Analyser mes carousels</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Identifie les types de slides et angles qui performent le mieux via IA. (Gemini
-                  Vision utilisé si disponible)
+                  Identifie les dynamiques de pertes d'attention et le type de slide qui performe le
+                  mieux (via l'IA sélectionnée).
                 </p>
               </div>
               <Button
@@ -2625,43 +2780,15 @@ export default function CarouselPage() {
                 </CardContent>
               </Card>
 
-              {/* Model selector — reused */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-semibold">
-                    {t("model.selector.label")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {(
-                      [
-                        ["gemini-3-flash-preview", t("model.flash3.label"), t("model.flash3.desc")],
-                        [
-                          "gemini-3.1-flash-preview",
-                          t("model.flash31.label"),
-                          t("model.flash31.desc"),
-                        ],
-                        ["gemini-3.1-pro-preview", t("model.pro31.label"), t("model.pro31.desc")],
-                      ] as const
-                    ).map(([id, label, desc]) => (
-                      <button
-                        key={id}
-                        onClick={() => setAiModel(id)}
-                        title={desc}
-                        className={`flex flex-col items-start rounded-lg border px-3 py-2 text-left transition-colors ${
-                          aiModel === id
-                            ? "border-primary bg-primary/10 text-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        <span className="text-xs font-semibold">{label}</span>
-                        <span className="text-[10px] leading-tight opacity-70">{desc}</span>
-                      </button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+              <ModelSelector
+                feature="carousel"
+                value={aiModel}
+                onChange={(m) => {
+                  setAiModel(m);
+                  saveModelPref("carousel", m);
+                }}
+                className="mb-2"
+              />
 
               {/* Generate button */}
               <Button

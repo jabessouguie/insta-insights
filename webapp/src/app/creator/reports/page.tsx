@@ -30,6 +30,7 @@ import {
   type SavedReport,
   type ReportPeriodType,
 } from "@/lib/report-store";
+import { loadPersonas } from "@/lib/personas-store";
 import { ModelSelector } from "@/components/creator/ModelSelector";
 import { getModelPref, saveModelPref, DEFAULT_MODEL } from "@/lib/model-prefs-store";
 
@@ -322,10 +323,24 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
+      const personasCtx = loadPersonas();
+      let promptContext = "";
+      if (personasCtx?.personas && personasCtx.personas.length > 0) {
+        promptContext += `Audience ciblée principale : ${personasCtx.personas[0].name} - ${personasCtx.personas.map((p) => p.motivations.slice(0, 2).join(", ")).join("; ")}. \n`;
+      }
+      if (personasCtx?.brandVoice) {
+        promptContext += `Ton de voix recommandé : ${personasCtx.brandVoice.dominantTone}. Suggestions vocales : ${personasCtx.brandVoice.suggestions.join(", ")}.\n`;
+      }
+
       const res = await fetch("/api/report/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data, periodType, model: reportModel }),
+        body: JSON.stringify({
+          data,
+          periodType,
+          model: reportModel,
+          promptContext: promptContext.trim() || undefined,
+        }),
       });
       const json: ReportGenerateResponse = await res.json();
       if (json.success && json.report) {

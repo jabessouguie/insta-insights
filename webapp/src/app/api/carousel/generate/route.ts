@@ -165,7 +165,7 @@ export async function POST(request: Request): Promise<NextResponse<CarouselGener
 
     // If photos are provided and provider is Gemini, use vision for aesthetic analysis
     const { getActiveProvider, callGeminiVision } = await import("@/lib/ai-provider");
-    const activeProvider = getActiveProvider();
+    const activeProvider = getActiveProvider(body.model);
 
     let rawText: string;
 

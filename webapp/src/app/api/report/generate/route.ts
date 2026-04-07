@@ -8,11 +8,13 @@ interface ReportGenerateRequest {
   data: InstagramAnalytics;
   periodType?: "weekly" | "monthly";
   model?: string;
+  promptContext?: string;
 }
 
 function buildReportPrompt(
   data: InstagramAnalytics,
-  periodType: "weekly" | "monthly" = "monthly"
+  periodType: "weekly" | "monthly" = "monthly",
+  promptContext?: string
 ): string {
   const { profile, metrics, audienceInsights, contentInteractions, reachInsights, posts } = data;
 
@@ -87,10 +89,12 @@ ${topCaptions}
     .slice(0, 3)
     .map((h) => `${h.hour}h`)
     .join(", ")}
+${promptContext ? `\n## Contexte additionnel (Audience & Ton de voix)\n${promptContext}` : ""}
 
 ## Tâche
 
 Génère un rapport exécutif ${periodLabel} concis et actionnable. Adopte un ton professionnel et direct. Utilise des données réelles tirées des métriques ci-dessus.${isWeekly ? "\nPour un rapport hebdomadaire, concentre-toi sur les tendances immédiates, les contenus de la semaine et les actions à prendre dès maintenant." : ""}
+
 
 ## Format JSON STRICT (aucun markdown)
 
@@ -127,6 +131,7 @@ export async function POST(request: Request): Promise<NextResponse<ReportGenerat
       ? ((body as ReportGenerateRequest).periodType ?? "monthly")
       : "monthly";
     const model = isWrapped ? (body as ReportGenerateRequest).model : undefined;
+    const promptContext = isWrapped ? (body as ReportGenerateRequest).promptContext : undefined;
 
     if (!isAIConfigured()) {
       return NextResponse.json(
@@ -135,7 +140,7 @@ export async function POST(request: Request): Promise<NextResponse<ReportGenerat
       );
     }
 
-    const prompt = buildReportPrompt(data, periodType);
+    const prompt = buildReportPrompt(data, periodType, promptContext);
     const raw = await generateText(prompt, { model });
     const report = JSON.parse(stripJsonFences(raw));
     report.generatedAt = report.generatedAt ?? new Date().toISOString();

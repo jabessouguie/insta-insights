@@ -32,8 +32,23 @@ export const GEMINI_FLASH_31 = "gemini-3.1-flash-preview"; // Gemini 3.1 Flash �
 export const GEMINI_FLASH_LITE = "gemini-3.1-flash-lite-preview"; // Gemini 3.1 Lite — cost-efficient
 export const GEMINI_PRO = "gemini-3.1-pro-preview"; // Gemini 3.1 Pro — most capable
 
-/** Detect which provider to use, based on env vars. */
-export function getActiveProvider(): AIProvider {
+/** Detect which provider to use, based on env vars and requested model. */
+export function getActiveProvider(requestedModel?: string): AIProvider {
+  if (requestedModel) {
+    if (requestedModel.startsWith("claude") && process.env.ANTHROPIC_API_KEY) return "anthropic";
+    if (
+      (requestedModel.startsWith("gpt") || /^o\d/.test(requestedModel)) &&
+      process.env.OPENAI_API_KEY
+    )
+      return "openai";
+    if (
+      (requestedModel.startsWith("gpt") || /^o\d/.test(requestedModel)) &&
+      process.env.OPENAI_BASE_URL
+    )
+      return "openai-compatible";
+    if (requestedModel.startsWith("gemini") && process.env.GEMINI_API_KEY) return "gemini";
+  }
+
   const explicit = process.env.AI_PROVIDER as AIProvider | undefined;
   if (explicit && explicit in DEFAULT_MODELS) return explicit;
   // Auto-detect from available keys (priority order)
@@ -90,8 +105,8 @@ export async function generateText(
   prompt: string,
   options: GenerateTextOptions = {}
 ): Promise<string> {
-  const provider = getActiveProvider();
   const requested = options.model;
+  const provider = getActiveProvider(requested);
   const model =
     requested && isModelCompatible(requested, provider) ? requested : getDefaultModel(provider);
   const maxTokens = options.maxTokens ?? 4096;
@@ -206,7 +221,7 @@ export async function generateTextStream(
   options: GenerateTextOptions = {}
 ): Promise<ReadableStream<Uint8Array>> {
   const encoder = new TextEncoder();
-  const provider = getActiveProvider();
+  const provider = getActiveProvider(options.model);
 
   if (provider === "gemini") {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
