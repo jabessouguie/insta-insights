@@ -23,6 +23,7 @@ import {
   EyeOff,
   FileText,
   LayoutGrid,
+  History,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -61,6 +62,7 @@ import type { BrandPitchResponse } from "@/app/api/collabs/brand-pitch/route";
 import { captureEvent } from "@/lib/posthog";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
+import { CollabHistoryPanel } from "@/components/creator/CollabHistoryPanel";
 
 // ─── Type badge colors ─────────────────────────────────────────────────────────
 
@@ -1633,7 +1635,7 @@ export default function CollabsPage() {
   const { lang } = useLanguage();
   const { data } = useInstagramData();
   const { data: session } = useSession();
-  const [pageTab, setPageTab] = useState<"finder" | "tracker">("finder");
+  const [pageTab, setPageTab] = useState<"finder" | "tracker" | "history">("finder");
   const [location, setLocation] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState("");
@@ -1891,6 +1893,13 @@ export default function CollabsPage() {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setPageTab("history")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${pageTab === "history" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <History className="h-3.5 w-3.5" />
+              Historique
+            </button>
           </div>
         </div>
 
@@ -1898,6 +1907,9 @@ export default function CollabsPage() {
         {pageTab === "tracker" && (
           <CollabTrackerBoard trackings={trackings} onUpdate={handleTrackingUpdate} />
         )}
+
+        {/* History panel */}
+        {pageTab === "history" && <CollabHistoryPanel />}
 
         {/* Search form + results */}
         {pageTab === "finder" && (
