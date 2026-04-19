@@ -20,10 +20,10 @@ const STORAGE_KEY = "model_prefs_v1";
 export const MODEL_OPTIONS: Array<{ label: string; value: string; provider: string }> = [
   { label: "Gemini Flash (rapide)", value: "gemini-3-flash-preview", provider: "gemini" },
   { label: "Gemini Pro (puissant)", value: "gemini-3.1-pro-preview", provider: "gemini" },
-  { label: "Claude Sonnet 4.6", value: "claude-sonnet-4-6", provider: "anthropic" },
-  { label: "Claude Opus 4.6", value: "claude-opus-4-6", provider: "anthropic" },
-  { label: "GPT-4.1 (flagship)", value: "gpt-4.1", provider: "openai" },
-  { label: "GPT-4.1 mini (rapide)", value: "gpt-4.1-mini", provider: "openai" },
+  { label: "Claude 3.7 Sonnet", value: "claude-3-7-sonnet-20250219", provider: "anthropic" },
+  { label: "Claude 3.5 Sonnet", value: "claude-3-5-sonnet-20241022", provider: "anthropic" },
+  { label: "GPT-4o (flagship)", value: "gpt-4o", provider: "openai" },
+  { label: "GPT-4o mini (rapide)", value: "gpt-4o-mini", provider: "openai" },
   { label: "o3 (raisonnement)", value: "o3", provider: "openai" },
   { label: "o4-mini (raisonnement rapide)", value: "o4-mini", provider: "openai" },
 ];

@@ -8,6 +8,7 @@ export interface BrandPitchRequest {
   brandName: string;
   profile: Partial<InstagramProfile>;
   language?: "fr" | "en";
+  model?: string;
   posts?: { caption: string }[];
   topCountries?: string[];
   audienceGender?: { female?: number; male?: number };
@@ -37,6 +38,7 @@ export async function POST(request: Request): Promise<NextResponse<BrandPitchRes
       audienceGender,
       engagementRate,
       followerCount,
+      model,
     } = body;
 
     if (!brandName?.trim()) {
@@ -101,7 +103,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
   }
 }`;
 
-    const raw = await generateText(prompt);
+    const raw = await generateText(prompt, { model });
     const clean = stripJsonFences(raw);
     const parsed = JSON.parse(clean) as BrandPitchResponse["data"];
 

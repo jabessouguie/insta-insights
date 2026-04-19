@@ -9,6 +9,7 @@ export interface CollabEmailRequest {
   collab: CollabMatch;
   profile: Partial<InstagramProfile>;
   language?: "fr" | "en";
+  model?: string;
   /** When true, generates a follow-up reminder email referencing the initial contact */
   followUp?: boolean;
   /** Creator first name from Identity settings — used to sign the email */
@@ -34,6 +35,7 @@ export async function POST(request: Request): Promise<NextResponse<CollabEmailRe
       followUp = false,
       creatorFirstName,
       pastCollabsContext,
+      model,
     } = body;
 
     if (!isAIConfigured()) {
@@ -176,7 +178,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
 }${feedbackLine}`
       : prompt;
 
-    const rawText = await generateText(finalPrompt);
+    const rawText = await generateText(finalPrompt, { model });
     const raw = stripJsonFences(rawText);
     const parsed = JSON.parse(raw);
 

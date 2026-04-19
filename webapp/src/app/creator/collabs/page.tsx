@@ -63,6 +63,8 @@ import { captureEvent } from "@/lib/posthog";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 import { CollabHistoryPanel } from "@/components/creator/CollabHistoryPanel";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref } from "@/lib/model-prefs-store";
 
 // ─── Type badge colors ─────────────────────────────────────────────────────────
 
@@ -378,12 +380,14 @@ function DMPanel({
   tracking,
   onTrackingUpdate,
   language,
+  aiModel,
 }: {
   collab: CollabMatch;
   profile: { username?: string; followerCount?: number };
   tracking: CollabTracking;
   onTrackingUpdate: (t: CollabTracking) => void;
   language?: "fr" | "en";
+  aiModel?: string;
 }) {
   const [dmText, setDmText] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -400,7 +404,7 @@ function DMPanel({
         const res = await fetch("/api/collabs/dm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ collab, profile, feedback, language }),
+          body: JSON.stringify({ collab, profile, feedback, language, model: aiModel }),
         });
         const json = await res.json();
         if (json.success && json.data) setDmText(json.data.message as string);
@@ -512,6 +516,7 @@ function EmailPanel({
   onTrackingUpdate,
   instagramData,
   language,
+  aiModel,
 }: {
   collab: CollabMatch;
   profile: { username?: string; followerCount?: number };
@@ -519,6 +524,7 @@ function EmailPanel({
   onTrackingUpdate: (t: CollabTracking) => void;
   instagramData?: InstagramAnalytics;
   language?: "fr" | "en";
+  aiModel?: string;
 }) {
   const t = useT();
   const [emailData, setEmailData] = useState<{ subject: string; body: string } | null>(null);
@@ -618,6 +624,7 @@ function EmailPanel({
             profile,
             feedback,
             language,
+            model: aiModel,
             creatorFirstName: loadUserProfile().firstName || undefined,
             pastCollabsContext: formatPastCollabsForPrompt(loadPastCollabs()) || undefined,
           }),
@@ -677,6 +684,7 @@ function EmailPanel({
           sentEmailBody: sentBody,
           prospectReply: prospectReplyText.trim(),
           language,
+          model: aiModel,
         }),
       });
       const data = (await res.json()) as { success: boolean; replies?: string[]; error?: string };
@@ -934,6 +942,7 @@ function CollabCard({
   onTrackingUpdate,
   instagramData,
   language,
+  aiModel,
 }: {
   collab: CollabMatch;
   profile: { username?: string; followerCount?: number; bio?: string };
@@ -942,6 +951,7 @@ function CollabCard({
   onTrackingUpdate: (t: CollabTracking) => void;
   language?: "fr" | "en";
   instagramData?: InstagramAnalytics;
+  aiModel?: string;
 }) {
   const t = useT();
 
@@ -1058,6 +1068,7 @@ function CollabCard({
               tracking={tracking}
               onTrackingUpdate={onTrackingUpdate}
               language={language}
+              aiModel={aiModel}
             />
           </div>
         )}
@@ -1083,6 +1094,7 @@ function CollabCard({
                 onTrackingUpdate={onTrackingUpdate}
                 instagramData={instagramData}
                 language={language}
+                aiModel={aiModel}
               />
             </div>
           </div>
@@ -1380,10 +1392,12 @@ function QuickPitchPanel({
   profile,
   instagramData,
   language,
+  aiModel,
 }: {
   profile: { username?: string; followerCount?: number; bio?: string };
   instagramData?: InstagramAnalytics;
   language?: "fr" | "en";
+  aiModel?: string;
 }) {
   const [brandName, setBrandName] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1418,6 +1432,7 @@ function QuickPitchPanel({
           audienceGender: instagramData?.audienceInsights?.genderSplit,
           engagementRate: instagramData?.metrics?.engagementRate,
           followerCount: instagramData?.profile?.followerCount,
+          model: aiModel,
         }),
       });
       const json = (await res.json()) as BrandPitchResponse;
@@ -1645,6 +1660,7 @@ export default function CollabsPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState("");
   const [showHidden, setShowHidden] = useState(false);
+  const [aiModel, setAiModel] = useState<string>(getModelPref("collabs"));
 
   // Tracking state
   const [trackings, setTrackings] = useState<Record<string, CollabTracking>>({});
@@ -1743,6 +1759,7 @@ export default function CollabsPage() {
           excludeNames,
           count,
           language: lang,
+          model: aiModel,
         }),
       });
       const json = await res.json();
@@ -1914,11 +1931,22 @@ export default function CollabsPage() {
         {/* Search form + results */}
         {pageTab === "finder" && (
           <>
+            <div className="mb-4">
+              <ModelSelector
+                feature="collabs"
+                value={aiModel}
+                onChange={(m) => {
+                  setAiModel(m);
+                  saveModelPref("collabs", m);
+                }}
+              />
+            </div>
             {/* Quick brand pitch */}
             <QuickPitchPanel
               profile={data?.profile ?? {}}
               instagramData={data ?? undefined}
               language={lang}
+              aiModel={aiModel}
             />
 
             <Card className="mb-8">
@@ -2183,6 +2211,7 @@ export default function CollabsPage() {
                       onTrackingUpdate={handleTrackingUpdate}
                       instagramData={data ?? undefined}
                       language={lang}
+                      aiModel={aiModel}
                     />
                   );
                 })}

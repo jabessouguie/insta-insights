@@ -48,6 +48,7 @@ export interface CollabFinderRequest {
    * (reason, summary, potentialRevenue, …).
    */
   language?: "fr" | "en";
+  model?: string;
 }
 
 export interface CollabFinderResponse {
@@ -59,7 +60,15 @@ export interface CollabFinderResponse {
 export async function POST(request: Request): Promise<NextResponse<CollabFinderResponse>> {
   try {
     const body: CollabFinderRequest = await request.json();
-    const { location, interests, profile, excludeNames = [], count = 15, language = "fr" } = body;
+    const {
+      location,
+      interests,
+      profile,
+      excludeNames = [],
+      count = 15,
+      language = "fr",
+      model,
+    } = body;
     const n = Math.max(1, Math.min(count, 100)); // cap at 100 for sanity
 
     if (!location || !interests?.length) {
@@ -216,7 +225,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) — le tableau collabs doit con
 
 collabFormats doit être un tableau non-vide choisi parmi : partenariat, nuitee_offerte, code_promo, sponsorise, ugc, ambassador. Sélectionne 1 à 3 formats adaptés au type et à la niche du partenaire.`;
 
-    const raw = await generateText(prompt);
+    const raw = await generateText(prompt, { model });
     const rawClean = stripJsonFences(raw);
     const parsed = JSON.parse(rawClean) as { collabs: CollabMatch[]; summary: string };
 

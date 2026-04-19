@@ -8,6 +8,7 @@ interface ReplySuggestRequest {
   sentEmailBody: string;
   prospectReply: string;
   language?: "fr" | "en";
+  model?: string;
 }
 
 interface ReplySuggestResponse {
@@ -19,7 +20,7 @@ interface ReplySuggestResponse {
 export async function POST(request: Request): Promise<NextResponse<ReplySuggestResponse>> {
   try {
     const body: ReplySuggestRequest = await request.json();
-    const { collabName, sentEmailBody, prospectReply, language = "fr" } = body;
+    const { collabName, sentEmailBody, prospectReply, language = "fr", model } = body;
 
     if (!collabName?.trim()) {
       return NextResponse.json(
@@ -73,7 +74,7 @@ Rules:
 - Reply ONLY with a JSON array of 3 strings, no markdown fences, no keys:
 ["reply 1", "reply 2", "reply 3"]`;
 
-    const rawText = await generateText(prompt, { model: GEMINI_FLASH, maxTokens: 600 });
+    const rawText = await generateText(prompt, { model: model || GEMINI_FLASH, maxTokens: 600 });
     // Strip potential JSON fences
     const cleaned = rawText
       .replace(/^```(?:json)?\s*/i, "")

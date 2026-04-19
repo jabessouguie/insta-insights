@@ -10,6 +10,7 @@ export interface CollabDMRequest {
   profile: Partial<InstagramProfile>;
   feedback?: string;
   language?: "fr" | "en";
+  model?: string;
 }
 
 export interface CollabDMResponse {
@@ -21,7 +22,7 @@ export interface CollabDMResponse {
 export async function POST(request: Request): Promise<NextResponse<CollabDMResponse>> {
   try {
     const body: CollabDMRequest = await request.json();
-    const { collab, profile, feedback, language = "fr" } = body;
+    const { collab, profile, feedback, language = "fr", model } = body;
     const lang = language === "fr" ? "français" : "English";
 
     if (!isAIConfigured()) {
@@ -54,7 +55,7 @@ Règles STRICTES :
 - Rédige uniquement le texte du message, rien d'autre
 ${feedback ? `\nRetours sur la version précédente : ${feedback}` : ""}`;
 
-    const message = await generateText(prompt);
+    const message = await generateText(prompt, { model });
 
     return NextResponse.json({ success: true, data: { message: message.trim() } });
   } catch (error) {

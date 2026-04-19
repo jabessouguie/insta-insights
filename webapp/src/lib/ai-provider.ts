@@ -21,7 +21,7 @@ export type AIProvider = "gemini" | "anthropic" | "openai" | "openai-compatible"
 
 const DEFAULT_MODELS: Record<AIProvider, string> = {
   gemini: "gemini-3-flash-preview",
-  anthropic: "claude-sonnet-4-6",
+  anthropic: "claude-3-7-sonnet-20250219",
   openai: "gpt-4o",
   "openai-compatible": "llama3",
 };
