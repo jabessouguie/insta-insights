@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Upload, X, Sparkles, Loader2, Plus, FileText, Trash2 } from "lucide-react";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref } from "@/lib/model-prefs-store";
 import type { GuideType } from "@/types/instagram";
 import type { GuideGenerateRequest } from "@/app/api/guide/generate/route";
 
@@ -60,6 +62,7 @@ export default function GuidePage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedHtml, setGeneratedHtml] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [aiModel, setAiModel] = useState<string>(getModelPref("guide"));
 
   const GUIDE_TYPES: { value: GuideType; label: string }[] = [
     { value: "travel", label: t("guide.type.travel") },
@@ -93,7 +96,8 @@ export default function GuidePage() {
         authorName: authorName || undefined,
         accentColor,
         language: lang as "fr" | "en",
-      };
+        model: aiModel,
+      } as GuideGenerateRequest & { model?: string };
 
       const res = await fetch("/api/guide/generate", {
         method: "POST",
@@ -333,6 +337,17 @@ export default function GuidePage() {
 
             {/* Generate button */}
             {error && <p className="text-sm text-destructive">{error}</p>}
+
+            <ModelSelector
+              feature="guide"
+              value={aiModel}
+              onChange={(m) => {
+                setAiModel(m);
+                saveModelPref("guide", m);
+              }}
+              className="mb-2"
+            />
+
             <Button
               onClick={handleGenerate}
               disabled={isGenerating}

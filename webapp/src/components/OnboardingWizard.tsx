@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   BookOpen,
   Handshake,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isOnboardingCompleted, markStepSeen, completeOnboarding } from "@/lib/onboarding-store";
@@ -30,7 +29,6 @@ const STEPS = [
     cta: "Commencer",
     items: [
       { icon: LayoutPanelLeft, text: "Génère des carrousels professionnels avec l'IA" },
-      { icon: FileText, text: "Crée un Media Kit exportable en PDF" },
       { icon: Handshake, text: "Trouve des collabs et pitche les marques en un clic" },
       { icon: BookOpen, text: "Transforme tes notes en guides PDF structurés" },
     ],
@@ -61,7 +59,6 @@ const STEPS = [
     modules: [
       { href: "/creator/dashboard", label: "Dashboard", desc: "Tes métriques en un coup d'œil" },
       { href: "/creator/carousel", label: "Carrousel IA", desc: "Génère des posts en secondes" },
-      { href: "/creator/mediakit", label: "Media Kit", desc: "Impressionne les marques" },
       { href: "/creator/collabs", label: "Collabs", desc: "Trouve et pitche des partenaires" },
     ],
   },

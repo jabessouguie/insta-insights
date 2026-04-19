@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   UploadCloud,
-  FileText,
   Handshake,
   Sparkles,
   TrendingUp,
@@ -139,34 +138,7 @@ const GUIDES = [
     ],
     tip: "💡 Si l'IA retourne des erreurs ou des réponses vides, vérifie que ta clé API est valide et que ton quota n'est pas épuisé.",
   },
-  {
-    id: "mediakit",
-    icon: FileText,
-    color: "text-emerald-400",
-    bg: "bg-emerald-400/10",
-    title: "Créer et exporter ton Media Kit",
-    intro:
-      "Le Media Kit génère automatiquement un document PDF professionnel à partir de tes vraies analytics Instagram.",
-    steps: [
-      {
-        title: "Personnaliser ton profil",
-        body: "Va sur /creator/settings pour renseigner ton nom, tagline, services proposés, email de contact et tarif par post. Ces informations s'intègrent automatiquement dans le Media Kit.",
-      },
-      {
-        title: "Choisir un thème",
-        body: "Depuis /creator/mediakit, sélectionne parmi les 10 thèmes disponibles (Forest, Ocean, Neon, Pastel…). Le preview se met à jour en temps réel.",
-      },
-      {
-        title: "Exporter en PDF",
-        body: "Clique sur le bouton d'export. Un nouvel onglet s'ouvre avec ton Media Kit HTML complet — la boîte de dialogue d'impression de ton navigateur apparaît automatiquement. Sélectionne \"Enregistrer en PDF\".",
-      },
-      {
-        title: "Partager avec les marques",
-        body: "Tu peux aussi copier le lien de partage pour envoyer ton Media Kit directement sans PDF.",
-      },
-    ],
-    tip: '💡 Pour un meilleur rendu PDF : dans les options d\'impression, active "Graphiques d\'arrière-plan" et désactive "En-têtes et pieds de page".',
-  },
+
   {
     id: "collabs",
     icon: Handshake,

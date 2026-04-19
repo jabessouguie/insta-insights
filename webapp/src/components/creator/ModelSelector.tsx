@@ -16,6 +16,9 @@ const FEATURE_LABELS: Record<ModelFeature, string> = {
   report: "Modèle IA (rapport)",
   audience: "Modèle IA (audience)",
   captions: "Modèle IA (légendes)",
+  ugc: "Modèle IA (UGC)",
+  guide: "Modèle IA (guide)",
+  collabs: "Modèle IA (collabs)",
 };
 
 export function ModelSelector({ feature, value, onChange, className }: ModelSelectorProps) {

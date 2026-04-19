@@ -3,7 +3,15 @@
  * Allows the user to choose a specific model for carousel, insights, and report generation.
  */
 
-export type ModelFeature = "carousel" | "insights" | "report" | "audience" | "captions";
+export type ModelFeature =
+  | "carousel"
+  | "insights"
+  | "report"
+  | "audience"
+  | "captions"
+  | "ugc"
+  | "guide"
+  | "collabs";
 
 export type ModelPrefs = Partial<Record<ModelFeature, string>>;
 

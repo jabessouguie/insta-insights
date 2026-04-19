@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<NextResponse<UGCGenerateResponse>> {
   try {
-    const body: UGCGenerateRequest = await request.json();
-    const { brandName, constraints, language = "fr" } = body;
+    const body: UGCGenerateRequest & { model?: string } = await request.json();
+    const { brandName, constraints, language = "fr", model } = body;
 
     if (!brandName?.trim()) {
       return NextResponse.json(
@@ -57,7 +57,7 @@ Reply ONLY with valid JSON (no markdown fences, no extra text):
   ]
 }`;
 
-    const rawText = await generateText(prompt, { model: GEMINI_FLASH });
+    const rawText = await generateText(prompt, { model: model ?? GEMINI_FLASH });
     const parsed = JSON.parse(stripJsonFences(rawText)) as UGCScript;
 
     return NextResponse.json({ success: true, ugc: parsed });

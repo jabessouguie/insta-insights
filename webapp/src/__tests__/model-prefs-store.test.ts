@@ -47,10 +47,12 @@ describe("saveModelPref", () => {
     saveModelPref("carousel", "gpt-4o");
     saveModelPref("insights", "claude-sonnet-4-6");
     saveModelPref("report", "gemini-3.1-pro-preview");
+    saveModelPref("collabs", "gpt-4o");
     const prefs = loadModelPrefs();
     expect(prefs.carousel).toBe("gpt-4o");
     expect(prefs.insights).toBe("claude-sonnet-4-6");
     expect(prefs.report).toBe("gemini-3.1-pro-preview");
+    expect(prefs.collabs).toBe("gpt-4o");
   });
 
   it("overwrites an existing pref", () => {
@@ -62,7 +64,16 @@ describe("saveModelPref", () => {
 
 describe("getModelPref", () => {
   it("returns DEFAULT_MODEL when nothing is stored", () => {
-    const features: ModelFeature[] = ["carousel", "insights", "report"];
+    const features: ModelFeature[] = [
+      "carousel",
+      "insights",
+      "report",
+      "ugc",
+      "guide",
+      "collabs",
+      "audience",
+      "captions",
+    ];
     for (const f of features) {
       expect(getModelPref(f)).toBe(DEFAULT_MODEL);
     }

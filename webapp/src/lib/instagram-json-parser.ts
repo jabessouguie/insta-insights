@@ -416,10 +416,32 @@ function enrichPostsWithInsights(exportFolder: string, posts: InstagramPost[]): 
     }
   }
 
-  // Match posts to insights by timestamp
+  // Build a sorted array of timestamps for fuzzy matching
+  const sortedTs = Array.from(insightsByTs.keys()).sort((a, b) => a - b);
+
+  // Match posts to insights by timestamp with a ±60s fuzzy window
+  // (Instagram's posts.json and posts.json insights can have slightly different timestamps)
   for (const post of posts) {
     const ts = Math.floor(post.timestamp.getTime() / 1000);
-    const insight = insightsByTs.get(ts);
+
+    // Try exact match first
+    let insight = insightsByTs.get(ts);
+
+    // Fuzzy match: find closest insight timestamp within 60 seconds
+    if (!insight) {
+      let bestDiff = Infinity;
+      let bestTs: number | null = null;
+      for (const insightTs of sortedTs) {
+        const diff = Math.abs(insightTs - ts);
+        if (diff < bestDiff && diff <= 60) {
+          bestDiff = diff;
+          bestTs = insightTs;
+        }
+        if (insightTs > ts + 60) break; // sortedTs is sorted, no need to continue
+      }
+      if (bestTs !== null) insight = insightsByTs.get(bestTs);
+    }
+
     if (!insight) continue;
 
     const likes = insight.get("J'aime") || insight.get("Likes") || "0";

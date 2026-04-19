@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateText, isAIConfigured, stripJsonFences } from "@/lib/ai-provider";
+import { generateText, isAIConfigured, stripJsonFences, GEMINI_FLASH } from "@/lib/ai-provider";
 import { generateGuideHTML } from "@/lib/guide-generator";
 import type { GuideConfig, GuideSection, GuideType } from "@/types/instagram";
 
@@ -16,6 +16,7 @@ export interface GuideGenerateRequest {
   authorName?: string;
   accentColor?: string;
   language?: "fr" | "en";
+  model?: string;
 }
 
 export interface GuideGenerateResponse {
@@ -143,7 +144,7 @@ Réponds UNIQUEMENT avec ce JSON (sans markdown) :
   ]
 }`;
 
-    const rawText = await generateText(prompt);
+    const rawText = await generateText(prompt, { model: body.model ?? GEMINI_FLASH });
     const parsed = JSON.parse(stripJsonFences(rawText)) as { sections: GuideSection[] };
 
     const config: GuideConfig = {

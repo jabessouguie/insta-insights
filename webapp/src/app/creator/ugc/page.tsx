@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useT } from "@/lib/i18n";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { ModelSelector } from "@/components/creator/ModelSelector";
+import { getModelPref, saveModelPref } from "@/lib/model-prefs-store";
 import type { UGCScript, UGCFormat } from "@/types/instagram";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ export default function UGCPage() {
   const [error, setError] = useState<string | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
+  const [aiModel, setAiModel] = useState<string>(getModelPref("ugc"));
 
   const handleGenerate = async () => {
     if (!brandName.trim()) {
@@ -54,6 +57,7 @@ export default function UGCPage() {
           brandName: brandName.trim(),
           constraints: constraints.trim() || undefined,
           language: lang,
+          model: aiModel,
         }),
       });
       const data = (await res.json()) as { success: boolean; ugc?: UGCScript; error?: string };
@@ -121,6 +125,16 @@ export default function UGCPage() {
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <ModelSelector
+            feature="ugc"
+            value={aiModel}
+            onChange={(m) => {
+              setAiModel(m);
+              saveModelPref("ugc", m);
+            }}
+            className="mb-2"
+          />
 
           <Button
             onClick={() => void handleGenerate()}
